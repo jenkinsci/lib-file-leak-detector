@@ -10,6 +10,7 @@ import static org.objectweb.asm.Opcodes.*;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.File;
 import java.lang.instrument.Instrumentation;
 import java.lang.instrument.UnmodifiableClassException;
 
@@ -35,11 +36,16 @@ public class Main {
                         base.visitLabel(s);
                         // m = ClassLoader.getSystemClassLoadeR().loadClass("org.kohsuke.file_leak_detecter").getDeclaredMethod("open",[]);
                         base.visitMethodInsn(INVOKESTATIC,"java/lang/ClassLoader","getSystemClassLoader","()Ljava/lang/ClassLoader;");
-                        base.visitLdcInsn("org.kohsuke.file_leak_detecter");
-                        base.visitMethodInsn(INVOKEVIRTUAL,"java/lang/ClassLoader","loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
-                        base.visitLdcInsn("open");
-                        base.newArray("Ljava/lang/Class;",0);
-                        base.visitMethodInsn(INVOKEVIRTUAL,"java/lang/Class","getDeclaredMethod","(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;");
+                        base.ldc("org.kohsuke.file_leak_detecter.Listener");
+                        base.invokeVirtual("java/lang/ClassLoader","loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
+                        base.ldc("open");
+                        base.newArray("Ljava/lang/Class;",1);
+                        base.dup();
+                        base.iconst(0);
+                        base.ldc(File.class);
+                        base.aastore();
+
+                        base.invokeVirtual("java/lang/Class","getDeclaredMethod","(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;");
 
                         // m.invoke(null,new Object[]{file})
                         base._null();
@@ -50,12 +56,16 @@ public class Main {
                         base.aload(1);
                         base.aastore();
 
-                        base.invokeVirtualVoid("java/lang/reflect/Method","invoke","(Ljava/io/Object;[Ljava/lang/Object;)Ljava/lang/Object;");
+                        base.visitMethodInsn(INVOKEVIRTUAL, "java/lang/reflect/Method", "invoke", "(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;");
+                        base.pop();
                         base.visitInsn(RETURN);
 
                         base.visitLabel(e);
                         base.visitLabel(h);
-                        base.println("error!");
+
+                        base.visitFieldInsn(GETSTATIC,"java/lang/System","out","Ljava/io/PrintStream;");
+                        base.visitInsn(SWAP);
+                        base.invokeVirtual("java/io/PrintStream","println","(Ljava/lang/Object;)V");
                     }
                 }
             )

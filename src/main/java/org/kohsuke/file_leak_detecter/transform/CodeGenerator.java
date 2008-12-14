@@ -3,6 +3,7 @@ package org.kohsuke.file_leak_detecter.transform;
 import org.objectweb.asm.MethodAdapter;
 import org.objectweb.asm.MethodVisitor;
 import static org.objectweb.asm.Opcodes.*;
+import org.objectweb.asm.Type;
 
 /**
  * Convenience method to generate bytecode.
@@ -16,7 +17,7 @@ public class CodeGenerator extends MethodAdapter {
 
     public void println(String msg) {
         super.visitFieldInsn(GETSTATIC,"java/lang/System","out","Ljava/io/PrintStream;");
-        super.visitLdcInsn(msg);
+        ldc(msg);
         super.visitMethodInsn(INVOKEVIRTUAL,"java/io/PrintStream","println","(Ljava/lang/String;)V");
     }
 
@@ -52,8 +53,13 @@ public class CodeGenerator extends MethodAdapter {
         super.visitInsn(POP);
     }
 
-    public void invokeVirtualVoid(String owner, String name, String desc) {
+    public void ldc(Object o) {
+        if(o.getClass()==Class.class)
+            o = Type.getType((Class)o);
+        super.visitLdcInsn(o);
+    }
+
+    public void invokeVirtual(String owner, String name, String desc) {
         super.visitMethodInsn(INVOKEVIRTUAL, owner, name, desc);
-        pop();
     }
 }
