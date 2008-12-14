@@ -55,16 +55,16 @@ public class Main {
                 FileOutputStream.class,
                 RandomAccessFile.class);
 
-        // test code
-        for( int i=0; true; i++ ) {
-            FileOutputStream o = new FileOutputStream("target/dummy"+i);
-            o.write("abc".getBytes());
-        }
-//        Listener.dump(System.out);
-//        o.close();
-
-//        System.out.println("after close");
-//        Listener.dump(System.out);
+//        // test code
+//        for( int i=0; true; i++ ) {
+//            FileOutputStream o = new FileOutputStream("target/dummy"+i);
+//            o.write("abc".getBytes());
+//        }
+////        Listener.dump(System.out);
+////        o.close();
+//
+////        System.out.println("after close");
+////        Listener.dump(System.out);
     }
 
     /**
