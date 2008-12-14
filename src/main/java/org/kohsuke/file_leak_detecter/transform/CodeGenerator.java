@@ -101,7 +101,7 @@ public class CodeGenerator extends MethodAdapter {
 
         visitMethodInsn(INVOKEVIRTUAL, "java/lang/reflect/Method", "invoke", "(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;");
         pop();
-        visitJumpInsn(GOTO,tail);
+        _goto(tail);
 
         visitLabel(e);
         visitLabel(h);
@@ -124,5 +124,17 @@ public class CodeGenerator extends MethodAdapter {
         iconst(idx);
         ldc(type);
         aastore();
+    }
+
+    public void _goto(Label l) {
+        visitJumpInsn(GOTO,l);
+    }
+
+    public void ifFalse(Label label) {
+        visitJumpInsn(IFEQ,label);
+    }
+
+    public void athrow() {
+        visitInsn(ATHROW);
     }
 }

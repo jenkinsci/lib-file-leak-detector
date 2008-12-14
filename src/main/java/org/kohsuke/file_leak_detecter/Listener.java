@@ -58,6 +58,11 @@ public class Listener {
     public static PrintStream TRACE = null;
 
     /**
+     * Trace the "too many open files" error here
+     */
+    public static PrintStream ERROR = System.err;
+
+    /**
      * Tracing may cause additional files to be opened.
      * In such a case, avoid infinite recursion.
      */
@@ -103,5 +108,17 @@ public class Listener {
         ps.println(TABLE.size()+" files are open");
         for (Record r : TABLE.values())
             r.dump("",ps);
+    }
+
+    /**
+     * Called when the system has too many open files.
+     */
+    public static synchronized void outOfDescriptors() {
+        if(ERROR!=null && !tracing) {
+            tracing = true;
+            ERROR.println("Too many open files");
+            dump(ERROR);
+            tracing = false;
+        }
     }
 }
