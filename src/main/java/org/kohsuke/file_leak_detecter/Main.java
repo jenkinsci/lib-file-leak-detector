@@ -18,6 +18,18 @@ import java.lang.instrument.UnmodifiableClassException;
  */
 public class Main {
     public static void premain(String agentArguments, Instrumentation instrumentation) throws UnmodifiableClassException, IOException {
+        if(agentArguments!=null) {
+            if(agentArguments.equals("help")) {
+                System.err.println("File leak detecter arguments:");
+                System.err.println("  help    - show the help screen.");
+                System.err.println("  trace   - trace open/close.");
+                System.exit(-1);
+            }
+            if(agentArguments.equals("trace")) {
+                Listener.TRACE = true;
+            }
+        }
+
         System.out.println("Installed");
         instrumentation.addTransformer(new TransformerImpl(
             newSpec(FileOutputStream.class,"(Ljava/io/File;Z)V"),

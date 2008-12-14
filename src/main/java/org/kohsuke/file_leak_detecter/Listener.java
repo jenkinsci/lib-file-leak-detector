@@ -29,8 +29,8 @@ public class Listener {
             this.time = System.currentTimeMillis();
         }
 
-        public void dump(PrintStream ps) {
-            ps.println(file+" by thread:"+threadName+" on "+new Date(time));
+        public void dump(String prefix, PrintStream ps) {
+            ps.println(prefix+file+" by thread:"+threadName+" on "+new Date(time));
             StackTraceElement[] trace = stackTrace.getStackTrace();
             int i=0;
             // skip until we find the Method.invoke() that called us
@@ -51,6 +51,17 @@ public class Listener {
     private static final Map<Object,Record> TABLE = new HashMap<Object,Record>();
 
     /**
+     * Trace the open/close op
+     */
+    public static boolean TRACE = false;
+
+    /**
+     * Tracing may cause additional files to be opened.
+     * In such a case, avoid infinite recursion.
+     */
+    private static boolean tracing = false;
+
+    /**
      * Called when a new file is opened.
      *
      * @param _this
@@ -59,7 +70,13 @@ public class Listener {
      *      File being opened.
      */
     public static synchronized void open(Object _this, File f) {
-        TABLE.put(_this,new Record(f));
+        Record r = new Record(f);
+        TABLE.put(_this, r);
+        if(TRACE && !tracing) {
+            tracing = true;
+            r.dump("Opened ",System.err);
+            tracing = false;
+        }
     }
 
     /**
@@ -69,7 +86,13 @@ public class Listener {
      *      {@link FileInputStream}, {@link FileOutputStream}, or {@link RandomAccessFile}.
      */
     public static synchronized void close(Object _this) {
-        TABLE.remove(_this);
+        Record r = TABLE.remove(_this);
+        if(r!=null && TRACE && !tracing) {
+            r.dump("Closed ",System.err);
+            tracing = true;
+            r.dump("Opened ",System.err);
+            tracing = false;
+        }
     }
 
     /**
@@ -78,6 +101,6 @@ public class Listener {
     public static synchronized void dump(PrintStream ps) {
         ps.println(TABLE.size()+" files are open");
         for (Record r : TABLE.values())
-            r.dump(ps);
+            r.dump("",ps);
     }
 }
