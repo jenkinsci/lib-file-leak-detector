@@ -1,0 +1,33 @@
+What is this?
+
+    This little Java agent is a tool that keeps track of where/when/who
+    opened files in your JVM. You can have the agent trace these operations
+    to find out about the access pattern or access leak, or dump the
+    list of currently open files and where/when/who opened them.
+    
+    In addition, upon "too many open files" exception, this agent will 
+    dump the list, allowing you to find out where a large number of
+    file descriptors are in use.
+
+Usage
+
+    Without any option, this tool silently records file open/close operations
+    and upon "too many open files" exception, the table will be dumped to
+    stderr.
+
+-------------
+$ java -javaagent:path/to/file-leak-detecter.jar ...your usual Java args follows...
+-------------
+
+    To activate tracing, use the 'trace' option:
+
+-------------
+$ java -javaagent:path/to/file-leak-detecter.jar=trace ...your usual Java args follows...
+-------------
+    
+    Use the help option to see the help screen for the complete list of options.
+
+-------------
+$ java -javaagent:path/to/file-leak-detecter.jar=help
+-------------
+

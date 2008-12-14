@@ -1,0 +1,20 @@
+<?xml version="1.0" ?>
+<project name="File Leak Detecter">
+  <skin>
+    <groupId>org.jvnet.maven-javanet-skin</groupId>
+    <artifactId>maven-javanet-skin</artifactId>
+    <version>1.1</version>
+  </skin>
+
+  <body>
+    <menu name="File Leak Detecter">
+      <item name="Introduction" href="index.html" />
+      <item name="Download" href="https://maven2-repository.dev.java.net/source/browse/maven2-repository/trunk/www/repository/org/kohsuke/file-leak-detecter/" />
+    </menu>
+    <menu name="Project Info">
+      <item name="Mailing list" href="https://file-leak-detecter.dev.java.net/servlets/ProjectMailingListList" />
+      <item name="Issue tracker" href="https://file-leak-detecter.dev.java.net/servlets/ProjectIssues" />
+      <item name="Subversion" href="https://file-leak-detecter.dev.java.net/source/browse/file-leak-detecter/" />
+    </menu>
+  </body>
+</project>
