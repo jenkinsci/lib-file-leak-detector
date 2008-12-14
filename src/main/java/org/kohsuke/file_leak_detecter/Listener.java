@@ -7,6 +7,7 @@ import java.io.RandomAccessFile;
 import java.io.PrintStream;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Date;
 
 /**
  * Intercepted JDK calls land here.
@@ -19,15 +20,17 @@ public class Listener {
         public final File file;
         public final Exception stackTrace = new Exception();
         public final String threadName;
+        public final long time;
 
         private Record(File file) {
             this.file = file;
             // keeping a Thread would potentially leak a thread, so let's just do a name
             this.threadName = Thread.currentThread().getName();
+            this.time = System.currentTimeMillis();
         }
 
         public void dump(PrintStream ps) {
-            ps.println(file+" by "+threadName);
+            ps.println(file+" by thread:"+threadName+" on "+new Date(time));
             StackTraceElement[] trace = stackTrace.getStackTrace();
             int i=0;
             // skip until we find the Method.invoke() that called us
