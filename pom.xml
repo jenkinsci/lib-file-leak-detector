@@ -32,7 +32,7 @@
           <execution>
             <phase>package</phase>
             <goals>
-              <goal>attached</goal>
+              <goal>assembly</goal>
             </goals>
             <configuration>
               <descriptorId>jar-with-dependencies</descriptorId>
@@ -41,6 +41,25 @@
                   <Premain-Class>org.kohsuke.file_leak_detecter.Main</Premain-Class>
                 </manifestEntries>
               </archive>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.jvnet.maven-antrun-extended-plugin</groupId>
+        <artifactId>maven-antrun-extended-plugin</artifactId>
+        <version>1.32</version>
+        <executions>
+          <execution>
+            <!-- push jar with dependencies as the main artifact -->
+            <phase>integration-test</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <tasks>
+                <attachArtifact file="target/${artifactId}-${version}-jar-with-dependencies.jar" />
+              </tasks>
             </configuration>
           </execution>
         </executions>
@@ -70,8 +89,14 @@
   <dependencies>
     <dependency>
       <groupId>asm</groupId>
+      <artifactId>asm</artifactId>
+      <version>3.1</version>
+    </dependency>
+    <dependency>
+      <groupId>asm</groupId>
       <artifactId>asm-all</artifactId>
       <version>3.1</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>  
 
