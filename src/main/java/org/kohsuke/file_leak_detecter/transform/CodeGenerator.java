@@ -4,6 +4,7 @@ import org.objectweb.asm.MethodAdapter;
 import org.objectweb.asm.MethodVisitor;
 import static org.objectweb.asm.Opcodes.*;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.Label;
 
 /**
  * Convenience method to generate bytecode.
@@ -61,5 +62,67 @@ public class CodeGenerator extends MethodAdapter {
 
     public void invokeVirtual(String owner, String name, String desc) {
         super.visitMethodInsn(INVOKEVIRTUAL, owner, name, desc);
+    }
+
+    /**
+     * Invokes a static method on the class in the system classloader.
+     *
+     * This is used for instrumenting classes in the bootstrap classloader,
+     * which cannot see the classes in the system classloader.
+     */
+    public void invokeAppStatic(String userClassName, String userMethodName, Class[] argTypes, int[] localIndex) {
+        Label s = new Label();
+        Label e = new Label();
+        Label h = new Label();
+        Label tail = new Label();
+        visitTryCatchBlock(s,e,h,"java/lang/Exception");
+        visitLabel(s);
+        // [RESULT] m = ClassLoader.getSystemClassLoadeR().loadClass($userClassName).getDeclaredMethod($userMethodName,[...]);
+        visitMethodInsn(INVOKESTATIC,"java/lang/ClassLoader","getSystemClassLoader","()Ljava/lang/ClassLoader;");
+        ldc(userClassName);
+        invokeVirtual("java/lang/ClassLoader","loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
+        ldc(userMethodName);
+        newArray("Ljava/lang/Class;",argTypes.length);
+        for (int i = 0; i < argTypes.length; i++)
+            storeConst(i, argTypes[i]);
+
+        invokeVirtual("java/lang/Class","getDeclaredMethod","(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;");
+
+        // [RESULT] m.invoke(null,new Object[]{this,file})
+        _null();
+        newArray("Ljava/lang/Object;",argTypes.length);
+
+        for (int i = 0; i < localIndex.length; i++) {
+            dup();
+            iconst(i);
+            aload(localIndex[i]);
+            aastore();
+        }
+
+        visitMethodInsn(INVOKEVIRTUAL, "java/lang/reflect/Method", "invoke", "(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;");
+        pop();
+        visitJumpInsn(GOTO,tail);
+
+        visitLabel(e);
+        visitLabel(h);
+
+        // [RESULT] catch(e) { System.out.println(e); }
+        visitFieldInsn(GETSTATIC,"java/lang/System","out","Ljava/io/PrintStream;");
+        visitInsn(SWAP);
+        invokeVirtual("java/io/PrintStream","println","(Ljava/lang/Object;)V");
+
+        visitLabel(tail);
+    }
+
+    /**
+     * When the stack top is an array, store a constant to the known index of the array.
+     *
+     * ..., array => ..., array
+     */
+    private void storeConst(int idx, Object type) {
+        dup();
+        iconst(idx);
+        ldc(type);
+        aastore();
     }
 }

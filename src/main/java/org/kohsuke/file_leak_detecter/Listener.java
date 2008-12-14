@@ -8,6 +8,10 @@ import java.io.FileOutputStream;
  */
 public class Listener {
     public static void open(FileOutputStream fos, File f) {
-        System.out.println(f+" opened");
+        System.out.println(fos+" opened "+f);
+    }
+
+    public static void close(FileOutputStream fos) {
+        System.out.println(fos+" closed");
     }
 }
