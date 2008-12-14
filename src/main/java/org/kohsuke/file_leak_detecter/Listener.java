@@ -88,9 +88,8 @@ public class Listener {
     public static synchronized void close(Object _this) {
         Record r = TABLE.remove(_this);
         if(r!=null && TRACE && !tracing) {
-            r.dump("Closed ",System.err);
             tracing = true;
-            r.dump("Opened ",System.err);
+            r.dump("Closed ",System.err);
             tracing = false;
         }
     }
