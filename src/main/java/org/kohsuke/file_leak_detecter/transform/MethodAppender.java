@@ -14,7 +14,7 @@ public abstract class MethodAppender extends MethodTransformSpec {
         super(name, desc);
     }
 
-    protected abstract void append(CodeGenerator base);
+    protected abstract void append(CodeGenerator g);
 
     @Override
     public MethodVisitor newAdapter(MethodVisitor base) {

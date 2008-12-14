@@ -23,49 +23,60 @@ public class Main {
         TransformerImpl t = new TransformerImpl(
             new ClassTransformSpec("java/io/FileOutputStream",
                 new MethodAppender("close","()V") {
-                    protected void append(CodeGenerator base) {
-                        base.println("Stream closed");
+                    protected void append(CodeGenerator g) {
+                        g.println("Stream closed");
                     }
                 },
                 new MethodAppender("<init>","(Ljava/io/File;Z)V") {
-                    protected void append(CodeGenerator base) {
+                    protected void append(CodeGenerator g) {
                         Label s = new Label();
                         Label e = new Label();
                         Label h = new Label();
-                        base.visitTryCatchBlock(s,e,h,"java/lang/Exception");
-                        base.visitLabel(s);
-                        // m = ClassLoader.getSystemClassLoadeR().loadClass("org.kohsuke.file_leak_detecter").getDeclaredMethod("open",[]);
-                        base.visitMethodInsn(INVOKESTATIC,"java/lang/ClassLoader","getSystemClassLoader","()Ljava/lang/ClassLoader;");
-                        base.ldc("org.kohsuke.file_leak_detecter.Listener");
-                        base.invokeVirtual("java/lang/ClassLoader","loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
-                        base.ldc("open");
-                        base.newArray("Ljava/lang/Class;",1);
-                        base.dup();
-                        base.iconst(0);
-                        base.ldc(File.class);
-                        base.aastore();
+                        g.visitTryCatchBlock(s,e,h,"java/lang/Exception");
+                        g.visitLabel(s);
+                        // [RESULT] m = ClassLoader.getSystemClassLoadeR().loadClass("org.kohsuke.file_leak_detecter").getDeclaredMethod("open",[...]);
+                        g.visitMethodInsn(INVOKESTATIC,"java/lang/ClassLoader","getSystemClassLoader","()Ljava/lang/ClassLoader;");
+                        g.ldc("org.kohsuke.file_leak_detecter.Listener");
+                        g.invokeVirtual("java/lang/ClassLoader","loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
+                        g.ldc("open");
+                        g.newArray("Ljava/lang/Class;",2);
+                        storeClass(g, 0, FileOutputStream.class);
+                        storeClass(g, 1, File.class);
 
-                        base.invokeVirtual("java/lang/Class","getDeclaredMethod","(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;");
+                        g.invokeVirtual("java/lang/Class","getDeclaredMethod","(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;");
 
-                        // m.invoke(null,new Object[]{file})
-                        base._null();
-                        base.newArray("Ljava/lang/Object;",1);
+                        // [RESULT] m.invoke(null,new Object[]{this,file})
+                        g._null();
+                        g.newArray("Ljava/lang/Object;",2);
 
-                        base.dup();
-                        base.iconst(0);
-                        base.aload(1);
-                        base.aastore();
+                        g.dup();
+                        g.iconst(0);
+                        g.aload(0);
+                        g.aastore();
 
-                        base.visitMethodInsn(INVOKEVIRTUAL, "java/lang/reflect/Method", "invoke", "(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;");
-                        base.pop();
-                        base.visitInsn(RETURN);
+                        g.dup();
+                        g.iconst(1);
+                        g.aload(1);
+                        g.aastore();
 
-                        base.visitLabel(e);
-                        base.visitLabel(h);
+                        g.visitMethodInsn(INVOKEVIRTUAL, "java/lang/reflect/Method", "invoke", "(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;");
+                        g.pop();
+                        g.visitInsn(RETURN);
 
-                        base.visitFieldInsn(GETSTATIC,"java/lang/System","out","Ljava/io/PrintStream;");
-                        base.visitInsn(SWAP);
-                        base.invokeVirtual("java/io/PrintStream","println","(Ljava/lang/Object;)V");
+                        g.visitLabel(e);
+                        g.visitLabel(h);
+
+                        // [RESULT] catch(e) { System.out.println(e); }
+                        g.visitFieldInsn(GETSTATIC,"java/lang/System","out","Ljava/io/PrintStream;");
+                        g.visitInsn(SWAP);
+                        g.invokeVirtual("java/io/PrintStream","println","(Ljava/lang/Object;)V");
+                    }
+
+                    private void storeClass(CodeGenerator g, int idx, Class<?> type) {
+                        g.dup();
+                        g.iconst(idx);
+                        g.ldc(type);
+                        g.aastore();
                     }
                 }
             )
