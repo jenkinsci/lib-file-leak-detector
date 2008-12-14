@@ -20,18 +20,34 @@ public class Main {
         System.out.println("Installed");
         TransformerImpl t = new TransformerImpl(
             new ClassTransformSpec("java/io/FileOutputStream",
+                new MethodAppender("<init>","(Ljava/io/File;Z)V") {
+                    protected void append(CodeGenerator g) {
+                        g.invokeAppStatic("org.kohsuke.file_leak_detecter.Listener","open",
+                                new Class[]{FileOutputStream.class,File.class},
+                                new int[]{0,1});
+                    }
+                },
                 new MethodAppender("close","()V") {
                     protected void append(CodeGenerator g) {
                         g.invokeAppStatic("org.kohsuke.file_leak_detecter.Listener","close",
                                 new Class[]{FileOutputStream.class},
                                 new int[]{0});
                     }
-                },
-                new MethodAppender("<init>","(Ljava/io/File;Z)V") {
+                }
+            ),
+            new ClassTransformSpec("java/io/FileInputStream",
+                new MethodAppender("<init>","(Ljava/io/File;)V") {
                     protected void append(CodeGenerator g) {
                         g.invokeAppStatic("org.kohsuke.file_leak_detecter.Listener","open",
-                                new Class[]{FileOutputStream.class,File.class},
+                                new Class[]{FileInputStream.class,File.class},
                                 new int[]{0,1});
+                    }
+                },
+                new MethodAppender("close","()V") {
+                    protected void append(CodeGenerator g) {
+                        g.invokeAppStatic("org.kohsuke.file_leak_detecter.Listener","close",
+                                new Class[]{FileInputStream.class},
+                                new int[]{0});
                     }
                 }
             )
