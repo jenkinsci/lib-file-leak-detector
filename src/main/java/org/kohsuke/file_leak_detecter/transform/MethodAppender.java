@@ -14,16 +14,16 @@ public abstract class MethodAppender extends MethodTransformSpec {
         super(name, desc);
     }
 
-    protected abstract void append(MethodVisitor base);
+    protected abstract void append(CodeGenerator base);
 
     @Override
-    public MethodVisitor newAdapter(final MethodVisitor base) {
+    public MethodVisitor newAdapter(MethodVisitor base) {
+        final CodeGenerator cg = new CodeGenerator(base);
         return new MethodAdapter(base) {
             @Override
             public void visitInsn(int opcode) {
-                if(opcode==RETURN) {
-                    append(base);
-                }
+                if(opcode==RETURN)
+                    append(cg);
                 super.visitInsn(opcode);
             }
         };
