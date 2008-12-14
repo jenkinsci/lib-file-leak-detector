@@ -10,6 +10,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.File;
 import java.io.RandomAccessFile;
+import java.io.PrintStream;
 import java.lang.instrument.Instrumentation;
 import java.lang.instrument.UnmodifiableClassException;
 
@@ -21,16 +22,21 @@ public class Main {
         if(agentArguments!=null) {
             if(agentArguments.equals("help")) {
                 System.err.println("File leak detecter arguments:");
-                System.err.println("  help    - show the help screen.");
-                System.err.println("  trace   - trace open/close.");
+                System.err.println("  help        - show the help screen.");
+                System.err.println("  trace       - log every open/close operation to stderr.");
+                System.err.println("  trace=FILE  - log every open/close operation to the given file.");
+                System.err.println("  threshold=N - ");
                 System.exit(-1);
             }
             if(agentArguments.equals("trace")) {
-                Listener.TRACE = true;
+                Listener.TRACE = System.err;
+            }
+            if(agentArguments.startsWith("trace=")) {
+                Listener.TRACE = new PrintStream(new FileOutputStream(agentArguments.substring(6)));
             }
         }
 
-        System.out.println("Installed");
+        System.err.println("File leak detecter installed");
         instrumentation.addTransformer(new TransformerImpl(
             newSpec(FileOutputStream.class,"(Ljava/io/File;Z)V"),
             newSpec(FileInputStream.class, "(Ljava/io/File;)V"),

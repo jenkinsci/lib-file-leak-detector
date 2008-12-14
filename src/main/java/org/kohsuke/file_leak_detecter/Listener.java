@@ -15,7 +15,9 @@ import java.util.Date;
  * @author Kohsuke Kawaguchi
  */
 public class Listener {
-
+    /**
+     * Remembers who/where/when opened a file.
+     */
     private static final class Record {
         public final File file;
         public final Exception stackTrace = new Exception();
@@ -53,7 +55,7 @@ public class Listener {
     /**
      * Trace the open/close op
      */
-    public static boolean TRACE = false;
+    public static PrintStream TRACE = null;
 
     /**
      * Tracing may cause additional files to be opened.
@@ -72,9 +74,9 @@ public class Listener {
     public static synchronized void open(Object _this, File f) {
         Record r = new Record(f);
         TABLE.put(_this, r);
-        if(TRACE && !tracing) {
+        if(TRACE!=null && !tracing) {
             tracing = true;
-            r.dump("Opened ",System.err);
+            r.dump("Opened ",TRACE);
             tracing = false;
         }
     }
@@ -87,9 +89,9 @@ public class Listener {
      */
     public static synchronized void close(Object _this) {
         Record r = TABLE.remove(_this);
-        if(r!=null && TRACE && !tracing) {
+        if(r!=null && TRACE!=null && !tracing) {
             tracing = true;
-            r.dump("Closed ",System.err);
+            r.dump("Closed ",TRACE);
             tracing = false;
         }
     }
