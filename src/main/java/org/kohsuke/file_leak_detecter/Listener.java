@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileInputStream;
 import java.io.RandomAccessFile;
+import java.io.PrintStream;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -21,6 +22,11 @@ public class Listener {
         private Record(File file) {
             this.file = file;
         }
+
+        public void dump(PrintStream ps) {
+            ps.println(file);
+            stackTrace.printStackTrace(ps);
+        }
     }
 
     /**
@@ -33,13 +39,20 @@ public class Listener {
      * @param _this
      *      {@link FileInputStream}, {@link FileOutputStream}, or {@link RandomAccessFile}.
      */
-    public static void open(Object _this, File f) {
-        System.out.println(_this+" opened "+f);
+    public static synchronized void open(Object _this, File f) {
         TABLE.put(_this,new Record(f));
     }
 
-    public static void close(Object _this) {
-        System.out.println(_this+" closed");
+    public static synchronized void close(Object _this) {
         TABLE.remove(_this);
+    }
+
+    /**
+     * Dumps all files that are currently open.
+     */
+    public static synchronized void dump(PrintStream ps) {
+        ps.println(TABLE.size()+" files are open");
+        for (Record r : TABLE.values())
+            r.dump(ps);
     }
 }

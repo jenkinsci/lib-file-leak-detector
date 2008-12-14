@@ -32,7 +32,11 @@ public class Main {
         // test code
         FileOutputStream o = new FileOutputStream("target/dummy");
         o.write("abc".getBytes());
+        Listener.dump(System.out);
         o.close();
+
+        System.out.println("after close");
+        Listener.dump(System.out);
     }
 
     /**
