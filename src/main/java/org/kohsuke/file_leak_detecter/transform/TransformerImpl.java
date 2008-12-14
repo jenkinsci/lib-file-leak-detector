@@ -1,4 +1,4 @@
-package org.kohsuke.file_leak_detecter;
+package org.kohsuke.file_leak_detecter.transform;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;

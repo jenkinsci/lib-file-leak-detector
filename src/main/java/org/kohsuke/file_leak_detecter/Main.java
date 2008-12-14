@@ -1,14 +1,17 @@
 package org.kohsuke.file_leak_detecter;
 
-import org.objectweb.asm.MethodAdapter;
+import org.kohsuke.file_leak_detecter.transform.ClassTransformSpec;
+import org.kohsuke.file_leak_detecter.transform.MethodAppender;
+import org.kohsuke.file_leak_detecter.transform.TransformerImpl;
 import org.objectweb.asm.MethodVisitor;
-import static org.objectweb.asm.Opcodes.*;
+import static org.objectweb.asm.Opcodes.GETSTATIC;
+import static org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.lang.instrument.UnmodifiableClassException;
-import java.io.FileOutputStream;
-import java.io.FileInputStream;
-import java.io.IOException;
 
 /**
  * @author Kohsuke Kawaguchi
@@ -18,20 +21,11 @@ public class Main {
         System.out.println("Installed");
         TransformerImpl t = new TransformerImpl(
             new ClassTransformSpec("java/io/FileOutputStream",
-                new MethodTransformSpec("close","()V") {
-                    @Override
-                    public MethodVisitor newAdapter(MethodVisitor base) {
-                        return new MethodAdapter(base) {
-                            @Override
-                            public void visitInsn(int opcode) {
-                                if(opcode==RETURN) {
-                                    super.visitFieldInsn(GETSTATIC,"java/lang/System","out","Ljava/io/PrintStream;");
-                                    super.visitLdcInsn("Stream closed");
-                                    super.visitMethodInsn(INVOKEVIRTUAL,"java/io/PrintStream","println","(Ljava/lang/String;)V");
-                                }
-                                super.visitInsn(opcode);
-                            }
-                        };
+                new MethodAppender("close","()V") {
+                    protected void append(MethodVisitor base) {
+                        base.visitFieldInsn(GETSTATIC,"java/lang/System","out","Ljava/io/PrintStream;");
+                        base.visitLdcInsn("Stream closed");
+                        base.visitMethodInsn(INVOKEVIRTUAL,"java/io/PrintStream","println","(Ljava/lang/String;)V");
                     }
                 }
             )
