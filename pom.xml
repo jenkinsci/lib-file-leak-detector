@@ -15,16 +15,6 @@
   <build>
     <plugins>
       <plugin>
-        <artifactId>maven-jar-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifestEntries>
-              <Premain-Class>org.kohsuke.file_leak_detecter.Main</Premain-Class>
-            </manifestEntries>
-          </archive>
-        </configuration>
-      </plugin>
-      <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
           <source>1.5</source>
@@ -32,42 +22,43 @@
         </configuration>
       </plugin>
       <plugin>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>assembly</goal>
-            </goals>
-            <configuration>
-              <descriptorId>jar-with-dependencies</descriptorId>
-              <archive>
-                <manifestEntries>
-                  <Premain-Class>org.kohsuke.file_leak_detecter.Main</Premain-Class>
-                </manifestEntries>
-              </archive>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <groupId>org.jvnet.maven-antrun-extended-plugin</groupId>
         <artifactId>maven-antrun-extended-plugin</artifactId>
         <version>1.32</version>
         <executions>
           <execution>
-            <!-- push jar with dependencies as the main artifact -->
-            <phase>integration-test</phase>
+            <!--
+              Using ASM 3.x breaks ASM 2.x app, and vice versa, so we have to package-rename it to
+              avoid conflicts.
+             -->
+            <phase>package</phase>
             <goals>
               <goal>run</goal>
             </goals>
             <configuration>
               <tasks>
-                <attachArtifact file="target/${artifactId}-${version}-jar-with-dependencies.jar" />
+                <resolveArtifact artifactId="asm" property="asm.jar"/>
+                <taskdef name="jarjar" classname="com.tonicsystems.jarjar.JarJarTask" />
+                <jarjar jarfile="target/all.jar">
+                  <manifest>
+                    <attribute name="Premain-Class" value="org.kohsuke.file_leak_detecter.Main" />
+                  </manifest>
+                  <fileset dir="target/classes"/>
+                  <zipfileset src="${asm.jar}" />
+                  <rule pattern="org.objectweb.asm.**" result="org.kohsuke.file_leak_detecter.internal.asm.@1" />
+                </jarjar>
+                <attachArtifact file="target/all.jar"/>
               </tasks>
             </configuration>
           </execution>
         </executions>
+        <dependencies>
+          <dependency>
+            <groupId>com.tonicsystems</groupId>
+            <artifactId>jarjar</artifactId>
+            <version>0.6</version>
+          </dependency>
+        </dependencies>
       </plugin>
     </plugins>
     <extensions>
@@ -87,7 +78,7 @@
       <repository>
         <uniqueVersion>false</uniqueVersion>
         <id>java.net-maven2-repository</id>
-        <url>java-net:/maven2-repository/trunk/www/repository/</url>
+        <url>java-net:/maven2-repositoy/trunk/www/repository/</url>
       </repository>
   </distributionManagement>
 
