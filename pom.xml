@@ -3,13 +3,13 @@
   <groupId>org.kohsuke</groupId>
   <artifactId>file-leak-detecter</artifactId>
   <packaging>jar</packaging>
-  <version>1.1-SNAPSHOT</version>
+  <version>1.1</version>
   <name>File Leak Detecter</name>
 
   <scm>
-    <connection>scm:svn:https://svn.dev.java.net/svn/file-leak-detecter/trunk/file-leak-detecter</connection>
-    <developerConnection>scm:svn:https://svn.dev.java.net/svn/file-leak-detecter/trunk/file-leak-detecter</developerConnection>
-    <url>https://file-leak-detecter.dev.java.net/source/browse/file-leak-detecter/trunk/file-leak-detecter/</url>
+    <connection>scm:svn:https://svn.dev.java.net/svn/file-leak-detecter/tags/file-leak-detecter-1.1</connection>
+    <developerConnection>scm:svn:https://svn.dev.java.net/svn/file-leak-detecter/tags/file-leak-detecter-1.1</developerConnection>
+    <url>https://file-leak-detecter.dev.java.net/source/browse/file-leak-detecter/tags/file-leak-detecter-1.1</url>
   </scm>
 
   <build>
@@ -37,17 +37,17 @@
             </goals>
             <configuration>
               <tasks>
-                <resolveArtifact artifactId="asm" property="asm.jar"/>
+                <resolveArtifact artifactId="asm" property="asm.jar" />
                 <taskdef name="jarjar" classname="com.tonicsystems.jarjar.JarJarTask" />
                 <jarjar jarfile="target/all.jar">
                   <manifest>
                     <attribute name="Premain-Class" value="org.kohsuke.file_leak_detecter.Main" />
                   </manifest>
-                  <fileset dir="target/classes"/>
+                  <fileset dir="target/classes" />
                   <zipfileset src="${asm.jar}" />
                   <rule pattern="org.objectweb.asm.**" result="org.kohsuke.file_leak_detecter.internal.asm.@1" />
                 </jarjar>
-                <attachArtifact file="target/all.jar"/>
+                <attachArtifact file="target/all.jar" />
               </tasks>
             </configuration>
           </execution>
