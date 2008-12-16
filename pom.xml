@@ -3,13 +3,13 @@
   <groupId>org.kohsuke</groupId>
   <artifactId>file-leak-detecter</artifactId>
   <packaging>jar</packaging>
-  <version>1.2-SNAPSHOT</version>
+  <version>1.2</version>
   <name>File Leak Detecter</name>
 
   <scm>
-    <connection>scm:svn:https://svn.dev.java.net/svn/file-leak-detecter/trunk/file-leak-detecter</connection>
-    <developerConnection>scm:svn:https://svn.dev.java.net/svn/file-leak-detecter/trunk/file-leak-detecter</developerConnection>
-    <url>https://file-leak-detecter.dev.java.net/source/browse/file-leak-detecter/trunk/file-leak-detecter/</url>
+    <connection>scm:svn:https://svn.dev.java.net/svn/file-leak-detecter/tags/file-leak-detecter-1.2</connection>
+    <developerConnection>scm:svn:https://svn.dev.java.net/svn/file-leak-detecter/tags/file-leak-detecter-1.2</developerConnection>
+    <url>https://file-leak-detecter.dev.java.net/source/browse/file-leak-detecter/tags/file-leak-detecter-1.2</url>
   </scm>
 
   <build>
