@@ -7,7 +7,6 @@ import org.kohsuke.file_leak_detecter.transform.TransformerImpl;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodAdapter;
 import org.objectweb.asm.MethodVisitor;
-import static org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -17,8 +16,11 @@ import java.io.PrintStream;
 import java.io.RandomAccessFile;
 import java.lang.instrument.Instrumentation;
 import java.lang.instrument.UnmodifiableClassException;
+import java.net.Socket;
+import java.net.ServerSocket;
 
 /**
+ * Java agent that instruments JDK classes to keep track of where file descriptors are opened.
  * @author Kohsuke Kawaguchi
  */
 public class Main {
@@ -48,12 +50,23 @@ public class Main {
         instrumentation.addTransformer(new TransformerImpl(
             newSpec(FileOutputStream.class,"(Ljava/io/File;Z)V"),
             newSpec(FileInputStream.class, "(Ljava/io/File;)V"),
-            newSpec(RandomAccessFile.class,"(Ljava/io/File;Ljava/lang/String;)V")
+            newSpec(RandomAccessFile.class,"(Ljava/io/File;Ljava/lang/String;)V"),
+            new ClassTransformSpec(ServerSocket.class,
+                new OpenSocketIntercepter("bind", "(Ljava/net/SocketAddress;I)V"),
+                new CloseIntercepter()
+            ),
+            new ClassTransformSpec(Socket.class,
+                new OpenSocketIntercepter("connect", "(Ljava/net/SocketAddress;I)V"),
+                new OpenSocketIntercepter("postAccept", "()V"),
+                new CloseIntercepter()
+            )
         ),true);
         instrumentation.retransformClasses(
                 FileInputStream.class,
                 FileOutputStream.class,
-                RandomAccessFile.class);
+                RandomAccessFile.class,
+                Socket.class,
+                ServerSocket.class);
 
 //        // test code
 //        for( int i=0; true; i++ ) {
@@ -131,13 +144,31 @@ public class Main {
                             new int[]{0,1});
                 }
             },
-            new MethodAppender("close","()V") {
-                protected void append(CodeGenerator g) {
-                    g.invokeAppStatic("org.kohsuke.file_leak_detecter.Listener","close",
-                            new Class[]{Object.class},
-                            new int[]{0});
-                }
-            }
+            new CloseIntercepter()
         );
+    }
+
+    private static class CloseIntercepter extends MethodAppender {
+        public CloseIntercepter() {
+            super("close", "()V");
+        }
+
+        protected void append(CodeGenerator g) {
+            g.invokeAppStatic("org.kohsuke.file_leak_detecter.Listener","close",
+                    new Class[]{Object.class},
+                    new int[]{0});
+        }
+    }
+
+    private static class OpenSocketIntercepter extends MethodAppender {
+        public OpenSocketIntercepter(String name, String desc) {
+            super(name,desc);
+        }
+
+        protected void append(CodeGenerator g) {
+            g.invokeAppStatic("org.kohsuke.file_leak_detecter.Listener","openSocket",
+                    new Class[]{Object.class},
+                    new int[]{0});
+        }
     }
 }

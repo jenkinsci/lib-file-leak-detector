@@ -8,6 +8,8 @@ import java.io.PrintStream;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Date;
+import java.net.Socket;
+import java.net.ServerSocket;
 
 /**
  * Intercepted JDK calls land here.
@@ -18,21 +20,18 @@ public class Listener {
     /**
      * Remembers who/where/when opened a file.
      */
-    private static final class Record {
-        public final File file;
+    private static class Record {
         public final Exception stackTrace = new Exception();
         public final String threadName;
         public final long time;
 
-        private Record(File file) {
-            this.file = file;
+        protected Record() {
             // keeping a Thread would potentially leak a thread, so let's just do a name
             this.threadName = Thread.currentThread().getName();
             this.time = System.currentTimeMillis();
         }
 
         public void dump(String prefix, PrintStream ps) {
-            ps.println(prefix+file+" by thread:"+threadName+" on "+new Date(time));
             StackTraceElement[] trace = stackTrace.getStackTrace();
             int i=0;
             // skip until we find the Method.invoke() that called us
@@ -44,6 +43,58 @@ public class Listener {
             // print the rest
             for (; i < trace.length; i++)
                 ps.println("\tat " + trace[i]);
+        }
+    }
+
+    /**
+     * Record of opened file.
+     */
+    private static final class FileRecord extends Record {
+        public final File file;
+
+        private FileRecord(File file) {
+            this.file = file;
+        }
+
+        public void dump(String prefix, PrintStream ps) {
+            ps.println(prefix+file+" by thread:"+threadName+" on "+new Date(time));
+            super.dump(prefix,ps);
+        }
+    }
+
+    /**
+     * Record of opened socket.
+     */
+    private static final class SocketRecord extends Record {
+        public final Socket socket;
+        public final String peer;
+
+        private SocketRecord(Socket socket) {
+            this.socket = socket;
+            peer = socket.getRemoteSocketAddress().toString();
+        }
+
+        public void dump(String prefix, PrintStream ps) {
+            ps.println(prefix+"socket to "+peer+" by thread:"+threadName+" on "+new Date(time));
+            super.dump(prefix,ps);
+        }
+    }
+
+    /**
+     * Record of opened server socket.
+     */
+    private static final class ServerSocketRecord extends Record {
+        public final ServerSocket socket;
+        public final String address;
+
+        private ServerSocketRecord(ServerSocket socket) {
+            this.socket = socket;
+            address = socket.getLocalSocketAddress().toString();
+        }
+
+        public void dump(String prefix, PrintStream ps) {
+            ps.println(prefix+"server socket at "+address+" by thread:"+threadName+" on "+new Date(time));
+            super.dump(prefix,ps);
         }
     }
 
@@ -77,7 +128,22 @@ public class Listener {
      *      File being opened.
      */
     public static synchronized void open(Object _this, File f) {
-        Record r = new Record(f);
+        put(_this, new FileRecord(f));
+    }
+
+    /**
+     * Called when a socket is opened.
+     */
+    public static synchronized void openSocket(Object _this) {
+        if (_this instanceof Socket) {
+            put(_this, new SocketRecord((Socket) _this));
+        }
+        if (_this instanceof ServerSocket) {
+            put(_this, new ServerSocketRecord((ServerSocket) _this));
+        }
+    }
+    
+    private static void put(Object _this, Record r) {
         TABLE.put(_this, r);
         if(TRACE!=null && !tracing) {
             tracing = true;
@@ -90,7 +156,7 @@ public class Listener {
      * Called when a file is closed.
      *
      * @param _this
-     *      {@link FileInputStream}, {@link FileOutputStream}, or {@link RandomAccessFile}.
+     *      {@link FileInputStream}, {@link FileOutputStream}, {@link RandomAccessFile}, {@link Socket}, or {@link ServerSocket}.
      */
     public static synchronized void close(Object _this) {
         Record r = TABLE.remove(_this);

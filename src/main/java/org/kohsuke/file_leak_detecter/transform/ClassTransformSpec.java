@@ -10,6 +10,10 @@ public final class ClassTransformSpec {
     public final String name;
     /*package*/ Map<String,MethodTransformSpec> methodSpecs = new HashMap<String,MethodTransformSpec>();
 
+    public ClassTransformSpec(Class clazz, MethodTransformSpec... methodSpecs) {
+        this(clazz.getName().replace('.', '/'),methodSpecs);
+    }
+
     public ClassTransformSpec(String name, MethodTransformSpec... methodSpecs) {
         this.name = name;
         for (MethodTransformSpec s : methodSpecs)
