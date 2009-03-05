@@ -26,23 +26,25 @@ import java.net.ServerSocket;
 public class Main {
     public static void premain(String agentArguments, Instrumentation instrumentation) throws UnmodifiableClassException, IOException {
         if(agentArguments!=null) {
-            if(agentArguments.equals("help")) {
-                System.err.println("File leak detecter arguments:");
-                System.err.println("  help        - show the help screen.");
-                System.err.println("  trace       - log every open/close operation to stderr.");
-                System.err.println("  trace=FILE  - log every open/close operation to the given file.");
-                System.err.println("  error=FILE  - if 'too many open files' error is detected, send the dump here.");
-                System.err.println("                by default it goes to stderr.");
-                System.exit(-1);
-            }
-            if(agentArguments.equals("trace")) {
-                Listener.TRACE = System.err;
-            }
-            if(agentArguments.startsWith("trace=")) {
-                Listener.TRACE = new PrintStream(new FileOutputStream(agentArguments.substring(6)));
-            }
-            if(agentArguments.startsWith("error=")) {
-                Listener.ERROR = new PrintStream(new FileOutputStream(agentArguments.substring(6)));
+            for (String t : agentArguments.split(",")) {
+                if(t.equals("help")) {
+                    usageAndQuit();
+                } else
+                if(t.startsWith("threshold=")) {
+                    Listener.THRESHOLD = Integer.parseInt(t.substring("threshold=".length()));
+                } else
+                if(t.equals("trace")) {
+                    Listener.TRACE = System.err;
+                } else
+                if(t.startsWith("trace=")) {
+                    Listener.TRACE = new PrintStream(new FileOutputStream(agentArguments.substring(6)));
+                } else
+                if(t.startsWith("error=")) {
+                    Listener.ERROR = new PrintStream(new FileOutputStream(agentArguments.substring(6)));
+                } else {
+                    System.err.println("Unknown option: "+t);
+                    usageAndQuit();
+                }
             }
         }
 
@@ -78,6 +80,18 @@ public class Main {
 //
 ////        System.out.println("after close");
 ////        Listener.dump(System.out);
+    }
+
+    private static void usageAndQuit() {
+        System.err.println("File leak detecter arguments (to specify multiple values, separate them by ',':");
+        System.err.println("  help        - show the help screen.");
+        System.err.println("  trace       - log every open/close operation to stderr.");
+        System.err.println("  trace=FILE  - log every open/close operation to the given file.");
+        System.err.println("  error=FILE  - if 'too many open files' error is detected, send the dump here.");
+        System.err.println("                by default it goes to stderr.");
+        System.err.println("  threshold=N - instead of waiting until 'too many open files', dump once");
+        System.err.println("                we have N descriptors open.");
+        System.exit(-1);
     }
 
     /**

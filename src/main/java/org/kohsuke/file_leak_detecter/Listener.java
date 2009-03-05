@@ -120,6 +120,11 @@ public class Listener {
     private static boolean tracing = false;
 
     /**
+     * If the table size grows beyond this, report the table
+     */
+    public static int THRESHOLD = 999999;
+    
+    /**
      * Called when a new file is opened.
      *
      * @param _this
@@ -143,8 +148,12 @@ public class Listener {
         }
     }
     
-    private static void put(Object _this, Record r) {
+    private static synchronized void put(Object _this, Record r) {
         TABLE.put(_this, r);
+        if(TABLE.size()>THRESHOLD) {
+            dump(ERROR);
+            THRESHOLD+=10;
+        }
         if(TRACE!=null && !tracing) {
             tracing = true;
             r.dump("Opened ",TRACE);
@@ -171,7 +180,7 @@ public class Listener {
      * Dumps all files that are currently open.
      */
     public static synchronized void dump(PrintStream ps) {
-        ps.println(TABLE.size()+" files are open");
+        ps.println(TABLE.size()+" descriptors are open");
         for (Record r : TABLE.values())
             r.dump("",ps);
     }
