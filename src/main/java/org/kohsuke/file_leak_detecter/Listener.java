@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Date;
 import java.net.Socket;
 import java.net.ServerSocket;
+import java.nio.channels.SocketChannel;
 
 /**
  * Intercepted JDK calls land here.
@@ -99,6 +100,22 @@ public class Listener {
     }
 
     /**
+     * Record of opened SocketChannel.
+     */
+    private static final class SocketChannelRecord extends Record {
+        public final SocketChannel socket;
+
+        private SocketChannelRecord(SocketChannel socket) {
+            this.socket = socket;
+        }
+
+        public void dump(String prefix, PrintStream ps) {
+            ps.println(prefix+"socket channel by thread:"+threadName+" on "+new Date(time));
+            super.dump(prefix,ps);
+        }
+    }
+
+    /**
      * Files that are currently open.
      */
     private static final Map<Object,Record> TABLE = new HashMap<Object,Record>();
@@ -145,6 +162,9 @@ public class Listener {
         }
         if (_this instanceof ServerSocket) {
             put(_this, new ServerSocketRecord((ServerSocket) _this));
+        }
+        if (_this instanceof SocketChannel) {
+            put(_this, new SocketChannelRecord((SocketChannel) _this));
         }
     }
     

@@ -10,6 +10,11 @@ import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Arrays;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+import sun.misc.BASE64Encoder;
 
 /**
  * @author Kohsuke Kawaguchi
@@ -30,7 +35,7 @@ public class TransformerImpl implements ClassFileTransformer {
             return classfileBuffer;
 
         ClassReader cr = new ClassReader(classfileBuffer);
-        ClassWriter cw = new ClassWriter(0);
+        ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES|ClassWriter.COMPUTE_MAXS);
         cr.accept(new ClassAdapter(cw) {
             @Override
             public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
@@ -42,8 +47,9 @@ public class TransformerImpl implements ClassFileTransformer {
 
                 return ms.newAdapter(base);
             }
-        },0);
+        },cr.SKIP_FRAMES);
 
+        System.out.println("Transforming "+className);
         return cw.toByteArray();
     }
 }
