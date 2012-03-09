@@ -1,4 +1,4 @@
-package org.kohsuke.file_leak_detecter.transform;
+package org.kohsuke.file_leak_detector.transform;
 
 import java.util.Map;
 import java.util.HashMap;

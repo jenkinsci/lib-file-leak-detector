@@ -1,9 +1,9 @@
-package org.kohsuke.file_leak_detecter.transform;
+package org.kohsuke.file_leak_detector.transform;
 
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.ClassAdapter;
-import org.objectweb.asm.MethodVisitor;
+import org.kohsuke.asm3.ClassReader;
+import org.kohsuke.asm3.ClassWriter;
+import org.kohsuke.asm3.ClassAdapter;
+import org.kohsuke.asm3.MethodVisitor;
 
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;

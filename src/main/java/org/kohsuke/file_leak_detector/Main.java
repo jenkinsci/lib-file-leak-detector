@@ -1,9 +1,9 @@
-package org.kohsuke.file_leak_detecter;
+package org.kohsuke.file_leak_detector;
 
-import org.kohsuke.file_leak_detecter.transform.ClassTransformSpec;
-import org.kohsuke.file_leak_detecter.transform.CodeGenerator;
-import org.kohsuke.file_leak_detecter.transform.MethodAppender;
-import org.kohsuke.file_leak_detecter.transform.TransformerImpl;
+import org.kohsuke.file_leak_detector.transform.ClassTransformSpec;
+import org.kohsuke.file_leak_detector.transform.CodeGenerator;
+import org.kohsuke.file_leak_detector.transform.MethodAppender;
+import org.kohsuke.file_leak_detector.transform.TransformerImpl;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -47,7 +47,7 @@ public class Main {
             }
         }
 
-        System.err.println("File leak detecter installed");
+        System.err.println("File leak detector installed");
         instrumentation.addTransformer(new TransformerImpl(
             newSpec(FileOutputStream.class,"(Ljava/io/File;Z)V"),
             newSpec(FileInputStream.class, "(Ljava/io/File;)V"),
@@ -83,7 +83,7 @@ public class Main {
     }
 
     private static void usageAndQuit() {
-        System.err.println("File leak detecter arguments (to specify multiple values, separate them by ',':");
+        System.err.println("File leak detector arguments (to specify multiple values, separate them by ',':");
         System.err.println("  help        - show the help screen.");
         System.err.println("  trace       - log every open/close operation to stderr.");
         System.err.println("  trace=FILE  - log every open/close operation to the given file.");
@@ -137,7 +137,7 @@ public class Main {
 //                                g.ifFalse(rethrow);
 //
 //                                // too many open files detected
-//                                g.invokeAppStatic("org.kohsuke.file_leak_detecter.Listener","outOfDescriptors",
+//                                g.invokeAppStatic("org.kohsuke.file_leak_detector.Listener","outOfDescriptors",
 //                                        new Class[0], new int[0]);
 //
 //                                // rethrow the FileNotFoundException
@@ -154,7 +154,7 @@ public class Main {
 //                }
 
                 protected void append(CodeGenerator g) {
-                    g.invokeAppStatic("org.kohsuke.file_leak_detecter.Listener","open",
+                    g.invokeAppStatic("org.kohsuke.file_leak_detector.Listener","open",
                             new Class[]{Object.class, File.class},
                             new int[]{0,1});
                 }
@@ -169,7 +169,7 @@ public class Main {
         }
 
         protected void append(CodeGenerator g) {
-            g.invokeAppStatic("org.kohsuke.file_leak_detecter.Listener","close",
+            g.invokeAppStatic("org.kohsuke.file_leak_detector.Listener","close",
                     new Class[]{Object.class},
                     new int[]{0});
         }
@@ -181,7 +181,7 @@ public class Main {
         }
 
         protected void append(CodeGenerator g) {
-            g.invokeAppStatic("org.kohsuke.file_leak_detecter.Listener","openSocket",
+            g.invokeAppStatic("org.kohsuke.file_leak_detector.Listener","openSocket",
                     new Class[]{Object.class},
                     new int[]{0});
         }

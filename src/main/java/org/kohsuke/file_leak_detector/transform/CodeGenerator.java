@@ -1,10 +1,10 @@
-package org.kohsuke.file_leak_detecter.transform;
+package org.kohsuke.file_leak_detector.transform;
 
-import org.objectweb.asm.MethodAdapter;
-import org.objectweb.asm.MethodVisitor;
-import static org.objectweb.asm.Opcodes.*;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.Label;
+import org.kohsuke.asm3.MethodAdapter;
+import org.kohsuke.asm3.MethodVisitor;
+import static org.kohsuke.asm3.Opcodes.*;
+import org.kohsuke.asm3.Type;
+import org.kohsuke.asm3.Label;
 
 /**
  * Convenience method to generate bytecode.

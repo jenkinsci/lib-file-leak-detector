@@ -1,6 +1,6 @@
-package org.kohsuke.file_leak_detecter.transform;
+package org.kohsuke.file_leak_detector.transform;
 
-import org.objectweb.asm.MethodVisitor;
+import org.kohsuke.asm3.MethodVisitor;
 
 /**
  * @author Kohsuke Kawaguchi
