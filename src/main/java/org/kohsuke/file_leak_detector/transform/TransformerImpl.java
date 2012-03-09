@@ -29,13 +29,16 @@ public class TransformerImpl implements ClassFileTransformer {
     }
 
     public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
-
+        return transform(className,classfileBuffer);
+    }
+    
+    public byte[] transform(String className, byte[] classfileBuffer) {
         final ClassTransformSpec cs = specs.get(className);
         if(cs==null)
             return classfileBuffer;
 
         ClassReader cr = new ClassReader(classfileBuffer);
-        ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES|ClassWriter.COMPUTE_MAXS);
+        ClassWriter cw = new ClassWriter(/*ClassWriter.COMPUTE_FRAMES|*/ClassWriter.COMPUTE_MAXS);
         cr.accept(new ClassAdapter(cw) {
             @Override
             public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {

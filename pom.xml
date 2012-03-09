@@ -34,6 +34,27 @@
           <target>1.5</target>
         </configuration>
       </plugin>
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>attached</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <descriptorId>jar-with-dependencies</descriptorId>
+              <archive>
+                <manifestEntries>
+                  <Premain-Class>org.kohsuke.file_leak_detector.Main</Premain-Class>
+                </manifestEntries>
+              </archive>
+            </configuration>
+          </execution>
+        </executions>
+        <configuration>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 
@@ -43,5 +64,12 @@
       <artifactId>asm3</artifactId>
       <version>3.3.0</version>
     </dependency>
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.0.1</version>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 </project>

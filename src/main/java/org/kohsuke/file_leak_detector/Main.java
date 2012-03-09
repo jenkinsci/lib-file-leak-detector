@@ -53,7 +53,22 @@ public class Main {
 
         System.err.println("File leak detector installed");
         Listener.AGENT_INSTALLED = true;
-        instrumentation.addTransformer(new TransformerImpl(
+        instrumentation.addTransformer(createTransformer(),true);
+        
+        instrumentation.retransformClasses(
+                FileInputStream.class,
+                FileOutputStream.class,
+                RandomAccessFile.class);
+
+        // still haven't fully figured out how to intercept NIO, especially with close, so commenting out
+//                Socket.class,
+//                SocketChannel.class,
+//                AbstractInterruptibleChannel.class,
+//                ServerSocket.class);
+    }
+
+    static TransformerImpl createTransformer() {
+        return new TransformerImpl(
             newSpec(FileOutputStream.class,"(Ljava/io/File;Z)V"),
             newSpec(FileInputStream.class, "(Ljava/io/File;)V"),
             newSpec(RandomAccessFile.class,"(Ljava/io/File;Ljava/lang/String;)V"),
@@ -73,18 +88,7 @@ public class Main {
             new ClassTransformSpec(AbstractInterruptibleChannel.class,
                 new CloseInterceptor()
             )
-        ),true);
-        
-        instrumentation.retransformClasses(
-                FileInputStream.class,
-                FileOutputStream.class,
-                RandomAccessFile.class);
-
-        // still haven't fully figured out how to intercept NIO, especially with close, so commenting out
-//                Socket.class,
-//                SocketChannel.class,
-//                AbstractInterruptibleChannel.class,
-//                ServerSocket.class);
+        );
     }
 
     private static void usageAndQuit() {
@@ -117,6 +121,7 @@ public class Main {
                         public void visitMethodInsn(int opcode, String owner, String name, String desc) {
                             if(owner.equals(binName)
                             && name.startsWith("open")) {
+                                System.out.println("Intercepted");
                                 CodeGenerator g = new CodeGenerator(base);
                                 Label s = new Label(); // start of the try block
                                 Label e = new Label();  // end of the try block
@@ -126,9 +131,9 @@ public class Main {
                                 g.visitTryCatchBlock(s,e,h,"java/io/FileNotFoundException");
                                 g.visitLabel(s);
                                 super.visitMethodInsn(opcode, owner, name, desc);
-                                g.visitLabel(e);
                                 g._goto(tail);
 
+                                g.visitLabel(e);
                                 g.visitLabel(h);
                                 // [RESULT]
                                 // catch(FileNotFoundException e) {
@@ -160,9 +165,9 @@ public class Main {
                 }
 
                 protected void append(CodeGenerator g) {
-                    g.invokeAppStatic("org.kohsuke.file_leak_detector.Listener","open",
-                            new Class[]{Object.class, File.class},
-                            new int[]{0,1});
+//                    g.invokeAppStatic(Listener.class,"open",
+//                            new Class[]{Object.class, File.class},
+//                            new int[]{0,1});
                 }
             },
             new CloseInterceptor()
