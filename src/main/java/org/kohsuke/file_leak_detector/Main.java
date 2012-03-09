@@ -52,6 +52,9 @@ public class Main {
                 if(t.equals("trace")) {
                     Listener.TRACE = System.err;
                 } else
+                if(t.equals("strong")) {
+                    Listener.makeStrong();
+                } else
                 if(t.startsWith("trace=")) {
                     Listener.TRACE = new PrintStream(new FileOutputStream(agentArguments.substring(6)));
                 } else
@@ -90,6 +93,7 @@ public class Main {
         System.err.println("                by default it goes to stderr.");
         System.err.println("  threshold=N - instead of waiting until 'too many open files', dump once");
         System.err.println("                we have N descriptors open.");
+        System.err.println("  strong      - Don't let GC auto-close leaking file descriptors");
         System.exit(-1);
     }
 

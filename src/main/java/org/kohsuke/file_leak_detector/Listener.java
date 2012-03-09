@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.io.RandomAccessFile;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +15,7 @@ import java.util.Date;
 import java.net.Socket;
 import java.net.ServerSocket;
 import java.nio.channels.SocketChannel;
+import java.util.WeakHashMap;
 import java.util.zip.ZipFile;
 
 /**
@@ -122,7 +124,7 @@ public class Listener {
     /**
      * Files that are currently open, keyed by the owner object (like {@link FileInputStream}.
      */
-    private static final Map<Object,Record> TABLE = new LinkedHashMap<Object,Record>();
+    private static Map<Object,Record> TABLE = new LinkedHashMap<Object,Record>();
 
     /**
      * Trace the open/close op
@@ -155,6 +157,10 @@ public class Listener {
      */
     public boolean isAgentInstalled() {
         return AGENT_INSTALLED;
+    }
+    
+    public static synchronized void makeStrong() {
+        TABLE = new WeakHashMap<Object, Record>(TABLE);
     }
 
     /**
