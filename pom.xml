@@ -48,6 +48,8 @@
                 <manifestEntries>
                   <Agent-Class>org.kohsuke.file_leak_detector.Main</Agent-Class>
                   <Premain-Class>org.kohsuke.file_leak_detector.Main</Premain-Class>
+                  <Can-Retransform-Classes>true</Can-Retransform-Classes>
+                  <Can-Redefine-Classes>true</Can-Redefine-Classes>
                 </manifestEntries>
               </archive>
             </configuration>
