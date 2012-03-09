@@ -1,15 +1,15 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.kohsuke</groupId>
-  <artifactId>file-leak-detecter</artifactId>
+  <artifactId>file-leak-detector</artifactId>
   <packaging>jar</packaging>
   <version>1.3-SNAPSHOT</version>
-  <name>File Leak Detecter</name>
+  <name>File Leak Detector</name>
 
   <scm>
-    <connection>scm:svn:https://svn.dev.java.net/svn/file-leak-detecter/trunk/file-leak-detecter</connection>
-    <developerConnection>scm:svn:https://svn.dev.java.net/svn/file-leak-detecter/trunk/file-leak-detecter</developerConnection>
-    <url>https://file-leak-detecter.dev.java.net/source/browse/file-leak-detecter/trunk/file-leak-detecter/</url>
+    <connection>scm:svn:https://svn.dev.java.net/svn/file-leak-detector/trunk/file-leak-detector</connection>
+    <developerConnection>scm:svn:https://svn.dev.java.net/svn/file-leak-detector/trunk/file-leak-detector</developerConnection>
+    <url>https://file-leak-detector.dev.java.net/source/browse/file-leak-detector/trunk/file-leak-detector/</url>
   </scm>
 
   <build>
@@ -41,11 +41,11 @@
                 <taskdef name="jarjar" classname="com.tonicsystems.jarjar.JarJarTask" />
                 <jarjar jarfile="target/all.jar">
                   <manifest>
-                    <attribute name="Premain-Class" value="org.kohsuke.file_leak_detecter.Main" />
+                    <attribute name="Premain-Class" value="org.kohsuke.file_leak_detector.Main" />
                   </manifest>
                   <fileset dir="target/classes" />
                   <zipfileset src="${asm.jar}" />
-                  <rule pattern="org.objectweb.asm.**" result="org.kohsuke.file_leak_detecter.internal.asm.@1" />
+                  <rule pattern="org.objectweb.asm.**" result="org.kohsuke.file_leak_detector.internal.asm.@1" />
                 </jarjar>
                 <attachArtifact file="target/all.jar" />
               </tasks>
@@ -72,8 +72,8 @@
 
     <distributionManagement>
     <site>
-      <id>file-leak-detecter-www</id>
-      <url>java-net:/file-leak-detecter/trunk/www/</url>
+      <id>file-leak-detector-www</id>
+      <url>java-net:/file-leak-detector/trunk/www/</url>
     </site>
       <repository>
         <uniqueVersion>false</uniqueVersion>
