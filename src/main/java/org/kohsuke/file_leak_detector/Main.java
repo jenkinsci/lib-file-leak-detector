@@ -81,6 +81,18 @@ public class Main {
 //                ServerSocket.class);
     }
 
+    private static void usageAndQuit() {
+        System.err.println("File leak detector arguments (to specify multiple values, separate them by ',':");
+        System.err.println("  help        - show the help screen.");
+        System.err.println("  trace       - log every open/close operation to stderr.");
+        System.err.println("  trace=FILE  - log every open/close operation to the given file.");
+        System.err.println("  error=FILE  - if 'too many open files' error is detected, send the dump here.");
+        System.err.println("                by default it goes to stderr.");
+        System.err.println("  threshold=N - instead of waiting until 'too many open files', dump once");
+        System.err.println("                we have N descriptors open.");
+        System.exit(-1);
+    }
+
     static List<ClassTransformSpec> createSpec() {
         return Arrays.asList(
             newSpec(FileOutputStream.class, "(Ljava/io/File;Z)V"),
@@ -104,18 +116,6 @@ public class Main {
                     new CloseInterceptor()
             )
         );
-    }
-
-    private static void usageAndQuit() {
-        System.err.println("File leak detector arguments (to specify multiple values, separate them by ',':");
-        System.err.println("  help        - show the help screen.");
-        System.err.println("  trace       - log every open/close operation to stderr.");
-        System.err.println("  trace=FILE  - log every open/close operation to the given file.");
-        System.err.println("  error=FILE  - if 'too many open files' error is detected, send the dump here.");
-        System.err.println("                by default it goes to stderr.");
-        System.err.println("  threshold=N - instead of waiting until 'too many open files', dump once");
-        System.err.println("                we have N descriptors open.");
-        System.exit(-1);
     }
 
     /**
