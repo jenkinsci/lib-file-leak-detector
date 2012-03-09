@@ -21,7 +21,7 @@ public class Listener {
     /**
      * Remembers who/where/when opened a file.
      */
-    private static class Record {
+    public static class Record {
         public final Exception stackTrace = new Exception();
         public final String threadName;
         public final long time;
@@ -50,7 +50,7 @@ public class Listener {
     /**
      * Record of opened file.
      */
-    private static final class FileRecord extends Record {
+    public static final class FileRecord extends Record {
         public final File file;
 
         private FileRecord(File file) {
@@ -66,7 +66,7 @@ public class Listener {
     /**
      * Record of opened socket.
      */
-    private static final class SocketRecord extends Record {
+    public static final class SocketRecord extends Record {
         public final Socket socket;
         public final String peer;
 
@@ -84,7 +84,7 @@ public class Listener {
     /**
      * Record of opened server socket.
      */
-    private static final class ServerSocketRecord extends Record {
+    public static final class ServerSocketRecord extends Record {
         public final ServerSocket socket;
         public final String address;
 
@@ -102,7 +102,7 @@ public class Listener {
     /**
      * Record of opened SocketChannel.
      */
-    private static final class SocketChannelRecord extends Record {
+    public static final class SocketChannelRecord extends Record {
         public final SocketChannel socket;
 
         private SocketChannelRecord(SocketChannel socket) {
