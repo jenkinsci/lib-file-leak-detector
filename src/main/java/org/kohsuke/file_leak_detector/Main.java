@@ -11,6 +11,8 @@ import java.net.URL;
 import java.net.URLClassLoader;
 
 /**
+ * Entry point for externally attaching agent into another local process.
+ *
  * @author Kohsuke Kawaguchi
  */
 public class Main {
@@ -50,6 +52,9 @@ public class Main {
         }
     }
 
+    /**
+     * Loads the {@link VirtualMachine} class as the entry point to the attach API.
+     */
     private Class loadAttachApi() throws MalformedURLException, ClassNotFoundException {
         File toolsJar = locateToolsJar();
         URLClassLoader cl = new URLClassLoader(new URL[]{toolsJar.toURI().toURL()},getClass().getClassLoader());
@@ -60,11 +65,17 @@ public class Main {
         }
     }
 
+    /**
+     * Locates the {@code tools.jar} file. Note that on Mac there's no such file but the class is still loadable.
+     */
     private File locateToolsJar() {
         File home = new File(System.getProperty("java.home"));
         return new File(home,"../lib/tools.jar");
     }
 
+    /**
+     * Finds the jar file from a reference to class within.
+     */
     private File whichJar(Class c) {
         String url = c.getClassLoader().getResource(c.getName().replace('.', '/') + ".class").toExternalForm();
         if (url.startsWith("jar:file:")) {
