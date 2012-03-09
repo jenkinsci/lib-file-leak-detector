@@ -228,11 +228,13 @@ public class Listener {
      * Dumps all files that are currently open.
      */
     public static synchronized void dump(PrintStream ps) {
-        ps.println(TABLE.size()+" descriptors are open");
+        Record[] records = TABLE.values().toArray(new Record[0]);
+        ps.println(records.length+" descriptors are open");
         int i=0;
-        for (Record r : TABLE.values()) {
+        for (Record r : records) {
             r.dump("#"+(++i)+" ",ps);
         }
+        ps.println("----");
     }
 
     /**
