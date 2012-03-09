@@ -5,6 +5,8 @@ import java.io.FileOutputStream;
 import java.io.FileInputStream;
 import java.io.RandomAccessFile;
 import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Date;
@@ -175,6 +177,10 @@ public class Listener {
         if (_this instanceof SocketChannel) {
             put(_this, new SocketChannelRecord((SocketChannel) _this));
         }
+    }
+    
+    public static synchronized List<Record> getCurrentOpenFiles() {
+        return new ArrayList<Record>(TABLE.values());
     }
     
     private static synchronized void put(Object _this, Record r) {
