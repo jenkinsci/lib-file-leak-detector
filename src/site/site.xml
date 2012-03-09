@@ -11,9 +11,10 @@
   </skin>
 
   <body>
-    <menu name="File Leak Detecter">
+    <menu name="File Leak Detector">
       <item name="Introduction" href="index.html" />
       <item name="Download" href="http://mvnrepository.com/artifact/${project.groupId}/${project.artifactId}"/>
+      <item name="Javadoc" href="apidocs/" />
     </menu>
     <menu name="Project Info">
       <item name="Issue tracker" href="https://github.com/kohsuke/${project.artifactId}/issues" />

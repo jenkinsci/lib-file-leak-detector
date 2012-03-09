@@ -19,7 +19,7 @@ public class Main {
     @Argument(index=0,metaVar="PID",usage="Process ID to activate file leak detector",required=true)
     public String pid;
     
-    @Argument(index=1,metaVar="OPTSTR",usage="Packed option string for the file leak detector")
+    @Argument(index=1,metaVar="OPTSTR",usage="Packed option string of the form key1[=value1],key2[=value2],...")
     public String options;
     
     public static void main(String[] args) throws Exception {
@@ -32,6 +32,8 @@ public class Main {
             System.err.println(e.getMessage());
             System.err.println("java -jar file-leak-detector.jar PID [OPTSTR]");
             p.printUsage(System.err);
+            System.err.println("\nOptions:");
+            AgentMain.printOptions();
             System.exit(1);
         }
     }

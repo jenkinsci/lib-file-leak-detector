@@ -83,6 +83,11 @@ public class AgentMain {
 
     private static void usageAndQuit() {
         System.err.println("File leak detector arguments (to specify multiple values, separate them by ',':");
+        printOptions();
+        System.exit(-1);
+    }
+
+    static void printOptions() {
         System.err.println("  help        - show the help screen.");
         System.err.println("  trace       - log every open/close operation to stderr.");
         System.err.println("  trace=FILE  - log every open/close operation to the given file.");
@@ -91,7 +96,6 @@ public class AgentMain {
         System.err.println("  threshold=N - instead of waiting until 'too many open files', dump once");
         System.err.println("                we have N descriptors open.");
         System.err.println("  strong      - Don't let GC auto-close leaking file descriptors");
-        System.exit(-1);
     }
 
     static List<ClassTransformSpec> createSpec() {
