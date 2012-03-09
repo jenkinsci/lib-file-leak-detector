@@ -3,8 +3,12 @@ package org.kohsuke.file_leak_detector;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileInputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.io.RandomAccessFile;
 import java.io.PrintStream;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -38,7 +42,7 @@ public class Listener {
             this.time = System.currentTimeMillis();
         }
 
-        public void dump(String prefix, PrintStream ps) {
+        public void dump(String prefix, PrintWriter pw) {
             StackTraceElement[] trace = stackTrace.getStackTrace();
             int i=0;
             // skip until we find the Method.invoke() that called us
@@ -49,7 +53,7 @@ public class Listener {
                 }
             // print the rest
             for (; i < trace.length; i++)
-                ps.println("\tat " + trace[i]);
+                pw.println("\tat " + trace[i]);
         }
     }
 
@@ -63,9 +67,9 @@ public class Listener {
             this.file = file;
         }
 
-        public void dump(String prefix, PrintStream ps) {
-            ps.println(prefix+file+" by thread:"+threadName+" on "+new Date(time));
-            super.dump(prefix,ps);
+        public void dump(String prefix, PrintWriter pw) {
+            pw.println(prefix + file + " by thread:" + threadName + " on " + new Date(time));
+            super.dump(prefix,pw);
         }
     }
 
@@ -81,7 +85,7 @@ public class Listener {
             peer = socket.getRemoteSocketAddress().toString();
         }
 
-        public void dump(String prefix, PrintStream ps) {
+        public void dump(String prefix, PrintWriter ps) {
             ps.println(prefix+"socket to "+peer+" by thread:"+threadName+" on "+new Date(time));
             super.dump(prefix,ps);
         }
@@ -99,7 +103,7 @@ public class Listener {
             address = socket.getLocalSocketAddress().toString();
         }
 
-        public void dump(String prefix, PrintStream ps) {
+        public void dump(String prefix, PrintWriter ps) {
             ps.println(prefix+"server socket at "+address+" by thread:"+threadName+" on "+new Date(time));
             super.dump(prefix,ps);
         }
@@ -115,7 +119,7 @@ public class Listener {
             this.socket = socket;
         }
 
-        public void dump(String prefix, PrintStream ps) {
+        public void dump(String prefix, PrintWriter ps) {
             ps.println(prefix+"socket channel by thread:"+threadName+" on "+new Date(time));
             super.dump(prefix,ps);
         }
@@ -129,12 +133,12 @@ public class Listener {
     /**
      * Trace the open/close op
      */
-    public static PrintStream TRACE = null;
+    public static PrintWriter TRACE = null;
 
     /**
      * Trace the "too many open files" error here
      */
-    public static PrintStream ERROR = System.err;
+    public static PrintWriter ERROR = new PrintWriter(System.err);
 
     /**
      * Tracing may cause additional files to be opened.
@@ -227,14 +231,18 @@ public class Listener {
     /**
      * Dumps all files that are currently open.
      */
-    public static synchronized void dump(PrintStream ps) {
+    public static synchronized void dump(OutputStream out) {
+        dump(new OutputStreamWriter(out));
+    }
+    public static synchronized void dump(Writer w) {
+        PrintWriter pw = new PrintWriter(w);
         Record[] records = TABLE.values().toArray(new Record[0]);
-        ps.println(records.length+" descriptors are open");
+        pw.println(records.length+" descriptors are open");
         int i=0;
         for (Record r : records) {
-            r.dump("#"+(++i)+" ",ps);
+            r.dump("#"+(++i)+" ",pw);
         }
-        ps.println("----");
+        pw.println("----");
     }
 
     /**

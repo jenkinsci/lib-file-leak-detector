@@ -17,6 +17,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.io.RandomAccessFile;
 import java.lang.instrument.Instrumentation;
 import java.lang.instrument.UnmodifiableClassException;
@@ -50,16 +51,16 @@ public class Main {
                     Listener.THRESHOLD = Integer.parseInt(t.substring("threshold=".length()));
                 } else
                 if(t.equals("trace")) {
-                    Listener.TRACE = System.err;
+                    Listener.TRACE = new PrintWriter(System.err);
                 } else
                 if(t.equals("strong")) {
                     Listener.makeStrong();
                 } else
                 if(t.startsWith("trace=")) {
-                    Listener.TRACE = new PrintStream(new FileOutputStream(agentArguments.substring(6)));
+                    Listener.TRACE = new PrintWriter(new FileOutputStream(agentArguments.substring(6)));
                 } else
                 if(t.startsWith("error=")) {
-                    Listener.ERROR = new PrintStream(new FileOutputStream(agentArguments.substring(6)));
+                    Listener.ERROR = new PrintWriter(new FileOutputStream(agentArguments.substring(6)));
                 } else {
                     System.err.println("Unknown option: "+t);
                     usageAndQuit();
