@@ -20,7 +20,7 @@ public abstract class MethodAppender extends MethodTransformSpec {
     protected abstract void append(CodeGenerator g);
 
     @Override
-    public MethodVisitor newAdapter(MethodVisitor base) {
+    public MethodVisitor newAdapter(MethodVisitor base, int access, String name, String desc, String signature, String[] exceptions) {
         final CodeGenerator cg = new CodeGenerator(base);
         return new MethodAdapter(base) {
             @Override

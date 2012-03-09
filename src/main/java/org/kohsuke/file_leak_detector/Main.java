@@ -3,6 +3,9 @@ package org.kohsuke.file_leak_detector;
 import org.kohsuke.asm3.Label;
 import org.kohsuke.asm3.MethodAdapter;
 import org.kohsuke.asm3.MethodVisitor;
+import org.kohsuke.asm3.Opcodes;
+import org.kohsuke.asm3.Type;
+import org.kohsuke.asm3.commons.LocalVariablesSorter;
 import org.kohsuke.file_leak_detector.transform.ClassTransformSpec;
 import org.kohsuke.file_leak_detector.transform.CodeGenerator;
 import org.kohsuke.file_leak_detector.transform.MethodAppender;
@@ -10,6 +13,7 @@ import org.kohsuke.file_leak_detector.transform.TransformerImpl;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -20,6 +24,10 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.AbstractInterruptibleChannel;
+import java.util.Arrays;
+import java.util.List;
+
+import static org.kohsuke.asm3.Opcodes.*;
 
 /**
  * Java agent that instruments JDK classes to keep track of where file descriptors are opened.
@@ -53,7 +61,7 @@ public class Main {
 
         System.err.println("File leak detector installed");
         Listener.AGENT_INSTALLED = true;
-        instrumentation.addTransformer(createTransformer(),true);
+        instrumentation.addTransformer(new TransformerImpl(createSpec()),true);
         
         instrumentation.retransformClasses(
                 FileInputStream.class,
@@ -67,26 +75,26 @@ public class Main {
 //                ServerSocket.class);
     }
 
-    static TransformerImpl createTransformer() {
-        return new TransformerImpl(
-            newSpec(FileOutputStream.class,"(Ljava/io/File;Z)V"),
+    static List<ClassTransformSpec> createSpec() {
+        return Arrays.asList(
+            newSpec(FileOutputStream.class, "(Ljava/io/File;Z)V"),
             newSpec(FileInputStream.class, "(Ljava/io/File;)V"),
-            newSpec(RandomAccessFile.class,"(Ljava/io/File;Ljava/lang/String;)V"),
+            newSpec(RandomAccessFile.class, "(Ljava/io/File;Ljava/lang/String;)V"),
             new ClassTransformSpec(ServerSocket.class,
-                new OpenSocketInterceptor("bind", "(Ljava/net/SocketAddress;I)V"),
-                new CloseInterceptor()
+                    new OpenSocketInterceptor("bind", "(Ljava/net/SocketAddress;I)V"),
+                    new CloseInterceptor()
             ),
             new ClassTransformSpec(Socket.class,
-                new OpenSocketInterceptor("connect", "(Ljava/net/SocketAddress;I)V"),
-                new OpenSocketInterceptor("postAccept", "()V"),
-                new CloseInterceptor()
+                    new OpenSocketInterceptor("connect", "(Ljava/net/SocketAddress;I)V"),
+                    new OpenSocketInterceptor("postAccept", "()V"),
+                    new CloseInterceptor()
             ),
             new ClassTransformSpec(SocketChannel.class,
-                new OpenSocketInterceptor("<init>", "(Ljava/nio/channels/spi/SelectorProvider;)V"),
-                new CloseInterceptor()
+                    new OpenSocketInterceptor("<init>", "(Ljava/nio/channels/spi/SelectorProvider;)V"),
+                    new CloseInterceptor()
             ),
             new ClassTransformSpec(AbstractInterruptibleChannel.class,
-                new CloseInterceptor()
+                    new CloseInterceptor()
             )
         );
     }
@@ -113,22 +121,23 @@ public class Main {
             new MethodAppender("<init>", constructorDesc) {
                 // this causes VerifyError (run with -Xverify:all to confirm this on Mustang, or else the rt.jar classes won't be verified)
                 @Override
-                public MethodVisitor newAdapter(final MethodVisitor base) {
-                    return new MethodAdapter(super.newAdapter(base)) {
+                public MethodVisitor newAdapter(MethodVisitor base, int access, String name, String desc, String signature, String[] exceptions) {
+                    final MethodVisitor b = super.newAdapter(base, access, name, desc, signature, exceptions);
+                    final LocalVariablesSorter lvs = new LocalVariablesSorter(access,desc, b);
+                    return new MethodAdapter(lvs) {
                         // surround the open/openAppend calls with try/catch block
                         // to intercept "Too many open files" exception
                         @Override
                         public void visitMethodInsn(int opcode, String owner, String name, String desc) {
                             if(owner.equals(binName)
                             && name.startsWith("open")) {
-                                System.out.println("Intercepted");
-                                CodeGenerator g = new CodeGenerator(base);
+                                CodeGenerator g = new CodeGenerator(mv);
                                 Label s = new Label(); // start of the try block
                                 Label e = new Label();  // end of the try block
                                 Label h = new Label();  // handler entry point
                                 Label tail = new Label();   // where the execution continue
 
-                                g.visitTryCatchBlock(s,e,h,"java/io/FileNotFoundException");
+                                g.visitTryCatchBlock(s, e, h, "java/io/FileNotFoundException");
                                 g.visitLabel(s);
                                 super.visitMethodInsn(opcode, owner, name, desc);
                                 g._goto(tail);
@@ -136,9 +145,11 @@ public class Main {
                                 g.visitLabel(e);
                                 g.visitLabel(h);
                                 // [RESULT]
-                                // catch(FileNotFoundException e) {
-                                //    boolean b = e.getMessage().contains("Too many open files");
+                                // catch(FileNotFoundException ex) {
+                                //    boolean b = ex.getMessage().contains("Too many open files");
+                                int ex = lvs.newLocal(Type.getType(FileNotFoundException.class));
                                 g.dup();
+                                b.visitVarInsn(ASTORE, ex);
                                 g.invokeVirtual("java/io/FileNotFoundException","getMessage","()Ljava/lang/String;");
                                 g.ldc("Too many open files");
                                 g.invokeVirtual("java/lang/String","contains","(Ljava/lang/CharSequence;)Z");
@@ -153,6 +164,7 @@ public class Main {
 
                                 // rethrow the FileNotFoundException
                                 g.visitLabel(rethrow);
+                                b.visitVarInsn(ALOAD, ex);
                                 g.athrow();
 
                                 // normal execution continues here
@@ -165,9 +177,9 @@ public class Main {
                 }
 
                 protected void append(CodeGenerator g) {
-//                    g.invokeAppStatic(Listener.class,"open",
-//                            new Class[]{Object.class, File.class},
-//                            new int[]{0,1});
+                    g.invokeAppStatic(Listener.class,"open",
+                            new Class[]{Object.class, File.class},
+                            new int[]{0,1});
                 }
             },
             new CloseInterceptor()

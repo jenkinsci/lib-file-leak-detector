@@ -8,6 +8,8 @@ import org.kohsuke.asm3.MethodVisitor;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.security.ProtectionDomain;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Arrays;
@@ -23,7 +25,7 @@ public class TransformerImpl implements ClassFileTransformer {
 
     private final Map<String,ClassTransformSpec> specs = new HashMap<String,ClassTransformSpec>();
 
-    public TransformerImpl(ClassTransformSpec... specs) {
+    public TransformerImpl(Collection<ClassTransformSpec> specs) {
         for (ClassTransformSpec spec : specs)
             this.specs.put(spec.name,spec);
     }
@@ -48,7 +50,7 @@ public class TransformerImpl implements ClassFileTransformer {
                 if(ms==null)    ms = cs.methodSpecs.get(name+"*");
                 if(ms==null)    return base;
 
-                return ms.newAdapter(base);
+                return ms.newAdapter(base,access,name,desc,signature,exceptions);
             }
         },cr.SKIP_FRAMES);
 
