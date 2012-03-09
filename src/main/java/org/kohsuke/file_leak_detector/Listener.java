@@ -14,6 +14,7 @@ import java.util.Date;
 import java.net.Socket;
 import java.net.ServerSocket;
 import java.nio.channels.SocketChannel;
+import java.util.zip.ZipFile;
 
 /**
  * Intercepted JDK calls land here.
@@ -160,7 +161,7 @@ public class Listener {
      * Called when a new file is opened.
      *
      * @param _this
-     *      {@link FileInputStream}, {@link FileOutputStream}, or {@link RandomAccessFile}.
+     *      {@link FileInputStream}, {@link FileOutputStream}, {@link RandomAccessFile}, or {@link ZipFile}.
      * @param f
      *      File being opened.
      */
@@ -203,8 +204,10 @@ public class Listener {
     /**
      * Called when a file is closed.
      *
+     * This method tolerates a double-close where a close method is called on an already closed object.
+     *
      * @param _this
-     *      {@link FileInputStream}, {@link FileOutputStream}, {@link RandomAccessFile}, {@link Socket}, or {@link ServerSocket}.
+     *      {@link FileInputStream}, {@link FileOutputStream}, {@link RandomAccessFile}, {@link Socket}, {@link ServerSocket}, or {@link ZipFile}.
      */
     public static synchronized void close(Object _this) {
         Record r = TABLE.remove(_this);
