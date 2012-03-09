@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.io.RandomAccessFile;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -120,7 +121,7 @@ public class Listener {
     /**
      * Files that are currently open.
      */
-    private static final Map<Object,Record> TABLE = new HashMap<Object,Record>();
+    private static final Map<Object,Record> TABLE = new LinkedHashMap<Object,Record>();
 
     /**
      * Trace the open/close op
