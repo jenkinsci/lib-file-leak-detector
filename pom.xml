@@ -46,6 +46,7 @@
               <descriptorId>jar-with-dependencies</descriptorId>
               <archive>
                 <manifestEntries>
+                  <Agent-Class>org.kohsuke.file_leak_detector.Main</Agent-Class>
                   <Premain-Class>org.kohsuke.file_leak_detector.Main</Premain-Class>
                 </manifestEntries>
               </archive>

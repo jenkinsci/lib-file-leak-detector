@@ -36,7 +36,11 @@ import static org.kohsuke.asm3.Opcodes.*;
  */
 @SuppressWarnings("Since15")
 public class Main {
-    public static void premain(String agentArguments, Instrumentation instrumentation) throws UnmodifiableClassException, IOException {
+    public static void agentmain(String agentArguments, Instrumentation instrumentation) throws Exception {
+        premain(agentArguments,instrumentation);
+    }
+
+    public static void premain(String agentArguments, Instrumentation instrumentation) throws Exception {
         if(agentArguments!=null) {
             for (String t : agentArguments.split(",")) {
                 if(t.equals("help")) {
