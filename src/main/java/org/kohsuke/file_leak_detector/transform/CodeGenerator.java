@@ -124,10 +124,9 @@ public class CodeGenerator extends MethodAdapter {
         visitLabel(e);
         visitLabel(h);
 
-        // [RESULT] catch(e) { System.out.println(e); }
+        // [RESULT] catch(e) { e.printStackTrace(System.out); }
         visitFieldInsn(GETSTATIC,"java/lang/System","out","Ljava/io/PrintStream;");
-        visitInsn(SWAP);
-        invokeVirtual("java/io/PrintStream","println","(Ljava/lang/Object;)V");
+        invokeVirtual("java/lang/Exception","printStackTrace","(Ljava/io/PrintStream;)V");
 
         visitLabel(tail);
     }
