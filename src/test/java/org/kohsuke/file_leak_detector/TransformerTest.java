@@ -42,7 +42,7 @@ public class TransformerTest {
 //        o.write(data2);
 //        o.close();
 
-        CheckClassAdapter.verify(new ClassReader(data2), c== ZipFile.class, new PrintWriter(System.err));
+        CheckClassAdapter.verify(new ClassReader(data2), false, new PrintWriter(System.err));
     }
     
     @Parameters

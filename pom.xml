@@ -48,6 +48,7 @@
                 <manifestEntries>
                   <Agent-Class>org.kohsuke.file_leak_detector.AgentMain</Agent-Class>
                   <Premain-Class>org.kohsuke.file_leak_detector.AgentMain</Premain-Class>
+                  <Main-Class>org.kohsuke.file_leak_detector.Main</Main-Class>
                   <Can-Retransform-Classes>true</Can-Retransform-Classes>
                   <Can-Redefine-Classes>true</Can-Redefine-Classes>
                 </manifestEntries>
@@ -66,6 +67,18 @@
       <groupId>org.kohsuke</groupId>
       <artifactId>asm3</artifactId>
       <version>3.3.0</version>
+    </dependency>
+    <dependency>
+      <groupId>args4j</groupId>
+      <artifactId>args4j</artifactId>
+      <version>2.0.19</version>
+    </dependency>
+    <dependency>
+      <groupId>com.sun</groupId>
+      <artifactId>tools</artifactId>
+      <version>6.0</version>
+      <scope>system</scope>
+      <systemPath>${java.home}/../lib/tools.jar</systemPath>
     </dependency>
     <dependency>
       <groupId>commons-io</groupId>
