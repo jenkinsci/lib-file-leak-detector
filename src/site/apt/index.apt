@@ -16,18 +16,18 @@ Usage
     stderr.
 
 -------------
-$ java -javaagent:path/to/file-leak-detecter.jar ...your usual Java args follows...
+$ java -javaagent:path/to/file-leak-detector.jar ...your usual Java args follows...
 -------------
 
     To activate tracing, use the 'trace' option:
 
 -------------
-$ java -javaagent:path/to/file-leak-detecter.jar=trace ...your usual Java args follows...
+$ java -javaagent:path/to/file-leak-detector.jar=trace ...your usual Java args follows...
 -------------
     
     Use the help option to see the help screen for the complete list of options.
 
 -------------
-$ java -javaagent:path/to/file-leak-detecter.jar=help
+$ java -javaagent:path/to/file-leak-detector.jar=help
 -------------
 
