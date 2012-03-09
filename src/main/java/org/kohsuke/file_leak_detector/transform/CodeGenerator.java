@@ -84,6 +84,10 @@ public class CodeGenerator extends MethodAdapter {
 //    }
 
 
+    public void invokeAppStatic(Class userClass, String userMethodName, Class[] argTypes, int[] localIndex) {
+        invokeAppStatic(userClass.getName(),userMethodName,argTypes,localIndex);
+    }
+
     public void invokeAppStatic(String userClassName, String userMethodName, Class[] argTypes, int[] localIndex) {
         Label s = new Label();
         Label e = new Label();

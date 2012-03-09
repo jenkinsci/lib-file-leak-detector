@@ -14,6 +14,9 @@ public abstract class MethodAppender extends MethodTransformSpec {
         super(name, desc);
     }
 
+    /**
+     * Generates code to be appended right before the return statement.
+     */
     protected abstract void append(CodeGenerator g);
 
     @Override

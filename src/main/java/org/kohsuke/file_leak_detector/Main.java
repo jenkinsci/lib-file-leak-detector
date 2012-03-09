@@ -22,6 +22,7 @@ import java.nio.channels.spi.AbstractInterruptibleChannel;
  * Java agent that instruments JDK classes to keep track of where file descriptors are opened.
  * @author Kohsuke Kawaguchi
  */
+@SuppressWarnings("Since15")
 public class Main {
     public static void premain(String agentArguments, Instrumentation instrumentation) throws UnmodifiableClassException, IOException {
         if(agentArguments!=null) {
@@ -53,20 +54,20 @@ public class Main {
             newSpec(FileInputStream.class, "(Ljava/io/File;)V"),
             newSpec(RandomAccessFile.class,"(Ljava/io/File;Ljava/lang/String;)V"),
             new ClassTransformSpec(ServerSocket.class,
-                new OpenSocketIntercepter("bind", "(Ljava/net/SocketAddress;I)V"),
-                new CloseIntercepter()
+                new OpenSocketInterceptor("bind", "(Ljava/net/SocketAddress;I)V"),
+                new CloseInterceptor()
             ),
             new ClassTransformSpec(Socket.class,
-                new OpenSocketIntercepter("connect", "(Ljava/net/SocketAddress;I)V"),
-                new OpenSocketIntercepter("postAccept", "()V"),
-                new CloseIntercepter()
+                new OpenSocketInterceptor("connect", "(Ljava/net/SocketAddress;I)V"),
+                new OpenSocketInterceptor("postAccept", "()V"),
+                new CloseInterceptor()
             ),
             new ClassTransformSpec(SocketChannel.class,
-                new OpenSocketIntercepter("<init>", "(Ljava/nio/channels/spi/SelectorProvider;)V"),
-                new CloseIntercepter()
+                new OpenSocketInterceptor("<init>", "(Ljava/nio/channels/spi/SelectorProvider;)V"),
+                new CloseInterceptor()
             ),
             new ClassTransformSpec(AbstractInterruptibleChannel.class,
-                new CloseIntercepter()
+                new CloseInterceptor()
             )
         ),true);
         
@@ -159,29 +160,32 @@ public class Main {
                             new int[]{0,1});
                 }
             },
-            new CloseIntercepter()
+            new CloseInterceptor()
         );
     }
 
-    private static class CloseIntercepter extends MethodAppender {
-        public CloseIntercepter() {
+    /**
+     * Intercepts the {@code void close()} method and calls {@link Listener#close(Object)}
+     */
+    private static class CloseInterceptor extends MethodAppender {
+        public CloseInterceptor() {
             super("close", "()V");
         }
 
         protected void append(CodeGenerator g) {
-            g.invokeAppStatic("org.kohsuke.file_leak_detector.Listener","close",
+            g.invokeAppStatic(Listener.class,"close",
                     new Class[]{Object.class},
                     new int[]{0});
         }
     }
 
-    private static class OpenSocketIntercepter extends MethodAppender {
-        public OpenSocketIntercepter(String name, String desc) {
+    private static class OpenSocketInterceptor extends MethodAppender {
+        public OpenSocketInterceptor(String name, String desc) {
             super(name,desc);
         }
 
         protected void append(CodeGenerator g) {
-            g.invokeAppStatic("org.kohsuke.file_leak_detector.Listener","openSocket",
+            g.invokeAppStatic(Listener.class,"openSocket",
                     new Class[]{Object.class},
                     new int[]{0});
         }

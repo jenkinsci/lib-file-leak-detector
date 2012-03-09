@@ -4,6 +4,8 @@ import java.util.Map;
 import java.util.HashMap;
 
 /**
+ * Specifies how we transform a class.
+ *
  * @author Kohsuke Kawaguchi
  */
 public final class ClassTransformSpec {
