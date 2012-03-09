@@ -140,7 +140,16 @@ public class Listener {
      * If the table size grows beyond this, report the table
      */
     public static int THRESHOLD = 999999;
-    
+
+    /*package*/ static boolean AGENT_INSTALLED = false;
+
+    /**
+     * Returns true if the leak detector agent is running.
+     */
+    public boolean isAgentInstalled() {
+        return AGENT_INSTALLED;
+    }
+
     /**
      * Called when a new file is opened.
      *

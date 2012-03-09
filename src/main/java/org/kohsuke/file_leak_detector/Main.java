@@ -1,5 +1,8 @@
 package org.kohsuke.file_leak_detector;
 
+import org.kohsuke.asm3.Label;
+import org.kohsuke.asm3.MethodAdapter;
+import org.kohsuke.asm3.MethodVisitor;
 import org.kohsuke.file_leak_detector.transform.ClassTransformSpec;
 import org.kohsuke.file_leak_detector.transform.CodeGenerator;
 import org.kohsuke.file_leak_detector.transform.MethodAppender;
@@ -49,6 +52,7 @@ public class Main {
         }
 
         System.err.println("File leak detector installed");
+        Listener.AGENT_INSTALLED = true;
         instrumentation.addTransformer(new TransformerImpl(
             newSpec(FileOutputStream.class,"(Ljava/io/File;Z)V"),
             newSpec(FileInputStream.class, "(Ljava/io/File;)V"),
@@ -104,55 +108,56 @@ public class Main {
         return new ClassTransformSpec(binName,
             new MethodAppender("<init>", constructorDesc) {
                 // this causes VerifyError (run with -Xverify:all to confirm this on Mustang, or else the rt.jar classes won't be verified)
-//                @Override
-//                public MethodVisitor newAdapter(final MethodVisitor base) {
-//                    return new MethodAdapter(super.newAdapter(base)) {
-//                        // surround the open/openAppend calls with try/catch block
-//                        // to intercept "Too many open files" exception
-//                        @Override
-//                        public void visitMethodInsn(int opcode, String owner, String name, String desc) {
-//                            if(owner.equals(binName)
-//                            && name.startsWith("open")) {
-//                                CodeGenerator g = new CodeGenerator(base);
-//                                Label s = new Label(); // start of the try block
-//                                Label e = new Label();  // end of the try block
-//                                Label h = new Label();  // handler entry point
-//                                Label tail = new Label();   // where the execution continue
-//
-//                                g.visitTryCatchBlock(s,e,h,"java/io/FileNotFoundException");
-//                                g.visitLabel(s);
-//                                super.visitMethodInsn(opcode, owner, name, desc);
-//                                g.visitLabel(e);
-//                                g._goto(tail);
-//
-//                                g.visitLabel(h);
-//                                // [RESULT]
-//                                // catch(FileNotFoundException e) {
-//                                //    boolean b = e.getMessage().contains("Too many open files")
-//                                g.dup();
-//                                g.invokeVirtual("java/io/FileNotFoundException","getMessage","()Ljava/lang/String;");
-//                                g.ldc("Too many open files");
-//                                g.invokeVirtual("java/lang/String","contains","(Ljava/lang/CharSequence;)Z");
-//
-//                                Label rethrow = new Label();
-//                                g.ifFalse(rethrow);
-//
-//                                // too many open files detected
-//                                g.invokeAppStatic("org.kohsuke.file_leak_detector.Listener","outOfDescriptors",
-//                                        new Class[0], new int[0]);
-//
-//                                // rethrow the FileNotFoundException
-//                                g.visitLabel(rethrow);
-//                                g.athrow();
-//
-//                                // normal execution continutes here
-//                                g.visitLabel(tail);
-//                            } else
-//                                // no processing
-//                                super.visitMethodInsn(opcode, owner, name, desc);
-//                        }
-//                    };
-//                }
+                @Override
+                public MethodVisitor newAdapter(final MethodVisitor base) {
+                    return new MethodAdapter(super.newAdapter(base)) {
+                        // surround the open/openAppend calls with try/catch block
+                        // to intercept "Too many open files" exception
+                        @Override
+                        public void visitMethodInsn(int opcode, String owner, String name, String desc) {
+                            if(owner.equals(binName)
+                            && name.startsWith("open")) {
+                                CodeGenerator g = new CodeGenerator(base);
+                                Label s = new Label(); // start of the try block
+                                Label e = new Label();  // end of the try block
+                                Label h = new Label();  // handler entry point
+                                Label tail = new Label();   // where the execution continue
+
+                                g.visitTryCatchBlock(s,e,h,"java/io/FileNotFoundException");
+                                g.visitLabel(s);
+                                super.visitMethodInsn(opcode, owner, name, desc);
+                                g.visitLabel(e);
+                                g._goto(tail);
+
+                                g.visitLabel(h);
+                                // [RESULT]
+                                // catch(FileNotFoundException e) {
+                                //    boolean b = e.getMessage().contains("Too many open files");
+                                g.dup();
+                                g.invokeVirtual("java/io/FileNotFoundException","getMessage","()Ljava/lang/String;");
+                                g.ldc("Too many open files");
+                                g.invokeVirtual("java/lang/String","contains","(Ljava/lang/CharSequence;)Z");
+
+                                // too many open files detected
+                                //    if (b) { Listener.outOfDescriptors() }
+                                Label rethrow = new Label();
+                                g.ifFalse(rethrow);
+
+                                g.invokeAppStatic(Listener.class,"outOfDescriptors",
+                                        new Class[0], new int[0]);
+
+                                // rethrow the FileNotFoundException
+                                g.visitLabel(rethrow);
+                                g.athrow();
+
+                                // normal execution continues here
+                                g.visitLabel(tail);
+                            } else
+                                // no processing
+                                super.visitMethodInsn(opcode, owner, name, desc);
+                        }
+                    };
+                }
 
                 protected void append(CodeGenerator g) {
                     g.invokeAppStatic("org.kohsuke.file_leak_detector.Listener","open",
