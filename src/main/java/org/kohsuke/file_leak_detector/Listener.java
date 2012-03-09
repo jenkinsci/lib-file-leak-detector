@@ -155,7 +155,7 @@ public class Listener {
     /**
      * Returns true if the leak detector agent is running.
      */
-    public boolean isAgentInstalled() {
+    public static boolean isAgentInstalled() {
         return AGENT_INSTALLED;
     }
     
