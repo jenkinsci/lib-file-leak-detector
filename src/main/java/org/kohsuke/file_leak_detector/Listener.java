@@ -144,6 +144,9 @@ public class Listener {
      */
     public static int THRESHOLD = 999999;
 
+    /**
+     * Is the agent actually transforming the class files?
+     */
     /*package*/ static boolean AGENT_INSTALLED = false;
 
     /**
