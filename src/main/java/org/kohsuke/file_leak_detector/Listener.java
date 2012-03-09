@@ -124,7 +124,7 @@ public class Listener {
     /**
      * Files that are currently open, keyed by the owner object (like {@link FileInputStream}.
      */
-    private static Map<Object,Record> TABLE = new LinkedHashMap<Object,Record>();
+    private static Map<Object,Record> TABLE = new WeakHashMap<Object,Record>();
 
     /**
      * Trace the open/close op
@@ -160,7 +160,7 @@ public class Listener {
     }
     
     public static synchronized void makeStrong() {
-        TABLE = new WeakHashMap<Object, Record>(TABLE);
+        TABLE = new LinkedHashMap<Object, Record>(TABLE);
     }
 
     /**
