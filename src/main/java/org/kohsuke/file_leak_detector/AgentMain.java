@@ -32,7 +32,7 @@ import static org.kohsuke.asm3.Opcodes.*;
  * @author Kohsuke Kawaguchi
  */
 @SuppressWarnings("Since15")
-public class Main {
+public class AgentMain {
     public static void agentmain(String agentArguments, Instrumentation instrumentation) throws Exception {
         premain(agentArguments,instrumentation);
     }
@@ -132,7 +132,7 @@ public class Main {
     }
 
     /**
-     * Intercepts the {@code void close()} method and calls {@link Listener#close(Object)}
+     * Intercepts the {@code void close()} method and calls {@link Listener#close(Object)} in the end.
      */
     private static class CloseInterceptor extends MethodAppender {
         public CloseInterceptor() {

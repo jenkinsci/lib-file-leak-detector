@@ -13,13 +13,14 @@ import org.kohsuke.file_leak_detector.transform.TransformerImpl;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.zip.ZipFile;
 
 /**
  * @author Kohsuke Kawaguchi
  */
 @RunWith(Parameterized.class)
 public class TransformerTest {
-    List<ClassTransformSpec> specs = Main.createSpec();
+    List<ClassTransformSpec> specs = AgentMain.createSpec();
 
     Class c;
     
@@ -41,13 +42,13 @@ public class TransformerTest {
 //        o.write(data2);
 //        o.close();
 
-        CheckClassAdapter.verify(new ClassReader(data2), false, new PrintWriter(System.err));
+        CheckClassAdapter.verify(new ClassReader(data2), c== ZipFile.class, new PrintWriter(System.err));
     }
     
     @Parameters
     public static List<Object[]> specs() throws Exception {
         List<Object[]> r = new ArrayList<Object[]>();
-        for (ClassTransformSpec s : Main.createSpec()) {
+        for (ClassTransformSpec s : AgentMain.createSpec()) {
             Class<?> c = TransformerTest.class.getClassLoader().loadClass(s.name.replace('/', '.'));
             r.add(new Object[]{c});
         }
