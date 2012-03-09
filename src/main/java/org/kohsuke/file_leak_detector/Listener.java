@@ -120,7 +120,7 @@ public class Listener {
     }
 
     /**
-     * Files that are currently open.
+     * Files that are currently open, keyed by the owner object (like {@link FileInputStream}.
      */
     private static final Map<Object,Record> TABLE = new LinkedHashMap<Object,Record>();
 
@@ -191,8 +191,8 @@ public class Listener {
     private static synchronized void put(Object _this, Record r) {
         TABLE.put(_this, r);
         if(TABLE.size()>THRESHOLD) {
+            THRESHOLD=999999;
             dump(ERROR);
-            THRESHOLD+=10;
         }
         if(TRACE!=null && !tracing) {
             tracing = true;
@@ -223,8 +223,10 @@ public class Listener {
      */
     public static synchronized void dump(PrintStream ps) {
         ps.println(TABLE.size()+" descriptors are open");
-        for (Record r : TABLE.values())
-            r.dump("",ps);
+        int i=0;
+        for (Record r : TABLE.values()) {
+            r.dump("#"+(++i)+" ",ps);
+        }
     }
 
     /**
