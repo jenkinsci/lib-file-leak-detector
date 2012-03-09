@@ -54,7 +54,7 @@ public class TransformerImpl implements ClassFileTransformer {
             }
         },cr.SKIP_FRAMES);
 
-        System.out.println("Transforming "+className);
+//        System.out.println("Transforming "+className);
         return cw.toByteArray();
     }
 }
