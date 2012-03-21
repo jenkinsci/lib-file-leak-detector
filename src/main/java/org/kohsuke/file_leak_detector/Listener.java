@@ -7,14 +7,14 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
-import java.io.PrintStream;
 import java.io.Writer;
+import java.lang.reflect.Field;
+import java.net.SocketAddress;
+import java.net.SocketImpl;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 import java.util.Date;
 import java.net.Socket;
 import java.net.ServerSocket;
@@ -82,7 +82,8 @@ public class Listener {
 
         private SocketRecord(Socket socket) {
             this.socket = socket;
-            peer = socket.getRemoteSocketAddress().toString();
+            SocketAddress ra = socket.getRemoteSocketAddress();
+            peer = ra!=null ? ra.toString() : "???";
         }
 
         public void dump(String prefix, PrintWriter ps) {
@@ -100,7 +101,8 @@ public class Listener {
 
         private ServerSocketRecord(ServerSocket socket) {
             this.socket = socket;
-            address = socket.getLocalSocketAddress().toString();
+            SocketAddress la = socket.getLocalSocketAddress();
+            address = la!=null ? la.toString() : "???";
         }
 
         public void dump(String prefix, PrintWriter ps) {
@@ -183,11 +185,20 @@ public class Listener {
      * Called when a socket is opened.
      */
     public static synchronized void openSocket(Object _this) {
-        if (_this instanceof Socket) {
-            put(_this, new SocketRecord((Socket) _this));
-        }
-        if (_this instanceof ServerSocket) {
-            put(_this, new ServerSocketRecord((ServerSocket) _this));
+        // intercept when
+        if (_this instanceof SocketImpl) {
+            try {
+                // one of the following must be true
+                SocketImpl si = (SocketImpl) _this;
+                Socket s = (Socket)SOCKETIMPL_SOCKET.get(si);
+                if (s!=null)
+                    put(_this, new SocketRecord(s));
+                ServerSocket ss = (ServerSocket)SOCKETIMPL_SERVER_SOCKET.get(si);
+                if (ss!=null)
+                    put(_this, new ServerSocketRecord(ss));
+            } catch (IllegalAccessException e) {
+                throw new AssertionError(e);
+            }
         }
         if (_this instanceof SocketChannel) {
             put(_this, new SocketChannelRecord((SocketChannel) _this));
@@ -254,6 +265,19 @@ public class Listener {
             ERROR.println("Too many open files");
             dump(ERROR);
             tracing = false;
+        }
+    }
+    
+    private static Field SOCKETIMPL_SOCKET,SOCKETIMPL_SERVER_SOCKET;
+    
+    static {
+        try {
+            SOCKETIMPL_SOCKET = SocketImpl.class.getDeclaredField("socket");
+            SOCKETIMPL_SERVER_SOCKET = SocketImpl.class.getDeclaredField("serverSocket");
+            SOCKETIMPL_SOCKET.setAccessible(true);
+            SOCKETIMPL_SERVER_SOCKET.setAccessible(true);
+        } catch (NoSuchFieldException e) {
+            throw new Error(e);
         }
     }
 }

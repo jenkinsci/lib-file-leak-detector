@@ -17,10 +17,7 @@ import java.io.FileOutputStream;
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
 import java.lang.instrument.Instrumentation;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.nio.channels.SocketChannel;
-import java.nio.channels.spi.AbstractInterruptibleChannel;
+import java.net.SocketImpl;
 import java.util.Arrays;
 import java.util.List;
 import java.util.zip.ZipFile;
@@ -104,21 +101,32 @@ public class AgentMain {
             newSpec(FileInputStream.class, "(Ljava/io/File;)V"),
             newSpec(RandomAccessFile.class, "(Ljava/io/File;Ljava/lang/String;)V"),
             newSpec(ZipFile.class, "(Ljava/io/File;I)V"),
-            new ClassTransformSpec(ServerSocket.class,
-                    new OpenSocketInterceptor("bind", "(Ljava/net/SocketAddress;I)V"),
-                    new CloseInterceptor()
+
+            /*
+                java.net.Socket/ServerSocket uses SocketImpl, and this is where FileDescriptors
+                are actually managed.
+
+                SocketInputStream/SocketOutputStream does not maintain a separate FileDescritor.
+                They just all piggy back on the same SocketImpl instance.
+             */
+            new ClassTransformSpec("java/net/PlainSocketImpl",
+                    // this is where a new file descriptor is allocated.
+                    // it'll occupy a socket even before it gets connected
+                    new OpenSocketInterceptor("create", "(Z)V"),
+
+                    // When a socket is accepted, it goes to "accept(SocketImpl s)"
+                    // where 's' is the new socket and 'this' is the server socket
+                    new AcceptInterceptor("accept","(Ljava/net/SocketImpl;)V"),
+
+                    // file descriptor actually get closed in socketClose()
+                    // socketPreClose() appears to do something similar, but if you read the source code
+                    // of the native socketClose0() method, then you see that it actually doesn't close
+                    // a file descriptor.
+                    new CloseInterceptor("socketClose")
             ),
-            new ClassTransformSpec(Socket.class,
-                    new OpenSocketInterceptor("connect", "(Ljava/net/SocketAddress;I)V"),
-                    new OpenSocketInterceptor("postAccept", "()V"),
-                    new CloseInterceptor()
-            ),
-            new ClassTransformSpec(SocketChannel.class,
+            new ClassTransformSpec("sun/nio/ch/SocketChannelImpl",
                     new OpenSocketInterceptor("<init>", "(Ljava/nio/channels/spi/SelectorProvider;)V"),
-                    new CloseInterceptor()
-            ),
-            new ClassTransformSpec(AbstractInterruptibleChannel.class,
-                    new CloseInterceptor()
+                    new CloseInterceptor("kill")
             )
         );
     }
@@ -140,9 +148,13 @@ public class AgentMain {
      */
     private static class CloseInterceptor extends MethodAppender {
         public CloseInterceptor() {
-            super("close", "()V");
+            this("close");
         }
 
+        public CloseInterceptor(String methodName) {
+            super(methodName, "()V");
+        }
+        
         protected void append(CodeGenerator g) {
             g.invokeAppStatic(Listener.class,"close",
                     new Class[]{Object.class},
@@ -163,6 +175,22 @@ public class AgentMain {
     }
 
     /**
+     * Used to intercept {@link java.net.AbstractPlainSocketImpl#accept(SocketImpl)}
+     */
+    private static class AcceptInterceptor extends MethodAppender {
+        public AcceptInterceptor(String name, String desc) {
+            super(name,desc);
+        }
+
+        protected void append(CodeGenerator g) {
+            // the 's' parameter is the new socket that will own the socket
+            g.invokeAppStatic(Listener.class,"openSocket",
+                    new Class[]{Object.class},
+                    new int[]{1});
+        }
+    }
+
+    /**
      * Intercepts the this.open(...) call in the constructor.
      */
     private static class ConstructorOpenInterceptor extends MethodAppender {
@@ -176,7 +204,6 @@ public class AgentMain {
             this.binName = binName;
         }
 
-        // this causes VerifyError (run with -Xverify:all to confirm this on Mustang, or else the rt.jar classes won't be verified)
         @Override
         public MethodVisitor newAdapter(MethodVisitor base, int access, String name, String desc, String signature, String[] exceptions) {
             final MethodVisitor b = super.newAdapter(base, access, name, desc, signature, exceptions);
