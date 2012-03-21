@@ -36,7 +36,8 @@ public class SocketDemo {
         while (true) {
             int dst = ss.getLocalPort();
             Socket s = new Socket("localhost",dst);
-            s.close();
+            s.shutdownInput();
+            s.shutdownOutput();
         }
     }
 }

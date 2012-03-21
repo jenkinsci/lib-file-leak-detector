@@ -14,6 +14,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
 import java.lang.instrument.Instrumentation;
@@ -167,6 +168,17 @@ public class AgentMain {
             super(name,desc);
         }
 
+        @Override
+        public MethodVisitor newAdapter(MethodVisitor base, int access, String name, String desc, String signature, String[] exceptions) {
+            final MethodVisitor b = super.newAdapter(base, access, name, desc, signature, exceptions);
+            return new OpenInterceptionAdapter(b,access,desc) {
+                @Override
+                protected boolean toIntercept(String owner, String name) {
+                    return name.equals("socketCreate");
+                }
+            };
+        }
+
         protected void append(CodeGenerator g) {
             g.invokeAppStatic(Listener.class,"openSocket",
                     new Class[]{Object.class},
@@ -175,11 +187,22 @@ public class AgentMain {
     }
 
     /**
-     * Used to intercept {@link java.net.AbstractPlainSocketImpl#accept(SocketImpl)}
+     * Used to intercept {@link java.net.PlainSocketImpl#accept(SocketImpl)}
      */
     private static class AcceptInterceptor extends MethodAppender {
         public AcceptInterceptor(String name, String desc) {
             super(name,desc);
+        }
+
+        @Override
+        public MethodVisitor newAdapter(MethodVisitor base, int access, String name, String desc, String signature, String[] exceptions) {
+            final MethodVisitor b = super.newAdapter(base, access, name, desc, signature, exceptions);
+            return new OpenInterceptionAdapter(b,access,desc) {
+                @Override
+                protected boolean toIntercept(String owner, String name) {
+                    return name.equals("socketAccept");
+                }
+            };
         }
 
         protected void append(CodeGenerator g) {
@@ -187,6 +210,81 @@ public class AgentMain {
             g.invokeAppStatic(Listener.class,"openSocket",
                     new Class[]{Object.class},
                     new int[]{1});
+        }
+    }
+
+    /**
+     * Rewrites a method that includes a call to a native method that actually opens a file descriptor
+     * (therefore it can throw "too many open files" exception.)
+     *
+     * surround the call with try/catch, and if "too many open files" exception is thrown
+     * call {@link Listener#outOfDescriptors()}.
+     */
+    private static abstract class OpenInterceptionAdapter extends MethodAdapter {
+        private final LocalVariablesSorter lvs;
+        private final MethodVisitor base;
+        private OpenInterceptionAdapter(MethodVisitor base, int access, String desc) {
+            super(null);
+            lvs = new LocalVariablesSorter(access,desc, base);
+            mv = lvs;
+            this.base = base;
+        }
+
+        /**
+         * Decide if this is the method that needs interception.
+         */
+        protected abstract boolean toIntercept(String owner, String name);
+        
+        protected Class<? extends Exception> getExpectedException() {
+            return IOException.class;
+        }
+
+        @Override
+        public void visitMethodInsn(int opcode, String owner, String name, String desc) {
+            if(toIntercept(owner,name)) {
+                Type exceptionType = Type.getType(getExpectedException());
+                
+                CodeGenerator g = new CodeGenerator(mv);
+                Label s = new Label(); // start of the try block
+                Label e = new Label();  // end of the try block
+                Label h = new Label();  // handler entry point
+                Label tail = new Label();   // where the execution continue
+
+                g.visitTryCatchBlock(s, e, h, exceptionType.getInternalName());
+                g.visitLabel(s);
+                super.visitMethodInsn(opcode, owner, name, desc);
+                g._goto(tail);
+
+                g.visitLabel(e);
+                g.visitLabel(h);
+                // [RESULT]
+                // catch(E ex) {
+                //    boolean b = ex.getMessage().contains("Too many open files");
+                int ex = lvs.newLocal(exceptionType);
+                g.dup();
+                base.visitVarInsn(ASTORE, ex);
+                g.invokeVirtual(exceptionType.getInternalName(),"getMessage","()Ljava/lang/String;");
+                g.ldc("Too many open files");
+                g.invokeVirtual("java/lang/String","contains","(Ljava/lang/CharSequence;)Z");
+
+                // too many open files detected
+                //    if (b) { Listener.outOfDescriptors() }
+                Label rethrow = new Label();
+                g.ifFalse(rethrow);
+
+                g.invokeAppStatic(Listener.class,"outOfDescriptors",
+                        new Class[0], new int[0]);
+
+                // rethrow the FileNotFoundException
+                g.visitLabel(rethrow);
+                base.visitVarInsn(ALOAD, ex);
+                g.athrow();
+
+                // normal execution continues here
+                g.visitLabel(tail);
+            } else
+                // no processing
+                super.visitMethodInsn(opcode, owner, name, desc);
         }
     }
 
@@ -207,55 +305,15 @@ public class AgentMain {
         @Override
         public MethodVisitor newAdapter(MethodVisitor base, int access, String name, String desc, String signature, String[] exceptions) {
             final MethodVisitor b = super.newAdapter(base, access, name, desc, signature, exceptions);
-            final LocalVariablesSorter lvs = new LocalVariablesSorter(access,desc, b);
-            return new MethodAdapter(lvs) {
-                // surround the open/openAppend calls with try/catch block
-                // to intercept "Too many open files" exception
+            return new OpenInterceptionAdapter(b,access,desc) {
                 @Override
-                public void visitMethodInsn(int opcode, String owner, String name, String desc) {
-                    if(owner.equals(binName)
-                    && name.startsWith("open")) {
-                        CodeGenerator g = new CodeGenerator(mv);
-                        Label s = new Label(); // start of the try block
-                        Label e = new Label();  // end of the try block
-                        Label h = new Label();  // handler entry point
-                        Label tail = new Label();   // where the execution continue
+                protected boolean toIntercept(String owner, String name) {
+                    return owner.equals(binName) && name.startsWith("open");
+                }
 
-                        g.visitTryCatchBlock(s, e, h, "java/io/FileNotFoundException");
-                        g.visitLabel(s);
-                        super.visitMethodInsn(opcode, owner, name, desc);
-                        g._goto(tail);
-
-                        g.visitLabel(e);
-                        g.visitLabel(h);
-                        // [RESULT]
-                        // catch(FileNotFoundException ex) {
-                        //    boolean b = ex.getMessage().contains("Too many open files");
-                        int ex = lvs.newLocal(Type.getType(FileNotFoundException.class));
-                        g.dup();
-                        b.visitVarInsn(ASTORE, ex);
-                        g.invokeVirtual("java/io/FileNotFoundException","getMessage","()Ljava/lang/String;");
-                        g.ldc("Too many open files");
-                        g.invokeVirtual("java/lang/String","contains","(Ljava/lang/CharSequence;)Z");
-
-                        // too many open files detected
-                        //    if (b) { Listener.outOfDescriptors() }
-                        Label rethrow = new Label();
-                        g.ifFalse(rethrow);
-
-                        g.invokeAppStatic(Listener.class,"outOfDescriptors",
-                                new Class[0], new int[0]);
-
-                        // rethrow the FileNotFoundException
-                        g.visitLabel(rethrow);
-                        b.visitVarInsn(ALOAD, ex);
-                        g.athrow();
-
-                        // normal execution continues here
-                        g.visitLabel(tail);
-                    } else
-                        // no processing
-                        super.visitMethodInsn(opcode, owner, name, desc);
+                @Override
+                protected Class<? extends Exception> getExpectedException() {
+                    return FileNotFoundException.class;
                 }
             };
         }
