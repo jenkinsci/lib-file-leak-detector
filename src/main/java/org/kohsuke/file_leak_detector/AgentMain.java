@@ -18,9 +18,16 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
 import java.lang.instrument.Instrumentation;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.net.SocketImpl;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.zip.ZipFile;
 
 import static org.kohsuke.asm3.Opcodes.*;
@@ -34,21 +41,26 @@ public class AgentMain {
     public static void agentmain(String agentArguments, Instrumentation instrumentation) throws Exception {
         premain(agentArguments,instrumentation);
     }
-
+    
     public static void premain(String agentArguments, Instrumentation instrumentation) throws Exception {
+        int serverPort = -1;
+        
         if(agentArguments!=null) {
             for (String t : agentArguments.split(",")) {
                 if(t.equals("help")) {
                     usageAndQuit();
                 } else
                 if(t.startsWith("threshold=")) {
-                    Listener.THRESHOLD = Integer.parseInt(t.substring("threshold=".length()));
+                    Listener.THRESHOLD = Integer.parseInt(t.substring(t.indexOf('=')+1));
                 } else
                 if(t.equals("trace")) {
                     Listener.TRACE = new PrintWriter(System.err);
                 } else
                 if(t.equals("strong")) {
                     Listener.makeStrong();
+                } else
+                if(t.startsWith("http=")) {
+                    serverPort = Integer.parseInt(t.substring(t.indexOf('=')+1));
                 } else
                 if(t.startsWith("trace=")) {
                     Listener.TRACE = new PrintWriter(new FileOutputStream(agentArguments.substring(6)));
@@ -73,11 +85,41 @@ public class AgentMain {
                 Class.forName("java.net.PlainSocketImpl"),
                 ZipFile.class);
 
+        if (serverPort>=0)
+            runHttpServer(serverPort);
+
         // still haven't fully figured out how to intercept NIO, especially with close, so commenting out
 //                Socket.class,
 //                SocketChannel.class,
 //                AbstractInterruptibleChannel.class,
 //                ServerSocket.class);
+    }
+
+    private static void runHttpServer(int port) throws IOException {
+        final ServerSocket ss = new ServerSocket();
+        ss.bind(new InetSocketAddress("localhost", port));
+        System.err.println("Serving file leak stats on http://localhost:"+ss.getLocalPort()+"/ for stats");
+        final ExecutorService es = Executors.newCachedThreadPool(new ThreadFactory() {
+            public Thread newThread(Runnable r) {
+                Thread t = new Thread(r);
+                t.setDaemon(true);
+                return t;
+            }
+        });
+        es.submit(new Callable<Object>() {
+            public Object call() throws Exception {
+                while (true) {
+                    final Socket s = ss.accept();
+                    es.submit(new Callable<Object>() {
+                        public Object call() throws Exception {
+                            Listener.dump(s.getOutputStream());
+                            s.close();
+                            return null;
+                        }
+                    });
+                }
+            }
+        });
     }
 
     private static void usageAndQuit() {
@@ -94,6 +136,8 @@ public class AgentMain {
         System.err.println("                by default it goes to stderr.");
         System.err.println("  threshold=N - instead of waiting until 'too many open files', dump once");
         System.err.println("                we have N descriptors open.");
+        System.err.println("  http=PORT   - Run a mini HTTP server that you can access to get stats on demand");
+        System.err.println("                Specify 0 to choose random available port, -1 to disable, which is default.");
         System.err.println("  strong      - Don't let GC auto-close leaking file descriptors");
     }
 
