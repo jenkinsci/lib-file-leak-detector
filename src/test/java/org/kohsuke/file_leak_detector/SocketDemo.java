@@ -24,8 +24,9 @@ public class SocketDemo {
                     final Socket s = ss.accept();
                     es.submit(new Callable<Object>() {
                         public Object call() throws Exception {
-                            s.shutdownInput();
-                            s.shutdownOutput();
+                            s.close();
+//                            s.shutdownInput();
+//                            s.shutdownOutput();
                             return null;
                         }
                     });
@@ -33,11 +34,17 @@ public class SocketDemo {
             }
         });
         
-        while (true) {
+        for (int i=0; i<10; i++) {
             int dst = ss.getLocalPort();
             Socket s = new Socket("localhost",dst);
-            s.shutdownInput();
-            s.shutdownOutput();
+            s.close();
+//            s.shutdownInput();
+//            s.shutdownOutput();
         }
+        
+        System.out.println("Dumping the table");
+        Listener.dump(System.out);
+        System.out.println("done");
+        es.shutdownNow();
     }
 }
