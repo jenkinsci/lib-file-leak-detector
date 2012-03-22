@@ -4,11 +4,16 @@ import com.sun.tools.attach.VirtualMachine;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
+import sun.tools.jar.resources.jar;
 
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Entry point for externally attaching agent into another local process.
@@ -59,12 +64,39 @@ public class Main {
      */
     private Class loadAttachApi() throws MalformedURLException, ClassNotFoundException {
         File toolsJar = locateToolsJar();
-        URLClassLoader cl = new URLClassLoader(new URL[]{toolsJar.toURI().toURL()},getClass().getClassLoader());
+
+        ClassLoader cl = wrapIntoClassLoader(toolsJar);
         try {
             return cl.loadClass("com.sun.tools.attach.VirtualMachine");
         } catch (ClassNotFoundException e) {
             throw new IllegalStateException("Unable to find tools.jar at "+toolsJar+" --- you need to run this tool with a JDK",e);
         }
+    }
+
+    /**
+     * Figures out how to load tools.jar into a classloader.
+     *
+     * The attachment API relies on JNI, so if we have other processes in the JVM that tries to use the attach API
+     * (like JavaMelody), it'll cause a failure. So we try to load tools.jar into the application classloadr
+     * so that later attempts to load tools.jar will see it.
+     */
+    protected ClassLoader wrapIntoClassLoader(File toolsJar) throws MalformedURLException {
+        URL jar = toolsJar.toURI().toURL();
+        
+        ClassLoader base = getClass().getClassLoader();
+        if (base instanceof URLClassLoader) {
+            try {
+                Method addURL = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
+                addURL.setAccessible(true);
+                addURL.invoke(base,jar);
+                return base;
+            } catch (Exception e) {
+                // if that fails, load into a separate classloader
+                LOGGER.log(Level.WARNING, "Failed to load tools.jar into appclassloader",e);
+            }
+        }
+
+        return new URLClassLoader(new URL[]{jar}, base);
     }
 
     /**
@@ -87,4 +119,6 @@ public class Main {
         }
         throw new IllegalStateException("Unable to figure out the file of the jar: "+url);
     }
+
+    private static final Logger LOGGER = Logger.getLogger(Main.class.getName());
 }
