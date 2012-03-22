@@ -254,6 +254,7 @@ public class Listener {
             r.dump("#"+(++i)+" ",pw);
         }
         pw.println("----");
+        pw.flush();
     }
 
     /**
