@@ -63,6 +63,19 @@ public class Main {
      * Loads the {@link VirtualMachine} class as the entry point to the attach API.
      */
     private Class loadAttachApi() throws MalformedURLException, ClassNotFoundException {
+
+        try {
+            Class vm = Class.forName("net.bull.javamelody.VirtualMachine");
+            // Reuse JavaMelody VirtualMachine to avoid conflict loading native code
+            Method m = vm.getDeclaredMethod("findVirtualMachineClass");
+            m.setAccessible(true);
+            Class c = (Class) m.invoke(vm);
+            System.out.println("re-using VirtualMachine from javamelody");
+            return c;
+        } catch (Exception e) {
+            // JavaMelody is not in classpath, or failed to reuse VirtualMachine class from this classloader
+        }
+
         File toolsJar = locateToolsJar();
 
         ClassLoader cl = wrapIntoClassLoader(toolsJar);

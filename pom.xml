@@ -74,6 +74,12 @@
       <version>2.0.19</version>
     </dependency>
     <dependency>
+      <groupId>net.bull.javamelody</groupId>
+      <artifactId>javamelody-core</artifactId>
+      <version>1.33.0</version>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
       <groupId>com.sun</groupId>
       <artifactId>tools</artifactId>
       <version>6.0</version>
