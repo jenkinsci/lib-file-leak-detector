@@ -70,6 +70,7 @@ public class AgentMain {
                 FileInputStream.class,
                 FileOutputStream.class,
                 RandomAccessFile.class,
+                Class.forName("java.net.PlainSocketImpl"),
                 ZipFile.class);
 
         // still haven't fully figured out how to intercept NIO, especially with close, so commenting out
