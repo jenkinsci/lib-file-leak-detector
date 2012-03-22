@@ -9,7 +9,8 @@ What is this?
     dump the list, allowing you to find out where a large number of
     file descriptors are in use.
 
-    For a long running application, this tool can be also loaded as a regular
+    For a long running application, you can have it run a mini HTTP server
+    to access the information on demand. This tool can be also loaded as a regular
     dependency jar and the list of the table can be
     {{{http://file-leak-detector.kohsuke.org/apidocs/index.html?org/kohsuke/file_leak_detector/Listener.html}programmatically accessed}}.
 
@@ -28,6 +29,13 @@ $ java -javaagent:path/to/file-leak-detector.jar ...your usual Java args follows
 
 -------------
 $ java -javaagent:path/to/file-leak-detector.jar=threshold=200 ...your usual Java args follows...
+-------------
+
+    Or have it run a mini HTTP server so that you can access the information
+    from your browser, do the followind and open http://localhost:19999/:
+
+-------------
+$ java -javaagent:path/to/file-leak-detector.jar=http=19999 ...your usual Java args follows...
 -------------
 
     Use the help option to see the help screen for the complete list of options.
