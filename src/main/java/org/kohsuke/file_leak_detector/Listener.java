@@ -82,11 +82,19 @@ public class Listener {
 
         private SocketRecord(Socket socket) {
             this.socket = socket;
+            peer = getRemoteAddress(socket);
+        }
+
+        private String getRemoteAddress(Socket socket) {
             SocketAddress ra = socket.getRemoteSocketAddress();
-            peer = ra!=null ? ra.toString() : "???";
+            return ra!=null ? ra.toString() : null;
         }
 
         public void dump(String prefix, PrintWriter ps) {
+            // best effort at showing where it is/was listening
+            String peer = this.peer;
+            if (peer==null)  peer=getRemoteAddress(socket);
+
             ps.println(prefix+"socket to "+peer+" by thread:"+threadName+" on "+new Date(time));
             super.dump(prefix,ps);
         }
@@ -101,11 +109,19 @@ public class Listener {
 
         private ServerSocketRecord(ServerSocket socket) {
             this.socket = socket;
+            address = getLocalAddress(socket);
+        }
+
+        private String getLocalAddress(ServerSocket socket) {
             SocketAddress la = socket.getLocalSocketAddress();
-            address = la!=null ? la.toString() : "???";
+            return la!=null ? la.toString() : null;
         }
 
         public void dump(String prefix, PrintWriter ps) {
+            // best effort at showing where it is/was listening
+            String address = this.address;
+            if (address==null)  address=getLocalAddress(socket);
+
             ps.println(prefix+"server socket at "+address+" by thread:"+threadName+" on "+new Date(time));
             super.dump(prefix,ps);
         }
