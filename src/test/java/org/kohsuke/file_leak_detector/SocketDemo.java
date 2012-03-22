@@ -44,7 +44,9 @@ public class SocketDemo {
         
         System.out.println("Dumping the table");
         Listener.dump(System.out);
+
         System.out.println("done");
+        ss.close();
         es.shutdownNow();
     }
 }
