@@ -63,10 +63,10 @@ public class AgentMain {
                     serverPort = Integer.parseInt(t.substring(t.indexOf('=')+1));
                 } else
                 if(t.startsWith("trace=")) {
-                    Listener.TRACE = new PrintWriter(new FileOutputStream(agentArguments.substring(6)));
+                    Listener.TRACE = new PrintWriter(new FileOutputStream(t.substring(6)));
                 } else
                 if(t.startsWith("error=")) {
-                    Listener.ERROR = new PrintWriter(new FileOutputStream(agentArguments.substring(6)));
+                    Listener.ERROR = new PrintWriter(new FileOutputStream(t.substring(6)));
                 } else {
                     System.err.println("Unknown option: "+t);
                     usageAndQuit();
@@ -87,6 +87,36 @@ public class AgentMain {
 
         if (serverPort>=0)
             runHttpServer(serverPort);
+
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                if (Listener.TRACE != null) {
+                    try {
+                        Listener.TRACE.flush();
+                    } catch (Throwable t) {
+                        // Ignore
+                    }
+                    try {
+                        Listener.TRACE.close();
+                    } catch (Throwable t) {
+                        // Ignore
+                    }
+                }
+                if (Listener.ERROR != null) {
+                    try {
+                        Listener.ERROR.flush();
+                    } catch (Throwable t) {
+                        // Ignore
+                    }
+                    try {
+                        Listener.ERROR.close();
+                    } catch (Throwable t) {
+                        // Ignore
+                    }
+                }
+            }
+         });
 
         // still haven't fully figured out how to intercept NIO, especially with close, so commenting out
 //                Socket.class,
