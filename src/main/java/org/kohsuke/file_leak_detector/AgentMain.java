@@ -38,6 +38,9 @@ import static org.kohsuke.asm3.Opcodes.*;
  */
 @SuppressWarnings("Since15")
 public class AgentMain {
+
+    private static boolean close = true;
+
     public static void agentmain(String agentArguments, Instrumentation instrumentation) throws Exception {
         premain(agentArguments,instrumentation);
     }
@@ -58,6 +61,9 @@ public class AgentMain {
                 } else
                 if(t.equals("strong")) {
                     Listener.makeStrong();
+                } else
+                if(t.startsWith("close=")) {
+                    close = Boolean.parseBoolean(t.substring(t.indexOf('=')+1));
                 } else
                 if(t.startsWith("http=")) {
                     serverPort = Integer.parseInt(t.substring(t.indexOf('=')+1));
@@ -91,30 +97,33 @@ public class AgentMain {
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
-                if (Listener.TRACE != null) {
-                    try {
-                        Listener.TRACE.flush();
-                    } catch (Throwable t) {
-                        // Ignore
+                if (close) {
+                    if (Listener.TRACE != null) {
+                        try {
+                            Listener.TRACE.flush();
+                        } catch (Throwable t) {
+                            // Ignore
+                        }
+                        try {
+                            Listener.TRACE.close();
+                        } catch (Throwable t) {
+                            // Ignore
+                        }
                     }
-                    try {
-                        Listener.TRACE.close();
-                    } catch (Throwable t) {
-                        // Ignore
+                    if (Listener.ERROR != null) {
+                        try {
+                            Listener.ERROR.flush();
+                        } catch (Throwable t) {
+                            // Ignore
+                        }
+                        try {
+                            Listener.ERROR.close();
+                        } catch (Throwable t) {
+                            // Ignore
+                        }
                     }
                 }
-                if (Listener.ERROR != null) {
-                    try {
-                        Listener.ERROR.flush();
-                    } catch (Throwable t) {
-                        // Ignore
-                    }
-                    try {
-                        Listener.ERROR.close();
-                    } catch (Throwable t) {
-                        // Ignore
-                    }
-                }
+                System.err.println("File leak detector stopped");
             }
          });
 
@@ -159,16 +168,17 @@ public class AgentMain {
     }
 
     static void printOptions() {
-        System.err.println("  help        - show the help screen.");
-        System.err.println("  trace       - log every open/close operation to stderr.");
-        System.err.println("  trace=FILE  - log every open/close operation to the given file.");
-        System.err.println("  error=FILE  - if 'too many open files' error is detected, send the dump here.");
-        System.err.println("                by default it goes to stderr.");
-        System.err.println("  threshold=N - instead of waiting until 'too many open files', dump once");
-        System.err.println("                we have N descriptors open.");
-        System.err.println("  http=PORT   - Run a mini HTTP server that you can access to get stats on demand");
-        System.err.println("                Specify 0 to choose random available port, -1 to disable, which is default.");
-        System.err.println("  strong      - Don't let GC auto-close leaking file descriptors");
+        System.err.println("  help          - show the help screen.");
+        System.err.println("  trace         - log every open/close operation to stderr.");
+        System.err.println("  trace=FILE    - log every open/close operation to the given file.");
+        System.err.println("  error=FILE    - if 'too many open files' error is detected, send the dump here.");
+        System.err.println("                  by default it goes to stderr.");
+        System.err.println("  threshold=N   - instead of waiting until 'too many open files', dump once");
+        System.err.println("                  we have N descriptors open.");
+        System.err.println("  close=BOOLEAN - Close the listeners in shutdown hook, default is true");
+        System.err.println("  http=PORT     - Run a mini HTTP server that you can access to get stats on demand");
+        System.err.println("                  Specify 0 to choose random available port, -1 to disable, which is default.");
+        System.err.println("  strong        - Don't let GC auto-close leaking file descriptors");
     }
 
     static List<ClassTransformSpec> createSpec() {
