@@ -88,36 +88,6 @@ public class AgentMain {
         if (serverPort>=0)
             runHttpServer(serverPort);
 
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
-                if (Listener.TRACE != null) {
-                    try {
-                        Listener.TRACE.flush();
-                    } catch (Throwable t) {
-                        // Ignore
-                    }
-                    try {
-                        Listener.TRACE.close();
-                    } catch (Throwable t) {
-                        // Ignore
-                    }
-                }
-                if (Listener.ERROR != null) {
-                    try {
-                        Listener.ERROR.flush();
-                    } catch (Throwable t) {
-                        // Ignore
-                    }
-                    try {
-                        Listener.ERROR.close();
-                    } catch (Throwable t) {
-                        // Ignore
-                    }
-                }
-            }
-         });
-
         // still haven't fully figured out how to intercept NIO, especially with close, so commenting out
 //                Socket.class,
 //                SocketChannel.class,
