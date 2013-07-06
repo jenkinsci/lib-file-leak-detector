@@ -54,6 +54,7 @@ public class Listener {
             // print the rest
             for (; i < trace.length; i++)
                 pw.println("\tat " + trace[i]);
+            pw.flush();
         }
     }
 
