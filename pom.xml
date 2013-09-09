@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.kohsuke</groupId>
     <artifactId>pom</artifactId>
-    <version>3</version>
+    <version>6</version>
   </parent>
   <groupId>org.kohsuke</groupId>
   <artifactId>file-leak-detector</artifactId>
@@ -35,16 +35,18 @@
         </configuration>
       </plugin>
       <plugin>
-        <artifactId>maven-assembly-plugin</artifactId>
+        <artifactId>maven-shade-plugin</artifactId>
         <executions>
           <execution>
             <goals>
-              <goal>attached</goal>
+              <goal>shade</goal>
             </goals>
             <phase>package</phase>
             <configuration>
-              <descriptorId>jar-with-dependencies</descriptorId>
-              <archive>
+              <shadedArtifactAttached>true</shadedArtifactAttached>
+              <shadedClassifierName>jar-with-dependencies</shadedClassifierName>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                 <manifestEntries>
                   <Agent-Class>org.kohsuke.file_leak_detector.AgentMain</Agent-Class>
                   <Premain-Class>org.kohsuke.file_leak_detector.AgentMain</Premain-Class>
@@ -52,7 +54,18 @@
                   <Can-Retransform-Classes>true</Can-Retransform-Classes>
                   <Can-Redefine-Classes>true</Can-Redefine-Classes>
                 </manifestEntries>
-              </archive>
+                </transformer>
+              </transformers>
+              <relocations>
+                <relocation>
+                  <pattern>org.kohsuke.args4j</pattern>
+                  <shadedPattern>org.kohsuke.file_leak_detector.args4j</shadedPattern>
+                </relocation>
+                <relocation>
+                  <pattern>org.kohsuke.asm3</pattern>
+                  <shadedPattern>org.kohsuke.file_leak_detector.asm3</shadedPattern>
+                </relocation>
+              </relocations>
             </configuration>
           </execution>
         </executions>
