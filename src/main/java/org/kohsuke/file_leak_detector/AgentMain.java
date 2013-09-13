@@ -22,7 +22,9 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketImpl;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -67,6 +69,28 @@ public class AgentMain {
                 } else
                 if(t.startsWith("error=")) {
                     Listener.ERROR = new PrintWriter(new FileOutputStream(t.substring(6)));
+                } else
+                if(t.startsWith("excludes=")) {
+                	List<String> lines = new ArrayList<String>();
+                    BufferedReader reader = new BufferedReader(new FileReader(t.substring(9)));
+                    try {
+	                    String line = reader.readLine();
+	                    while (line != null) {
+	                        lines.add(line);
+	                        line = reader.readLine();
+	                    }
+                    } finally {
+                    	reader.close();
+                    }
+                    
+                    // add the entries from the excludes-file, but filter out empty ones
+                    Iterator<String> it = lines.iterator();
+                    while(it.hasNext()) {
+                    	String str = it.next().trim();
+                    	if(!str.isEmpty() && !str.startsWith("#")) {
+                    		Listener.EXCLUDES.add(str);
+                    	}
+                    }
                 } else {
                     System.err.println("Unknown option: "+t);
                     usageAndQuit();

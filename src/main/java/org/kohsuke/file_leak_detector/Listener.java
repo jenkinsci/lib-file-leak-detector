@@ -56,6 +56,36 @@ public class Listener {
                 pw.println("\tat " + trace[i]);
             pw.flush();
         }
+        
+        public boolean exclude() {
+        	if(EXCLUDES.isEmpty()) {
+        		return false;
+        	}
+
+            StackTraceElement[] trace = stackTrace.getStackTrace();
+            int i=0;
+            // skip until we find the Method.invoke() that called us
+            for (; i<trace.length; i++) {
+				if(trace[i].getClassName().equals("java.lang.reflect.Method")) {
+                    i++;
+                    break;
+                }
+			}
+            
+            // check the rest
+            for (; i < trace.length; i++) {
+            	String t = trace[i].toString();
+            	for(String exclude : EXCLUDES) {
+            		// skip empty lines
+					if(t.contains(exclude)) {
+						return true;
+					}
+            	}
+			}
+
+            // no matchine exclude found
+            return false;
+        }
     }
 
     /**
@@ -160,6 +190,11 @@ public class Listener {
     public static PrintWriter ERROR = new PrintWriter(System.err);
 
     /**
+     * Allows to provide stacktrace-lines which cause the element to be excluded 
+     */
+    public static List<String> EXCLUDES = new ArrayList<String>();
+
+    /**
      * Tracing may cause additional files to be opened.
      * In such a case, avoid infinite recursion.
      */
@@ -227,6 +262,16 @@ public class Listener {
     }
     
     private static synchronized void put(Object _this, Record r) {
+    	// handle excludes
+    	if(r.exclude()) {
+            if(TRACE!=null && !tracing) {
+                tracing = true;
+                r.dump("Excluded ",TRACE);
+                tracing = false;
+            }
+			return;
+		}
+
         TABLE.put(_this, r);
         if(TABLE.size()>THRESHOLD) {
             THRESHOLD=999999;
