@@ -46,10 +46,11 @@ public class CodeGenerator extends MethodVisitor {
     }
 
     public void iconst(int i) {
-        if(i<=5)
+        if(i<=5) {
             super.visitInsn(ICONST_0+i);
-        else
+        } else {
             super.visitLdcInsn(i);
+        }
     }
 
     public void dup() {
@@ -119,8 +120,9 @@ public class CodeGenerator extends MethodVisitor {
         invokeVirtual("java/lang/ClassLoader","loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
         ldc(userMethodName);
         newArray("java/lang/Class",argTypes.length);
-        for (int i = 0; i < argTypes.length; i++)
+        for (int i = 0; i < argTypes.length; i++) {
             storeConst(i, argTypes[i]);
+        }
 
         invokeVirtual("java/lang/Class","getDeclaredMethod","(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;");
 
