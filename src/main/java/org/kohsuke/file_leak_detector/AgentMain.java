@@ -153,16 +153,18 @@ public class AgentMain {
     }
 
     static void printOptions() {
-        System.err.println("  help        - show the help screen.");
-        System.err.println("  trace       - log every open/close operation to stderr.");
-        System.err.println("  trace=FILE  - log every open/close operation to the given file.");
-        System.err.println("  error=FILE  - if 'too many open files' error is detected, send the dump here.");
-        System.err.println("                by default it goes to stderr.");
-        System.err.println("  threshold=N - instead of waiting until 'too many open files', dump once");
-        System.err.println("                we have N descriptors open.");
-        System.err.println("  http=PORT   - Run a mini HTTP server that you can access to get stats on demand");
-        System.err.println("                Specify 0 to choose random available port, -1 to disable, which is default.");
-        System.err.println("  strong      - Don't let GC auto-close leaking file descriptors");
+        System.err.println("  help          - show the help screen.");
+        System.err.println("  trace         - log every open/close operation to stderr.");
+        System.err.println("  trace=FILE    - log every open/close operation to the given file.");
+        System.err.println("  error=FILE    - if 'too many open files' error is detected, send the dump here.");
+        System.err.println("                  by default it goes to stderr.");
+        System.err.println("  threshold=N   - instead of waiting until 'too many open files', dump once");
+        System.err.println("                  we have N descriptors open.");
+        System.err.println("  http=PORT     - Run a mini HTTP server that you can access to get stats on demand");
+        System.err.println("                  Specify 0 to choose random available port, -1 to disable, which is default.");
+        System.err.println("  strong        - Don't let GC auto-close leaking file descriptors");
+        System.err.println("  excludes=File - Exclude any opened file where a line in the given exclude-file matches");
+        System.err.println("                  one of the lines from the stacktrace of the open-call.");
     }
 
     static List<ClassTransformSpec> createSpec() {
