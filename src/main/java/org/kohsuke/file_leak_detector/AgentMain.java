@@ -1,14 +1,7 @@
 package org.kohsuke.file_leak_detector;
 
-import org.kohsuke.asm3.Label;
-import org.kohsuke.asm3.MethodAdapter;
-import org.kohsuke.asm3.MethodVisitor;
-import org.kohsuke.asm3.Type;
-import org.kohsuke.asm3.commons.LocalVariablesSorter;
-import org.kohsuke.file_leak_detector.transform.ClassTransformSpec;
-import org.kohsuke.file_leak_detector.transform.CodeGenerator;
-import org.kohsuke.file_leak_detector.transform.MethodAppender;
-import org.kohsuke.file_leak_detector.transform.TransformerImpl;
+import static org.kohsuke.asm3.Opcodes.ALOAD;
+import static org.kohsuke.asm3.Opcodes.ASTORE;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -30,7 +23,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.zip.ZipFile;
 
-import static org.kohsuke.asm3.Opcodes.*;
+import org.kohsuke.asm3.Label;
+import org.kohsuke.asm3.MethodAdapter;
+import org.kohsuke.asm3.MethodVisitor;
+import org.kohsuke.asm3.Type;
+import org.kohsuke.asm3.commons.LocalVariablesSorter;
+import org.kohsuke.file_leak_detector.transform.ClassTransformSpec;
+import org.kohsuke.file_leak_detector.transform.CodeGenerator;
+import org.kohsuke.file_leak_detector.transform.MethodAppender;
+import org.kohsuke.file_leak_detector.transform.TransformerImpl;
 
 /**
  * Java agent that instruments JDK classes to keep track of where file descriptors are opened.
@@ -67,6 +68,14 @@ public class AgentMain {
                 } else
                 if(t.startsWith("error=")) {
                     Listener.ERROR = new PrintWriter(new FileOutputStream(t.substring(6)));
+                } else
+                if(t.equals("dumpatshutdown")) {
+                	Runtime.getRuntime().addShutdownHook(new Thread("File handles dumping shutdown hook") {
+						@Override
+						public void run() {
+							Listener.dump(System.err);
+						}
+                	});
                 } else {
                     System.err.println("Unknown option: "+t);
                     usageAndQuit();
@@ -85,8 +94,9 @@ public class AgentMain {
                 Class.forName("java.net.PlainSocketImpl"),
                 ZipFile.class);
 
-        if (serverPort>=0)
-            runHttpServer(serverPort);
+        if (serverPort>=0) {
+			runHttpServer(serverPort);
+		}
 
         // still haven't fully figured out how to intercept NIO, especially with close, so commenting out
 //                Socket.class,
@@ -129,16 +139,17 @@ public class AgentMain {
     }
 
     static void printOptions() {
-        System.err.println("  help        - show the help screen.");
-        System.err.println("  trace       - log every open/close operation to stderr.");
-        System.err.println("  trace=FILE  - log every open/close operation to the given file.");
-        System.err.println("  error=FILE  - if 'too many open files' error is detected, send the dump here.");
-        System.err.println("                by default it goes to stderr.");
-        System.err.println("  threshold=N - instead of waiting until 'too many open files', dump once");
-        System.err.println("                we have N descriptors open.");
-        System.err.println("  http=PORT   - Run a mini HTTP server that you can access to get stats on demand");
-        System.err.println("                Specify 0 to choose random available port, -1 to disable, which is default.");
-        System.err.println("  strong      - Don't let GC auto-close leaking file descriptors");
+        System.err.println("  help          - show the help screen.");
+        System.err.println("  trace         - log every open/close operation to stderr.");
+        System.err.println("  trace=FILE    - log every open/close operation to the given file.");
+        System.err.println("  error=FILE    - if 'too many open files' error is detected, send the dump here.");
+        System.err.println("                  by default it goes to stderr.");
+        System.err.println("  threshold=N   - instead of waiting until 'too many open files', dump once");
+        System.err.println("                  we have N descriptors open.");
+        System.err.println("  http=PORT     - Run a mini HTTP server that you can access to get stats on demand");
+        System.err.println("                  Specify 0 to choose random available port, -1 to disable, which is default.");
+        System.err.println("  strong        - Don't let GC auto-close leaking file descriptors");
+        System.err.println("  dumpatshutdown- Don't let GC auto-close leaking file descriptors");
     }
 
     static List<ClassTransformSpec> createSpec() {
@@ -201,7 +212,8 @@ public class AgentMain {
             super(methodName, "()V");
         }
         
-        protected void append(CodeGenerator g) {
+        @Override
+		protected void append(CodeGenerator g) {
             g.invokeAppStatic(Listener.class,"close",
                     new Class[]{Object.class},
                     new int[]{0});
@@ -224,7 +236,8 @@ public class AgentMain {
             };
         }
 
-        protected void append(CodeGenerator g) {
+        @Override
+		protected void append(CodeGenerator g) {
             g.invokeAppStatic(Listener.class,"openSocket",
                     new Class[]{Object.class},
                     new int[]{0});
@@ -250,7 +263,8 @@ public class AgentMain {
             };
         }
 
-        protected void append(CodeGenerator g) {
+        @Override
+		protected void append(CodeGenerator g) {
             // the 's' parameter is the new socket that will own the socket
             g.invokeAppStatic(Listener.class,"openSocket",
                     new Class[]{Object.class},
@@ -327,9 +341,10 @@ public class AgentMain {
 
                 // normal execution continues here
                 g.visitLabel(tail);
-            } else
-                // no processing
+            } else {
+				// no processing
                 super.visitMethodInsn(opcode, owner, name, desc);
+			}
         }
     }
 
@@ -363,7 +378,8 @@ public class AgentMain {
             };
         }
 
-        protected void append(CodeGenerator g) {
+        @Override
+		protected void append(CodeGenerator g) {
             g.invokeAppStatic(Listener.class,"open",
                     new Class[]{Object.class, File.class},
                     new int[]{0,1});
