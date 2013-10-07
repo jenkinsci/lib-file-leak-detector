@@ -70,6 +70,9 @@ public class AgentMain {
                 } else
                 if(t.startsWith("error=")) {
                     Listener.ERROR = new PrintWriter(new FileOutputStream(t.substring(6)));
+                } else
+                if(t.startsWith("listener=")) {
+                    Listener.EXTERNAL = (ExternalListener) AgentMain.class.getClassLoader().loadClass(t.substring(9)).newInstance();
                 } else {
                     System.err.println("Unknown option: "+t);
                     usageAndQuit();
