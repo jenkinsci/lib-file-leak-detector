@@ -69,7 +69,7 @@ public class Listener {
         }
 
         public void dump(String prefix, PrintWriter pw) {
-            pw.println(prefix + file + " by thread:" + threadName + " on " + new Date(time));
+            pw.println(prefix + file + " by thread:" + threadName + " on " + format(time));
             super.dump(prefix,pw);
         }
     }
@@ -96,7 +96,7 @@ public class Listener {
             String peer = this.peer;
             if (peer==null)  peer=getRemoteAddress(socket);
 
-            ps.println(prefix+"socket to "+peer+" by thread:"+threadName+" on "+new Date(time));
+            ps.println(prefix+"socket to "+peer+" by thread:"+threadName+" on "+format(time));
             super.dump(prefix,ps);
         }
     }
@@ -123,7 +123,7 @@ public class Listener {
             String address = this.address;
             if (address==null)  address=getLocalAddress(socket);
 
-            ps.println(prefix+"server socket at "+address+" by thread:"+threadName+" on "+new Date(time));
+            ps.println(prefix+"server socket at "+address+" by thread:"+threadName+" on "+format(time));
             super.dump(prefix,ps);
         }
     }
@@ -139,7 +139,7 @@ public class Listener {
         }
 
         public void dump(String prefix, PrintWriter ps) {
-            ps.println(prefix+"socket channel by thread:"+threadName+" on "+new Date(time));
+            ps.println(prefix+"socket channel by thread:"+threadName+" on "+format(time));
             super.dump(prefix,ps);
         }
     }
@@ -176,6 +176,11 @@ public class Listener {
     /*package*/ static boolean AGENT_INSTALLED = false;
 
     /**
+     * Implementation of {@link ExternalListener}.
+     */
+    public static ExternalListener EXTERNAL = null;
+
+    /**
      * Returns true if the leak detector agent is running.
      */
     public static boolean isAgentInstalled() {
@@ -195,6 +200,8 @@ public class Listener {
      *      File being opened.
      */
     public static synchronized void open(Object _this, File f) {
+       if (EXTERNAL != null)
+           EXTERNAL.open(_this, f);
         put(_this, new FileRecord(f));
     }
 
@@ -202,6 +209,8 @@ public class Listener {
      * Called when a socket is opened.
      */
     public static synchronized void openSocket(Object _this) {
+        if (EXTERNAL != null)
+            EXTERNAL.openSocket(_this);
         // intercept when
         if (_this instanceof SocketImpl) {
             try {
@@ -286,6 +295,14 @@ public class Listener {
         }
     }
     
+    private static String format(long time) {
+        try {
+            return new Date(time).toString();
+        } catch (Exception e) {
+            return Long.toString(time);
+        }
+    }
+
     private static Field SOCKETIMPL_SOCKET,SOCKETIMPL_SERVER_SOCKET;
     
     static {
