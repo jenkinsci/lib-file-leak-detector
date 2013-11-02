@@ -10,11 +10,14 @@ import org.kohsuke.file_leak_detector.transform.CodeGenerator;
 import org.kohsuke.file_leak_detector.transform.MethodAppender;
 import org.kohsuke.file_leak_detector.transform.TransformerImpl;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
 import java.lang.instrument.Instrumentation;
@@ -110,10 +113,19 @@ public class AgentMain {
             public Object call() throws Exception {
                 while (true) {
                     final Socket s = ss.accept();
-                    es.submit(new Callable<Object>() {
-                        public Object call() throws Exception {
-                            Listener.dump(s.getOutputStream());
-                            s.close();
+                    es.submit(new Callable<Void>() {
+                        public Void call() throws Exception {
+                            try {
+                                BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
+                                // Read the request line (and ignore it)
+                                in.readLine();
+
+                                PrintWriter w = new PrintWriter(new OutputStreamWriter(s.getOutputStream(),"UTF-8"));
+                                w.print("HTTP/1.0 200 OK\r\nContent-Type: text/plain;charset=UTF-8\r\n\r\n");
+                                Listener.dump(w);
+                            } finally {
+                                s.close();
+                            }
                             return null;
                         }
                     });
