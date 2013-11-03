@@ -13,7 +13,7 @@
   <body>
     <menu name="File Leak Detector">
       <item name="Introduction" href="index.html" />
-      <item name="Download" href="http://mvnrepository.com/artifact/${project.groupId}/${project.artifactId}"/>
+      <item name="Download" href="http://search.maven.org/remotecontent?filepath=org/kohsuke/file-leak-detector/${project.version}/file-leak-detector-${project.version}-jar-with-dependencies.jar"/>
       <item name="Javadoc" href="apidocs/" />
     </menu>
     <menu name="Project Info">
