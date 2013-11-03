@@ -10,6 +10,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
 import java.lang.instrument.Instrumentation;
@@ -72,6 +74,9 @@ public class AgentMain {
                 } else
                 if(t.startsWith("error=")) {
                     Listener.ERROR = new PrintWriter(new FileOutputStream(t.substring(6)));
+                } else
+                if(t.startsWith("listener=")) {
+                    ActivityListener.LIST.add((ActivityListener) AgentMain.class.getClassLoader().loadClass(t.substring(9)).newInstance());
                 } else
                 if(t.startsWith("excludes=")) {
                 	List<String> lines = new ArrayList<String>();
@@ -138,10 +143,19 @@ public class AgentMain {
             public Object call() throws Exception {
                 while (true) {
                     final Socket s = ss.accept();
-                    es.submit(new Callable<Object>() {
-                        public Object call() throws Exception {
-                            Listener.dump(s.getOutputStream());
-                            s.close();
+                    es.submit(new Callable<Void>() {
+                        public Void call() throws Exception {
+                            try {
+                                BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
+                                // Read the request line (and ignore it)
+                                in.readLine();
+
+                                PrintWriter w = new PrintWriter(new OutputStreamWriter(s.getOutputStream(),"UTF-8"));
+                                w.print("HTTP/1.0 200 OK\r\nContent-Type: text/plain;charset=UTF-8\r\n\r\n");
+                                Listener.dump(w);
+                            } finally {
+                                s.close();
+                            }
                             return null;
                         }
                     });
@@ -167,6 +181,7 @@ public class AgentMain {
         System.err.println("  http=PORT     - Run a mini HTTP server that you can access to get stats on demand");
         System.err.println("                  Specify 0 to choose random available port, -1 to disable, which is default.");
         System.err.println("  strong        - Don't let GC auto-close leaking file descriptors");
+        System.err.println("  listener=S    - Specify the fully qualified name of ActivityListener class to activate from beginning");
         System.err.println("  excludes=File - Exclude any opened file where a line in the given exclude-file matches");
         System.err.println("                  one of the lines from the stacktrace of the open-call.");
     }

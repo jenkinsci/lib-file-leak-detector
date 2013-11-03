@@ -99,7 +99,7 @@ public class Listener {
         }
 
         public void dump(String prefix, PrintWriter pw) {
-            pw.println(prefix + file + " by thread:" + threadName + " on " + new Date(time));
+            pw.println(prefix + file + " by thread:" + threadName + " on " + format(time));
             super.dump(prefix,pw);
         }
     }
@@ -126,7 +126,7 @@ public class Listener {
             String peer = this.peer;
             if (peer==null)  peer=getRemoteAddress(socket);
 
-            ps.println(prefix+"socket to "+peer+" by thread:"+threadName+" on "+new Date(time));
+            ps.println(prefix+"socket to "+peer+" by thread:"+threadName+" on "+format(time));
             super.dump(prefix,ps);
         }
     }
@@ -153,7 +153,7 @@ public class Listener {
             String address = this.address;
             if (address==null)  address=getLocalAddress(socket);
 
-            ps.println(prefix+"server socket at "+address+" by thread:"+threadName+" on "+new Date(time));
+            ps.println(prefix+"server socket at "+address+" by thread:"+threadName+" on "+format(time));
             super.dump(prefix,ps);
         }
     }
@@ -169,7 +169,7 @@ public class Listener {
         }
 
         public void dump(String prefix, PrintWriter ps) {
-            ps.println(prefix+"socket channel by thread:"+threadName+" on "+new Date(time));
+            ps.println(prefix+"socket channel by thread:"+threadName+" on "+format(time));
             super.dump(prefix,ps);
         }
     }
@@ -231,6 +231,10 @@ public class Listener {
      */
     public static synchronized void open(Object _this, File f) {
         put(_this, new FileRecord(f));
+
+        for (ActivityListener al : ActivityListener.LIST) {
+            al.open(_this,f);
+        }
     }
 
     /**
@@ -243,17 +247,29 @@ public class Listener {
                 // one of the following must be true
                 SocketImpl si = (SocketImpl) _this;
                 Socket s = (Socket)SOCKETIMPL_SOCKET.get(si);
-                if (s!=null)
+                if (s!=null) {
                     put(_this, new SocketRecord(s));
+                    for (ActivityListener al : ActivityListener.LIST) {
+                        al.openSocket(s);
+                    }
+                }
                 ServerSocket ss = (ServerSocket)SOCKETIMPL_SERVER_SOCKET.get(si);
-                if (ss!=null)
+                if (ss!=null) {
                     put(_this, new ServerSocketRecord(ss));
+                    for (ActivityListener al : ActivityListener.LIST) {
+                        al.openSocket(ss);
+                    }
+                }
             } catch (IllegalAccessException e) {
                 throw new AssertionError(e);
             }
         }
         if (_this instanceof SocketChannel) {
             put(_this, new SocketChannelRecord((SocketChannel) _this));
+
+            for (ActivityListener al : ActivityListener.LIST) {
+                al.openSocket(_this);
+            }
         }
     }
     
@@ -299,6 +315,9 @@ public class Listener {
             r.dump("Closed ",TRACE);
             tracing = false;
         }
+        for (ActivityListener al : ActivityListener.LIST) {
+            al.close(_this);
+        }
     }
 
     /**
@@ -331,6 +350,14 @@ public class Listener {
         }
     }
     
+    private static String format(long time) {
+        try {
+            return new Date(time).toString();
+        } catch (Exception e) {
+            return Long.toString(time);
+        }
+    }
+
     private static Field SOCKETIMPL_SOCKET,SOCKETIMPL_SERVER_SOCKET;
     
     static {
