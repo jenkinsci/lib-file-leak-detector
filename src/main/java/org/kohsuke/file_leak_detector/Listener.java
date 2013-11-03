@@ -192,7 +192,7 @@ public class Listener {
     /**
      * Allows to provide stacktrace-lines which cause the element to be excluded 
      */
-    public static List<String> EXCLUDES = new ArrayList<String>();
+    public static final List<String> EXCLUDES = new ArrayList<String>();
 
     /**
      * Tracing may cause additional files to be opened.

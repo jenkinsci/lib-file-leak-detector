@@ -1,14 +1,21 @@
 package org.kohsuke.file_leak_detector;
 
-import static org.kohsuke.asm3.Opcodes.ALOAD;
-import static org.kohsuke.asm3.Opcodes.ASTORE;
+import org.kohsuke.asm3.Label;
+import org.kohsuke.asm3.MethodAdapter;
+import org.kohsuke.asm3.MethodVisitor;
+import org.kohsuke.asm3.Type;
+import org.kohsuke.asm3.commons.LocalVariablesSorter;
+import org.kohsuke.file_leak_detector.transform.ClassTransformSpec;
+import org.kohsuke.file_leak_detector.transform.CodeGenerator;
+import org.kohsuke.file_leak_detector.transform.MethodAppender;
+import org.kohsuke.file_leak_detector.transform.TransformerImpl;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -19,9 +26,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketImpl;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -29,15 +34,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.zip.ZipFile;
 
-import org.kohsuke.asm3.Label;
-import org.kohsuke.asm3.MethodAdapter;
-import org.kohsuke.asm3.MethodVisitor;
-import org.kohsuke.asm3.Type;
-import org.kohsuke.asm3.commons.LocalVariablesSorter;
-import org.kohsuke.file_leak_detector.transform.ClassTransformSpec;
-import org.kohsuke.file_leak_detector.transform.CodeGenerator;
-import org.kohsuke.file_leak_detector.transform.MethodAppender;
-import org.kohsuke.file_leak_detector.transform.TransformerImpl;
+import static org.kohsuke.asm3.Opcodes.*;
 
 /**
  * Java agent that instruments JDK classes to keep track of where file descriptors are opened.
@@ -79,25 +76,22 @@ public class AgentMain {
                     ActivityListener.LIST.add((ActivityListener) AgentMain.class.getClassLoader().loadClass(t.substring(9)).newInstance());
                 } else
                 if(t.startsWith("excludes=")) {
-                	List<String> lines = new ArrayList<String>();
                     BufferedReader reader = new BufferedReader(new FileReader(t.substring(9)));
                     try {
-	                    String line = reader.readLine();
-	                    while (line != null) {
-	                        lines.add(line);
-	                        line = reader.readLine();
+	                    while (true) {
+	                    	String line = reader.readLine();
+	                    	if(line == null) {
+	                    		break;
+	                    	}
+
+	                    	String str = line.trim();
+	                        // add the entries from the excludes-file, but filter out empty ones and comments
+	                    	if(!str.isEmpty() && !str.startsWith("#")) {
+	                    		Listener.EXCLUDES.add(str);
+	                    	}
 	                    }
                     } finally {
                     	reader.close();
-                    }
-                    
-                    // add the entries from the excludes-file, but filter out empty ones
-                    Iterator<String> it = lines.iterator();
-                    while(it.hasNext()) {
-                    	String str = it.next().trim();
-                    	if(!str.isEmpty() && !str.startsWith("#")) {
-                    		Listener.EXCLUDES.add(str);
-                    	}
                     }
                 } else {
                     System.err.println("Unknown option: "+t);
@@ -117,9 +111,8 @@ public class AgentMain {
                 Class.forName("java.net.PlainSocketImpl"),
                 ZipFile.class);
 
-        if (serverPort>=0) {
-			runHttpServer(serverPort);
-		}
+        if (serverPort>=0)
+            runHttpServer(serverPort);
 
         // still haven't fully figured out how to intercept NIO, especially with close, so commenting out
 //                Socket.class,
@@ -246,8 +239,7 @@ public class AgentMain {
             super(methodName, "()V");
         }
         
-        @Override
-		protected void append(CodeGenerator g) {
+        protected void append(CodeGenerator g) {
             g.invokeAppStatic(Listener.class,"close",
                     new Class[]{Object.class},
                     new int[]{0});
@@ -270,8 +262,7 @@ public class AgentMain {
             };
         }
 
-        @Override
-		protected void append(CodeGenerator g) {
+        protected void append(CodeGenerator g) {
             g.invokeAppStatic(Listener.class,"openSocket",
                     new Class[]{Object.class},
                     new int[]{0});
@@ -297,8 +288,7 @@ public class AgentMain {
             };
         }
 
-        @Override
-		protected void append(CodeGenerator g) {
+        protected void append(CodeGenerator g) {
             // the 's' parameter is the new socket that will own the socket
             g.invokeAppStatic(Listener.class,"openSocket",
                     new Class[]{Object.class},
@@ -375,10 +365,9 @@ public class AgentMain {
 
                 // normal execution continues here
                 g.visitLabel(tail);
-            } else {
-				// no processing
+            } else
+                // no processing
                 super.visitMethodInsn(opcode, owner, name, desc);
-			}
         }
     }
 
@@ -412,8 +401,7 @@ public class AgentMain {
             };
         }
 
-        @Override
-		protected void append(CodeGenerator g) {
+        protected void append(CodeGenerator g) {
             g.invokeAppStatic(Listener.class,"open",
                     new Class[]{Object.class, File.class},
                     new int[]{0,1});
