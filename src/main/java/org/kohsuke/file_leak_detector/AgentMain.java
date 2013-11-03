@@ -72,7 +72,7 @@ public class AgentMain {
                     Listener.ERROR = new PrintWriter(new FileOutputStream(t.substring(6)));
                 } else
                 if(t.startsWith("listener=")) {
-                    Listener.EXTERNAL = (ExternalListener) AgentMain.class.getClassLoader().loadClass(t.substring(9)).newInstance();
+                    ActivityListener.LIST.add((ActivityListener) AgentMain.class.getClassLoader().loadClass(t.substring(9)).newInstance());
                 } else {
                     System.err.println("Unknown option: "+t);
                     usageAndQuit();
@@ -154,6 +154,7 @@ public class AgentMain {
         System.err.println("  http=PORT   - Run a mini HTTP server that you can access to get stats on demand");
         System.err.println("                Specify 0 to choose random available port, -1 to disable, which is default.");
         System.err.println("  strong      - Don't let GC auto-close leaking file descriptors");
+        System.err.println("  listener=S  - Specify the fully qualified name of ActivityListener class to activate from beginning");
     }
 
     static List<ClassTransformSpec> createSpec() {

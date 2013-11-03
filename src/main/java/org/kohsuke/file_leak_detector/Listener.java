@@ -176,11 +176,6 @@ public class Listener {
     /*package*/ static boolean AGENT_INSTALLED = false;
 
     /**
-     * Implementation of {@link ExternalListener}.
-     */
-    public static ExternalListener EXTERNAL = null;
-
-    /**
      * Returns true if the leak detector agent is running.
      */
     public static boolean isAgentInstalled() {
@@ -200,34 +195,46 @@ public class Listener {
      *      File being opened.
      */
     public static synchronized void open(Object _this, File f) {
-       if (EXTERNAL != null)
-           EXTERNAL.open(_this, f);
         put(_this, new FileRecord(f));
+
+        for (ActivityListener al : ActivityListener.LIST) {
+            al.open(_this,f);
+        }
     }
 
     /**
      * Called when a socket is opened.
      */
     public static synchronized void openSocket(Object _this) {
-        if (EXTERNAL != null)
-            EXTERNAL.openSocket(_this);
         // intercept when
         if (_this instanceof SocketImpl) {
             try {
                 // one of the following must be true
                 SocketImpl si = (SocketImpl) _this;
                 Socket s = (Socket)SOCKETIMPL_SOCKET.get(si);
-                if (s!=null)
+                if (s!=null) {
                     put(_this, new SocketRecord(s));
+                    for (ActivityListener al : ActivityListener.LIST) {
+                        al.openSocket(s);
+                    }
+                }
                 ServerSocket ss = (ServerSocket)SOCKETIMPL_SERVER_SOCKET.get(si);
-                if (ss!=null)
+                if (ss!=null) {
                     put(_this, new ServerSocketRecord(ss));
+                    for (ActivityListener al : ActivityListener.LIST) {
+                        al.openSocket(ss);
+                    }
+                }
             } catch (IllegalAccessException e) {
                 throw new AssertionError(e);
             }
         }
         if (_this instanceof SocketChannel) {
             put(_this, new SocketChannelRecord((SocketChannel) _this));
+
+            for (ActivityListener al : ActivityListener.LIST) {
+                al.openSocket(_this);
+            }
         }
     }
     
@@ -262,6 +269,9 @@ public class Listener {
             tracing = true;
             r.dump("Closed ",TRACE);
             tracing = false;
+        }
+        for (ActivityListener al : ActivityListener.LIST) {
+            al.close(_this);
         }
     }
 
