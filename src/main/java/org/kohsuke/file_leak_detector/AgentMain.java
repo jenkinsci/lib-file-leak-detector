@@ -13,6 +13,7 @@ import org.kohsuke.file_leak_detector.transform.TransformerImpl;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -73,6 +74,25 @@ public class AgentMain {
                 } else
                 if(t.startsWith("listener=")) {
                     ActivityListener.LIST.add((ActivityListener) AgentMain.class.getClassLoader().loadClass(t.substring(9)).newInstance());
+                } else
+                if(t.startsWith("excludes=")) {
+                    BufferedReader reader = new BufferedReader(new FileReader(t.substring(9)));
+                    try {
+	                    while (true) {
+	                    	String line = reader.readLine();
+	                    	if(line == null) {
+	                    		break;
+	                    	}
+
+	                    	String str = line.trim();
+	                        // add the entries from the excludes-file, but filter out empty ones and comments
+	                    	if(!str.isEmpty() && !str.startsWith("#")) {
+	                    		Listener.EXCLUDES.add(str);
+	                    	}
+	                    }
+                    } finally {
+                    	reader.close();
+                    }
                 } else {
                     System.err.println("Unknown option: "+t);
                     usageAndQuit();
@@ -144,17 +164,19 @@ public class AgentMain {
     }
 
     static void printOptions() {
-        System.err.println("  help        - show the help screen.");
-        System.err.println("  trace       - log every open/close operation to stderr.");
-        System.err.println("  trace=FILE  - log every open/close operation to the given file.");
-        System.err.println("  error=FILE  - if 'too many open files' error is detected, send the dump here.");
-        System.err.println("                by default it goes to stderr.");
-        System.err.println("  threshold=N - instead of waiting until 'too many open files', dump once");
-        System.err.println("                we have N descriptors open.");
-        System.err.println("  http=PORT   - Run a mini HTTP server that you can access to get stats on demand");
-        System.err.println("                Specify 0 to choose random available port, -1 to disable, which is default.");
-        System.err.println("  strong      - Don't let GC auto-close leaking file descriptors");
-        System.err.println("  listener=S  - Specify the fully qualified name of ActivityListener class to activate from beginning");
+        System.err.println("  help          - show the help screen.");
+        System.err.println("  trace         - log every open/close operation to stderr.");
+        System.err.println("  trace=FILE    - log every open/close operation to the given file.");
+        System.err.println("  error=FILE    - if 'too many open files' error is detected, send the dump here.");
+        System.err.println("                  by default it goes to stderr.");
+        System.err.println("  threshold=N   - instead of waiting until 'too many open files', dump once");
+        System.err.println("                  we have N descriptors open.");
+        System.err.println("  http=PORT     - Run a mini HTTP server that you can access to get stats on demand");
+        System.err.println("                  Specify 0 to choose random available port, -1 to disable, which is default.");
+        System.err.println("  strong        - Don't let GC auto-close leaking file descriptors");
+        System.err.println("  listener=S    - Specify the fully qualified name of ActivityListener class to activate from beginning");
+        System.err.println("  excludes=File - Exclude any opened file where a line in the given exclude-file matches");
+        System.err.println("                  one of the lines from the stacktrace of the open-call.");
     }
 
     static List<ClassTransformSpec> createSpec() {
