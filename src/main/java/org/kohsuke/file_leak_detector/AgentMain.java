@@ -75,12 +75,12 @@ public class AgentMain {
                     ActivityListener.LIST.add((ActivityListener) AgentMain.class.getClassLoader().loadClass(t.substring(9)).newInstance());
                 } else
                 if(t.equals("dumpatshutdown")) {
-                	Runtime.getRuntime().addShutdownHook(new Thread("File handles dumping shutdown hook") {
-						@Override
-						public void run() {
-							Listener.dump(System.err);
-						}
-                	});
+                    Runtime.getRuntime().addShutdownHook(new Thread("File handles dumping shutdown hook") {
+                        @Override
+                        public void run() {
+                            Listener.dump(System.err);
+                        }
+                    });
                 } else {
                     System.err.println("Unknown option: "+t);
                     usageAndQuit();
