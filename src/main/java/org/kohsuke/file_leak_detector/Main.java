@@ -10,8 +10,12 @@ import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.security.CodeSource;
+import java.security.ProtectionDomain;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -111,13 +115,17 @@ public class Main {
      * Finds the jar file from a reference to class within.
      */
     private File whichJar(Class c) {
-        String url = c.getClassLoader().getResource(c.getName().replace('.', '/') + ".class").toExternalForm();
-        if (url.startsWith("jar:file:")) {
-            url = url.substring(0,url.lastIndexOf('!'));
-            url = url.substring(9);
-            return new File(url);
+        try {
+            ProtectionDomain pd = c.getProtectionDomain();
+            CodeSource cs = pd.getCodeSource();
+            URL url = cs.getLocation();
+            URI uri = url.toURI();
+            File f = new File(uri);
+            return f;
         }
-        throw new IllegalStateException("Unable to figure out the file of the jar: "+url);
+        catch (URISyntaxException ex) {
+            throw new IllegalStateException("Unable to figure out the file of the jar", ex);
+        }
     }
 
     private static final Logger LOGGER = Logger.getLogger(Main.class.getName());
