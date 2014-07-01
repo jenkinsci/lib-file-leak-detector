@@ -163,7 +163,7 @@ public class AgentMain {
         System.err.println("                  Specify 0 to choose random available port, -1 to disable, which is default.");
         System.err.println("  strong        - Don't let GC auto-close leaking file descriptors");
         System.err.println("  listener=S    - Specify the fully qualified name of ActivityListener class to activate from beginning");
-        System.err.println("  dumpatshutdown- Don't let GC auto-close leaking file descriptors");
+        System.err.println("  dumpatshutdown- Dump open file handles at shutdown");
     }
 
     static List<ClassTransformSpec> createSpec() {
