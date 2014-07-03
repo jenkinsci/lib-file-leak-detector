@@ -13,6 +13,7 @@ import org.kohsuke.file_leak_detector.transform.TransformerImpl;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -81,6 +82,25 @@ public class AgentMain {
                             Listener.dump(System.err);
                         }
                     });
+                } else
+                if(t.startsWith("excludes=")) {
+                    BufferedReader reader = new BufferedReader(new FileReader(t.substring(9)));
+                    try {
+	                    while (true) {
+	                    	String line = reader.readLine();
+	                    	if(line == null) {
+	                    		break;
+	                    	}
+
+	                    	String str = line.trim();
+	                        // add the entries from the excludes-file, but filter out empty ones and comments
+	                    	if(!str.isEmpty() && !str.startsWith("#")) {
+	                    		Listener.EXCLUDES.add(str);
+	                    	}
+	                    }
+                    } finally {
+                    	reader.close();
+                    }
                 } else {
                     System.err.println("Unknown option: "+t);
                     usageAndQuit();
@@ -164,6 +184,8 @@ public class AgentMain {
         System.err.println("  strong        - Don't let GC auto-close leaking file descriptors");
         System.err.println("  listener=S    - Specify the fully qualified name of ActivityListener class to activate from beginning");
         System.err.println("  dumpatshutdown- Dump open file handles at shutdown");
+        System.err.println("  excludes=FILE - Ignore files opened directly/indirectly in specific methods.");
+        System.err.println("                  File lists 'some.pkg.ClassName.methodName' patterns.");
     }
 
     static List<ClassTransformSpec> createSpec() {
