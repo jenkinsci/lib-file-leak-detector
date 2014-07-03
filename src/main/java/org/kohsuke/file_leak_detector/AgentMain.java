@@ -184,8 +184,8 @@ public class AgentMain {
         System.err.println("  strong        - Don't let GC auto-close leaking file descriptors");
         System.err.println("  listener=S    - Specify the fully qualified name of ActivityListener class to activate from beginning");
         System.err.println("  dumpatshutdown- Don't let GC auto-close leaking file descriptors");
-        System.err.println("  excludes=File - Exclude any opened file where a line in the given exclude-file matches");
-        System.err.println("                  one of the lines from the stacktrace of the open-call.");
+        System.err.println("  excludes=FILE - Ignore files opened directly/indirectly in specific methods.");
+        System.err.println("                  File lists 'some.pkg.ClassName.methodName' patterns.");
     }
 
     static List<ClassTransformSpec> createSpec() {
