@@ -26,7 +26,7 @@
       <p id="toplinks">Skip to: <a href="#content">Content</a> | <a href="#sidebar">Navigation</a> | <a href="#footer">Footer</a></p>
 		
             <h1 id="bannerLeft">
-          <a href="">
+          <a href="./">
     
             File Leak Detector
     
@@ -53,7 +53,7 @@
         </li>
               
     <li class="none">
-              <a href="http://search.maven.org/remotecontent?filepath=org/kohsuke/file-leak-detector/1.7/file-leak-detector-1.7-jar-with-dependencies.jar">Download</a>
+              <a href="http://search.maven.org/remotecontent?filepath=org/kohsuke/file-leak-detector/1.8/file-leak-detector-1.8-jar-with-dependencies.jar">Download</a>
         </li>
               
     <li class="none">
@@ -76,12 +76,35 @@
     </div>
     <div id="content">
       <div id="contentBox">
-        <div class="section"><h2>What is this?<a name="What_is_this"></a></h2><p>This little Java agent is a tool that keeps track of where/when/who opened files in your JVM. You can have the agent trace these operations to find out about the access pattern or handle leaks, and dump the list of currently open files and where/when/who opened them.</p><p>In addition, upon &quot;too many open files&quot; exception, this agent will dump the list, allowing you to find out where a large number of file descriptors are in use.</p><p>For a long running application, you can have it run a mini HTTP server to access the information on demand. This tool can be also loaded as a regular dependency jar and the list of the table can be <a class="externalLink" href="http://file-leak-detector.kohsuke.org/apidocs/index.html?org/kohsuke/file_leak_detector/Listener.html">programmatically accessed</a>.</p></div><div class="section"><h2>Usage<a name="Usage"></a></h2><p>Without any option, this tool silently records file open/close operations and upon &quot;too many open files&quot; exception, the table will be dumped to stderr.</p><div><pre>$ java -javaagent:path/to/file-leak-detector.jar ...your usual Java args follows...</pre></div><p>There are several options you can pass to the agent. For example, to dump the open file handles when the total number reaches 200, you can do the following:</p><div><pre>$ java -javaagent:path/to/file-leak-detector.jar=threshold=200 ...your usual Java args follows...</pre></div><p>Or have it run a mini HTTP server so that you can access the information from your browser, do the followind and open http://localhost:19999/:</p><div><pre>$ java -javaagent:path/to/file-leak-detector.jar=http=19999 ...your usual Java args follows...</pre></div><p>Use the help option to see the help screen for the complete list of options.</p><div><pre>$ java -javaagent:path/to/file-leak-detector.jar=help</pre></div></div><div class="section"><h2>Attaching after VM startup<a name="Attaching_after_VM_startup"></a></h2><p>When run as a regular jar file, this tool can be used to attach the detector into other JVMs on the same system. You specify the JVM by its PID. The following example attaches the file leak detector to the pid 1500. Options can be specified in the 2nd argument in the same format you do to the agent.</p><div><pre>$ java -jar path/to/file-leak-detector.jar 1500 threshold=200,strong</pre></div></div>
+        <div class="section">
+<h2>What is this?<a name="What_is_this"></a></h2>
+<p>This little Java agent is a tool that keeps track of where/when/who opened files in your JVM. You can have the agent trace these operations to find out about the access pattern or handle leaks, and dump the list of currently open files and where/when/who opened them.</p>
+<p>In addition, upon &quot;too many open files&quot; exception, this agent will dump the list, allowing you to find out where a large number of file descriptors are in use.</p>
+<p>For a long running application, you can have it run a mini HTTP server to access the information on demand. This tool can be also loaded as a regular dependency jar and the list of the table can be <a class="externalLink" href="http://file-leak-detector.kohsuke.org/apidocs/index.html?org/kohsuke/file_leak_detector/Listener.html">programmatically accessed</a>.</p></div>
+<div class="section">
+<h2>Usage<a name="Usage"></a></h2>
+<p>Without any option, this tool silently records file open/close operations and upon &quot;too many open files&quot; exception, the table will be dumped to stderr.</p>
+<div>
+<pre>$ java -javaagent:path/to/file-leak-detector.jar ...your usual Java args follows...</pre></div>
+<p>There are several options you can pass to the agent. For example, to dump the open file handles when the total number reaches 200, you can do the following:</p>
+<div>
+<pre>$ java -javaagent:path/to/file-leak-detector.jar=threshold=200 ...your usual Java args follows...</pre></div>
+<p>Or have it run a mini HTTP server so that you can access the information from your browser, do the followind and open http://localhost:19999/:</p>
+<div>
+<pre>$ java -javaagent:path/to/file-leak-detector.jar=http=19999 ...your usual Java args follows...</pre></div>
+<p>Use the help option to see the help screen for the complete list of options.</p>
+<div>
+<pre>$ java -javaagent:path/to/file-leak-detector.jar=help</pre></div></div>
+<div class="section">
+<h2>Attaching after VM startup<a name="Attaching_after_VM_startup"></a></h2>
+<p>When run as a regular jar file, this tool can be used to attach the detector into other JVMs on the same system. You specify the JVM by its PID. The following example attaches the file leak detector to the pid 1500. Options can be specified in the 2nd argument in the same format you do to the agent.</p>
+<div>
+<pre>$ java -jar path/to/file-leak-detector.jar 1500 threshold=200,strong</pre></div></div>
       </div>
     </div>
     <div id="footer">
       <div class="xright">&#169;  
-          2013
+          2014
     
           <a href="http://kohsuke.org/">Kohsuke Kawaguchi</a> and other contributors
           
@@ -89,8 +112,8 @@
 
   
   
-  &nbsp;| Last Published: 11/02/2013
-  &nbsp;| Version: 1.7
+  &nbsp;| Last Published: 2014-07-02
+  &nbsp;| Version: 1.8
 </div>
       <div class="clear">
         <hr/>
