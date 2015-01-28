@@ -79,8 +79,8 @@
   <dependencies>
     <dependency>
       <groupId>org.kohsuke</groupId>
-      <artifactId>asm3</artifactId>
-      <version>3.3.0</version>
+      <artifactId>asm5</artifactId>
+      <version>5.0.1</version>
     </dependency>
     <dependency>
       <groupId>args4j</groupId>

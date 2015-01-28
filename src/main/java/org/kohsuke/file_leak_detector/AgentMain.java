@@ -1,10 +1,9 @@
 package org.kohsuke.file_leak_detector;
 
-import org.kohsuke.asm3.Label;
-import org.kohsuke.asm3.MethodAdapter;
-import org.kohsuke.asm3.MethodVisitor;
-import org.kohsuke.asm3.Type;
-import org.kohsuke.asm3.commons.LocalVariablesSorter;
+import org.kohsuke.asm5.Label;
+import org.kohsuke.asm5.MethodVisitor;
+import org.kohsuke.asm5.Type;
+import org.kohsuke.asm5.commons.LocalVariablesSorter;
 import org.kohsuke.file_leak_detector.transform.ClassTransformSpec;
 import org.kohsuke.file_leak_detector.transform.CodeGenerator;
 import org.kohsuke.file_leak_detector.transform.MethodAppender;
@@ -34,7 +33,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.zip.ZipFile;
 
-import static org.kohsuke.asm3.Opcodes.*;
+import static org.kohsuke.asm5.Opcodes.*;
 
 /**
  * Java agent that instruments JDK classes to keep track of where file descriptors are opened.
@@ -312,11 +311,11 @@ public class AgentMain {
      * surround the call with try/catch, and if "too many open files" exception is thrown
      * call {@link Listener#outOfDescriptors()}.
      */
-    private static abstract class OpenInterceptionAdapter extends MethodAdapter {
+    private static abstract class OpenInterceptionAdapter extends MethodVisitor {
         private final LocalVariablesSorter lvs;
         private final MethodVisitor base;
         private OpenInterceptionAdapter(MethodVisitor base, int access, String desc) {
-            super(null);
+            super(ASM5);
             lvs = new LocalVariablesSorter(access,desc, base);
             mv = lvs;
             this.base = base;
@@ -332,7 +331,7 @@ public class AgentMain {
         }
 
         @Override
-        public void visitMethodInsn(int opcode, String owner, String name, String desc) {
+        public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
             if(toIntercept(owner,name)) {
                 Type exceptionType = Type.getType(getExpectedException());
                 
@@ -344,7 +343,7 @@ public class AgentMain {
 
                 g.visitTryCatchBlock(s, e, h, exceptionType.getInternalName());
                 g.visitLabel(s);
-                super.visitMethodInsn(opcode, owner, name, desc);
+                super.visitMethodInsn(opcode, owner, name, desc, itf);
                 g._goto(tail);
 
                 g.visitLabel(e);
@@ -376,7 +375,7 @@ public class AgentMain {
                 g.visitLabel(tail);
             } else
                 // no processing
-                super.visitMethodInsn(opcode, owner, name, desc);
+                super.visitMethodInsn(opcode, owner, name, desc, itf);
         }
     }
 

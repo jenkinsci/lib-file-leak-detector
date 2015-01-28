@@ -1,6 +1,6 @@
 package org.kohsuke.file_leak_detector.transform;
 
-import org.kohsuke.asm3.MethodVisitor;
+import org.kohsuke.asm5.MethodVisitor;
 
 /**
  * Transforms a specific method.

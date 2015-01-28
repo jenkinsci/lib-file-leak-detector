@@ -1,19 +1,19 @@
 package org.kohsuke.file_leak_detector.transform;
 
-import org.kohsuke.asm3.MethodAdapter;
-import org.kohsuke.asm3.MethodVisitor;
-import static org.kohsuke.asm3.Opcodes.*;
-import org.kohsuke.asm3.Type;
-import org.kohsuke.asm3.Label;
+import org.kohsuke.asm5.Label;
+import org.kohsuke.asm5.MethodVisitor;
+import org.kohsuke.asm5.Type;
+
+import static org.kohsuke.asm5.Opcodes.*;
 
 /**
  * Convenience method to generate bytecode.
  *
  * @author Kohsuke Kawaguchi
  */
-public class CodeGenerator extends MethodAdapter {
+public class CodeGenerator extends MethodVisitor {
     public CodeGenerator(MethodVisitor mv) {
-        super(mv);
+        super(ASM5,mv);
     }
 
     public void println(String msg) {
