@@ -5,8 +5,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-import org.kohsuke.asm3.ClassReader;
-import org.kohsuke.asm3.util.CheckClassAdapter;
+import org.kohsuke.asm5.ClassReader;
+import org.kohsuke.asm5.util.CheckClassAdapter;
 import org.kohsuke.file_leak_detector.transform.ClassTransformSpec;
 import org.kohsuke.file_leak_detector.transform.TransformerImpl;
 
@@ -22,9 +22,9 @@ import java.util.zip.ZipFile;
 public class TransformerTest {
     List<ClassTransformSpec> specs = AgentMain.createSpec();
 
-    Class c;
+    Class<?> c;
     
-    public TransformerTest(Class c) {
+    public TransformerTest(Class<?> c) {
         this.c = c;
     }
 
