@@ -105,7 +105,7 @@ public class Main {
      * Locates the {@code tools.jar} file. Note that on Mac there's no such file but the class is still loadable.
      */
     private File locateToolsJar() {
-        File home = new File(System.getProperty("java.home"));
+        File home = new File(System.getenv("JAVA_HOME"));
         return new File(home,"../lib/tools.jar");
     }
 
