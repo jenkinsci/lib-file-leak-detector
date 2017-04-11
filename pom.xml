@@ -36,6 +36,49 @@
         </configuration>
       </plugin>
       <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <executions>
+        <execution>
+          <id>instrumented-tests</id>
+          <phase>integration-test</phase>
+          <goals>
+            <goal>test</goal>
+          </goals>
+          <configuration>
+            <reuseForks>false</reuseForks>
+            <includes>
+              <include>
+                **/SocketDemo.java
+              </include>
+            </includes>
+            <excludes>
+              <exclude>**/TransformerTest.java</exclude>
+            </excludes>
+            <argLine>
+              -javaagent:"${project.build.directory}/file-leak-detector-${project.version}-jar-with-dependencies.jar"
+            </argLine>
+          </configuration>
+        </execution>
+            <execution>
+              <id>default-test</id>
+              <phase>test</phase>
+              <goals>
+                <goal>test</goal>
+              </goals>
+              <configuration>
+                <includes>
+                  <include>
+                    **/TransformerTest.java
+                  </include>
+                </includes>
+                <excludes>
+                  <exclude>**/SocketDemo.java</exclude>
+                </excludes>
+              </configuration>
+            </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <artifactId>maven-shade-plugin</artifactId>
         <executions>
           <execution>
@@ -63,8 +106,8 @@
                   <shadedPattern>org.kohsuke.file_leak_detector.args4j</shadedPattern>
                 </relocation>
                 <relocation>
-                  <pattern>org.kohsuke.asm3</pattern>
-                  <shadedPattern>org.kohsuke.file_leak_detector.asm3</shadedPattern>
+                  <pattern>org.kohsuke.asm5</pattern>
+                  <shadedPattern>org.kohsuke.file_leak_detector.asm5</shadedPattern>
                 </relocation>
               </relocations>
             </configuration>
@@ -107,7 +150,6 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-
 
   <profiles>
     <profile>

@@ -25,6 +25,8 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketImpl;
+import java.nio.channels.SocketChannel;
+import java.nio.channels.spi.AbstractInterruptibleChannel;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -108,6 +110,10 @@ public class AgentMain {
         }
 
         System.err.println("File leak detector installed");
+
+        // Make sure the ActivityListener is loaded to prevent recursive death in instrumentation
+        ActivityListener.LIST.size();
+
         Listener.AGENT_INSTALLED = true;
         instrumentation.addTransformer(new TransformerImpl(createSpec()),true);
         
@@ -118,14 +124,14 @@ public class AgentMain {
                 Class.forName("java.net.PlainSocketImpl"),
                 ZipFile.class);
 
-        if (serverPort>=0)
-            runHttpServer(serverPort);
 
-        // still haven't fully figured out how to intercept NIO, especially with close, so commenting out
 //                Socket.class,
 //                SocketChannel.class,
 //                AbstractInterruptibleChannel.class,
 //                ServerSocket.class);
+
+        if (serverPort>=0)
+            runHttpServer(serverPort);
     }
 
     private static void runHttpServer(int port) throws IOException {
@@ -216,7 +222,24 @@ public class AgentMain {
                     // a file descriptor.
                     new CloseInterceptor("socketClose")
             ),
+            // Later versions of the JDK abstracted out the parts of PlainSocketImpl
+            new ClassTransformSpec("java/net/AbstractPlainSocketImpl",
+                // this is where a new file descriptor is allocated.
+                // it'll occupy a socket even before it gets connected
+                new OpenSocketInterceptor("create", "(Z)V"),
+
+                // When a socket is accepted, it goes to "accept(SocketImpl s)"
+                // where 's' is the new socket and 'this' is the server socket
+                new AcceptInterceptor("accept","(Ljava/net/SocketImpl;)V"),
+
+                // file descriptor actually get closed in socketClose()
+                // socketPreClose() appears to do something similar, but if you read the source code
+                // of the native socketClose0() method, then you see that it actually doesn't close
+                // a file descriptor.
+                new CloseInterceptor("socketClose")
+            ),
             new ClassTransformSpec("sun/nio/ch/SocketChannelImpl",
+                    new OpenSocketInterceptor("<init>", "(Ljava/nio/channels/spi/SelectorProvider;Ljava/io/FileDescriptor;Ljava/net/InetSocketAddress;)V"),
                     new OpenSocketInterceptor("<init>", "(Ljava/nio/channels/spi/SelectorProvider;)V"),
                     new CloseInterceptor("kill")
             )

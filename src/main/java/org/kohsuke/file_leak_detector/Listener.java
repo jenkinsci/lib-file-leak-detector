@@ -315,6 +315,7 @@ public class Listener {
             r.dump("Closed ",TRACE);
             tracing = false;
         }
+
         for (ActivityListener al : ActivityListener.LIST) {
             al.close(_this);
         }
