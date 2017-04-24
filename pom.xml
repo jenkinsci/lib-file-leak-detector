@@ -20,6 +20,16 @@
   </scm>
 
   <distributionManagement>
+      <repository>
+        <id>push-nexus</id>
+        <name>Internal Releases</name>
+        <url>http://nexus.pushtechnology.com:8081/nexus/content/repositories/releases/</url>
+      </repository>
+      <snapshotRepository>
+        <id>push-nexus</id>
+        <name>Internal Releases</name>
+        <url>http://nexus.pushtechnology.com:8081/nexus/content/repositories/snapshots/</url>
+      </snapshotRepository>
     <site>
       <id>github-pages</id>
       <url>gitsite:git@github.com/kohsuke/${project.artifactId}.git</url>
@@ -116,7 +126,19 @@
         <configuration>
         </configuration>
       </plugin>
+      <plugin>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <version>2.7</version>
+      </plugin>
     </plugins>
+
+    <extensions>
+      <extension>
+        <groupId>org.apache.maven.wagon</groupId>
+        <artifactId>wagon-ssh-external</artifactId>
+        <version>2.4</version>
+      </extension>
+    </extensions>
   </build>
 
   <dependencies>
