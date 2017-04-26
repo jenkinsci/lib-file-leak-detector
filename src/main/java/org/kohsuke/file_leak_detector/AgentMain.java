@@ -109,6 +109,7 @@ public class AgentMain {
             }
         }
 
+        Listener.EXCLUDES.add("sun.nio.ch.PipeImpl$Initializer$LoopbackConnector.run");
         System.err.println("File leak detector installed");
 
         // Make sure the ActivityListener is loaded to prevent recursive death in instrumentation
