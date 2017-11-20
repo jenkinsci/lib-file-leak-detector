@@ -1,16 +1,10 @@
 package org.kohsuke.file_leak_detector;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileInputStream;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.io.RandomAccessFile;
-import java.io.Writer;
+import java.io.*;
 import java.lang.reflect.Field;
 import java.net.SocketAddress;
 import java.net.SocketImpl;
+import java.nio.channels.Pipe;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -100,6 +94,19 @@ public class Listener {
 
         public void dump(String prefix, PrintWriter pw) {
             pw.println(prefix + file + " by thread:" + threadName + " on " + format(time));
+            super.dump(prefix,pw);
+        }
+    }
+
+    public static final class FileDescriptorRecord extends Record {
+        public final FileDescriptor fd;
+
+        private FileDescriptorRecord(FileDescriptor fd) {
+            this.fd = fd;
+        }
+
+        public void dump(String prefix, PrintWriter pw) {
+            pw.println(prefix + " Filedescriptor by thread:" + threadName + " on " + format(time));
             super.dump(prefix,pw);
         }
     }
@@ -237,6 +244,15 @@ public class Listener {
         }
     }
 
+    public static synchronized void fd_open(Object _this) {
+        if (_this instanceof FileDescriptor) {
+            put(_this, new FileDescriptorRecord((FileDescriptor)_this));
+            for (ActivityListener al : ActivityListener.LIST) {
+                al.fd_open(_this);
+            }
+        }
+    }
+
     /**
      * Called when a socket is opened.
      */
@@ -328,8 +344,20 @@ public class Listener {
     }
     public static synchronized void dump(Writer w) {
         PrintWriter pw = new PrintWriter(w);
-        Record[] records = TABLE.values().toArray(new Record[0]);
-        pw.println(records.length+" descriptors are open");
+        Record[] recordstmp = TABLE.values().toArray(new Record[0]);
+        List<Record> records = new ArrayList<Record>();
+        for (Record r : recordstmp) {
+            if (r instanceof FileDescriptorRecord) {
+                if (((FileDescriptorRecord) r).fd.valid()) {
+                    records.add(r);
+                } else {
+                    TABLE.remove(r);
+                }
+            } else {
+                records.add(r);
+            }
+        }
+        pw.println(records.size()+" descriptors are open");
         int i=0;
         for (Record r : records) {
             r.dump("#"+(++i)+" ",pw);

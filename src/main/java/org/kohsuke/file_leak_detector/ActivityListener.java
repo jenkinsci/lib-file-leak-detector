@@ -53,9 +53,14 @@ public abstract class ActivityListener {
     public void close(Object obj) {
     }
 
+    public void fd_open(Object obj) {
+
+    }
+
     /**
      * These listeners get called.
      */
     public static final List<ActivityListener> LIST = new CopyOnWriteArrayList<ActivityListener>();
+
 
 }

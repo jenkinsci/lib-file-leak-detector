@@ -63,8 +63,8 @@
                   <shadedPattern>org.kohsuke.file_leak_detector.args4j</shadedPattern>
                 </relocation>
                 <relocation>
-                  <pattern>org.kohsuke.asm3</pattern>
-                  <shadedPattern>org.kohsuke.file_leak_detector.asm3</shadedPattern>
+                  <pattern>org.kohsuke.asm5</pattern>
+                  <shadedPattern>org.kohsuke.file_leak_detector.asm5</shadedPattern>
                 </relocation>
               </relocations>
             </configuration>
