@@ -15,6 +15,8 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketImpl;
+import java.nio.channels.spi.AbstractInterruptibleChannel;
+import java.nio.channels.spi.AbstractSelectableChannel;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -107,7 +109,9 @@ public class AgentMain {
                 RandomAccessFile.class,
                 Class.forName("java.net.PlainSocketImpl"),
                 ZipFile.class,
-                FileDescriptor.class);
+                AbstractSelectableChannel.class,
+                AbstractInterruptibleChannel.class
+                );
 
         if (serverPort>=0)
             runHttpServer(serverPort);
@@ -184,8 +188,8 @@ public class AgentMain {
             newSpec(FileInputStream.class, "(Ljava/io/File;)V"),
             newSpec(RandomAccessFile.class, "(Ljava/io/File;Ljava/lang/String;)V"),
             newSpec(ZipFile.class, "(Ljava/io/File;I)V"),
-                newFdSpec("java/io/FileDescriptor", "<init>","()V", "fd_open"),
-
+                newFdSpec("java/nio/channels/spi/AbstractInterruptibleChannel", "close","()V", "close"),
+                newFdSpec("java/nio/channels/spi/AbstractSelectableChannel", "<init>","(Ljava/nio/channels/spi/SelectorProvider;)V", "ch_open"),
             /*
                 java.net.Socket/ServerSocket uses SocketImpl, and this is where FileDescriptors
                 are actually managed.

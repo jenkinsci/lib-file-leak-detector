@@ -34,8 +34,8 @@ public class PipeDemo {
     public static void main(String[] args) throws IOException {
         attachGivenAgentToThisVM(args[0],args[1]);
         final Pipe s = Pipe.open();
-        s.sink().close();
-        //s.source().close();
+        //s.sink().close();
+        s.source().close();
         System.out.println("Dumping the table");
         Listener.dump(System.out);
 
