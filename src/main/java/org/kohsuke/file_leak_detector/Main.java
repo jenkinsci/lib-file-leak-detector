@@ -1,6 +1,5 @@
 package org.kohsuke.file_leak_detector;
 
-import com.sun.tools.attach.VirtualMachine;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
@@ -25,10 +24,10 @@ import java.util.logging.Logger;
 public class Main {
     @Argument(index=0,metaVar="PID",usage="Process ID to activate file leak detector",required=true)
     public String pid;
-    
+
     @Argument(index=1,metaVar="OPTSTR",usage="Packed option string of the form key1[=value1],key2[=value2],...")
     public String options;
-    
+
     public static void main(String[] args) throws Exception {
         Main main = new Main();
         CmdLineParser p = new CmdLineParser(main);
@@ -84,7 +83,7 @@ public class Main {
      */
     protected ClassLoader wrapIntoClassLoader(File toolsJar) throws MalformedURLException {
         URL jar = toolsJar.toURI().toURL();
-        
+
         ClassLoader base = getClass().getClassLoader();
         if (base instanceof URLClassLoader) {
             try {
