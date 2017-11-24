@@ -15,7 +15,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * @author Kohsuke Kawaguchi
+ * @author Denis Joubert
  */
 public class PipeDemo {
 
