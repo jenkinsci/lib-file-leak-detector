@@ -1,9 +1,9 @@
 package org.kohsuke.file_leak_detector.transform;
 
-import org.kohsuke.asm5.ClassReader;
-import org.kohsuke.asm5.ClassVisitor;
-import org.kohsuke.asm5.ClassWriter;
-import org.kohsuke.asm5.MethodVisitor;
+import org.kohsuke.asm6.ClassReader;
+import org.kohsuke.asm6.ClassVisitor;
+import org.kohsuke.asm6.ClassWriter;
+import org.kohsuke.asm6.MethodVisitor;
 
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
@@ -12,8 +12,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.kohsuke.asm5.ClassReader.*;
-import static org.kohsuke.asm5.Opcodes.*;
+import static org.kohsuke.asm6.ClassReader.*;
+import static org.kohsuke.asm6.Opcodes.*;
 
 /**
  * @author Kohsuke Kawaguchi
@@ -38,7 +38,7 @@ public class TransformerImpl implements ClassFileTransformer {
 
         ClassReader cr = new ClassReader(classfileBuffer);
         ClassWriter cw = new ClassWriter(/*ClassWriter.COMPUTE_FRAMES|*/ClassWriter.COMPUTE_MAXS);
-        cr.accept(new ClassVisitor(ASM5,cw) {
+        cr.accept(new ClassVisitor(ASM6,cw) {
             @Override
             public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
                 MethodVisitor base = super.visitMethod(access, name, desc, signature, exceptions);

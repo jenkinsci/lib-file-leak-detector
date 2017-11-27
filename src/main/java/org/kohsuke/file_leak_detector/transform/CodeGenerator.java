@@ -1,10 +1,10 @@
 package org.kohsuke.file_leak_detector.transform;
 
-import org.kohsuke.asm5.Label;
-import org.kohsuke.asm5.MethodVisitor;
-import org.kohsuke.asm5.Type;
+import org.kohsuke.asm6.Label;
+import org.kohsuke.asm6.MethodVisitor;
+import org.kohsuke.asm6.Type;
 
-import static org.kohsuke.asm5.Opcodes.*;
+import static org.kohsuke.asm6.Opcodes.*;
 
 /**
  * Convenience method to generate bytecode.
@@ -13,7 +13,7 @@ import static org.kohsuke.asm5.Opcodes.*;
  */
 public class CodeGenerator extends MethodVisitor {
     public CodeGenerator(MethodVisitor mv) {
-        super(ASM5,mv);
+        super(ASM6,mv);
     }
 
     public void println(String msg) {

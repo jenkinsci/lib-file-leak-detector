@@ -1,9 +1,9 @@
 package org.kohsuke.file_leak_detector;
 
-import org.kohsuke.asm5.Label;
-import org.kohsuke.asm5.MethodVisitor;
-import org.kohsuke.asm5.Type;
-import org.kohsuke.asm5.commons.LocalVariablesSorter;
+import org.kohsuke.asm6.Label;
+import org.kohsuke.asm6.MethodVisitor;
+import org.kohsuke.asm6.Type;
+import org.kohsuke.asm6.commons.LocalVariablesSorter;
 import org.kohsuke.file_leak_detector.transform.ClassTransformSpec;
 import org.kohsuke.file_leak_detector.transform.CodeGenerator;
 import org.kohsuke.file_leak_detector.transform.MethodAppender;
@@ -33,7 +33,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.zip.ZipFile;
 
-import static org.kohsuke.asm5.Opcodes.*;
+import static org.kohsuke.asm6.Opcodes.*;
 
 /**
  * Java agent that instruments JDK classes to keep track of where file descriptors are opened.
