@@ -1,16 +1,10 @@
 package org.kohsuke.file_leak_detector;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileInputStream;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.io.RandomAccessFile;
-import java.io.Writer;
+import java.io.*;
 import java.lang.reflect.Field;
 import java.net.SocketAddress;
 import java.net.SocketImpl;
+import java.nio.channels.Pipe;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -103,6 +97,33 @@ public class Listener {
             super.dump(prefix,pw);
         }
     }
+
+    public static final class SourceChannelRecord extends Record {
+        public final Pipe.SourceChannel source;
+
+        private SourceChannelRecord(Pipe.SourceChannel source) {
+            this.source = source;
+        }
+
+        public void dump(String prefix, PrintWriter pw) {
+            pw.println(prefix + " Pipe Source Channel by thread:" + threadName + " on " + format(time));
+            super.dump(prefix,pw);
+        }
+    }
+
+    public static final class SinkChannelRecord extends Record {
+        public final Pipe.SinkChannel sink;
+
+        private SinkChannelRecord(Pipe.SinkChannel sink) {
+            this.sink = sink;
+        }
+
+        public void dump(String prefix, PrintWriter pw) {
+            pw.println(prefix + " Pipe Sink Channel by thread:" + threadName + " on " + format(time));
+            super.dump(prefix,pw);
+        }
+    }
+
 
     /**
      * Record of opened socket.
@@ -237,6 +258,26 @@ public class Listener {
         }
     }
 
+    public static synchronized void ch_open(Object _this) {
+        if (_this instanceof Pipe.SourceChannel) {
+            put(_this, new SourceChannelRecord((Pipe.SourceChannel)_this));
+            for (ActivityListener al : ActivityListener.LIST) {
+                al.fd_open(_this);
+            }
+        }
+        if (_this instanceof Pipe.SinkChannel) {
+            put(_this, new SinkChannelRecord((Pipe.SinkChannel)_this));
+            for (ActivityListener al : ActivityListener.LIST) {
+                al.fd_open(_this);
+            }
+        }
+
+    }
+
+    public static synchronized void ch_close(Object _this) {
+        close(_this);
+    }
+
     /**
      * Called when a socket is opened.
      */
@@ -320,6 +361,9 @@ public class Listener {
         }
     }
 
+
+
+
     /**
      * Dumps all files that are currently open.
      */
@@ -329,6 +373,7 @@ public class Listener {
     public static synchronized void dump(Writer w) {
         PrintWriter pw = new PrintWriter(w);
         Record[] records = TABLE.values().toArray(new Record[0]);
+
         pw.println(records.length+" descriptors are open");
         int i=0;
         for (Record r : records) {

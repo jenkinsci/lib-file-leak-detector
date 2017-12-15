@@ -9,22 +9,14 @@ import org.kohsuke.file_leak_detector.transform.CodeGenerator;
 import org.kohsuke.file_leak_detector.transform.MethodAppender;
 import org.kohsuke.file_leak_detector.transform.TransformerImpl;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileReader;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.io.RandomAccessFile;
+import java.io.*;
 import java.lang.instrument.Instrumentation;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketImpl;
+import java.nio.channels.spi.AbstractInterruptibleChannel;
+import java.nio.channels.spi.AbstractSelectableChannel;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -116,7 +108,10 @@ public class AgentMain {
                 FileOutputStream.class,
                 RandomAccessFile.class,
                 Class.forName("java.net.PlainSocketImpl"),
-                ZipFile.class);
+                ZipFile.class,
+                AbstractSelectableChannel.class,
+                AbstractInterruptibleChannel.class
+                );
 
         if (serverPort>=0)
             runHttpServer(serverPort);
@@ -193,7 +188,8 @@ public class AgentMain {
             newSpec(FileInputStream.class, "(Ljava/io/File;)V"),
             newSpec(RandomAccessFile.class, "(Ljava/io/File;Ljava/lang/String;)V"),
             newSpec(ZipFile.class, "(Ljava/io/File;I)V"),
-
+                newFdSpec("java/nio/channels/spi/AbstractInterruptibleChannel", "close","()V", "close"),
+                newFdSpec("java/nio/channels/spi/AbstractSelectableChannel", "<init>","(Ljava/nio/channels/spi/SelectorProvider;)V", "ch_open"),
             /*
                 java.net.Socket/ServerSocket uses SocketImpl, and this is where FileDescriptors
                 are actually managed.
@@ -230,8 +226,17 @@ public class AgentMain {
     private static ClassTransformSpec newSpec(final Class c, String constructorDesc) {
         final String binName = c.getName().replace('.', '/');
         return new ClassTransformSpec(binName,
-            new ConstructorOpenInterceptor(constructorDesc, binName),
             new CloseInterceptor()
+        );
+    }
+
+    /**
+     * Creates {@link ClassTransformSpec} that intercepts
+     * a constructor and the close method.
+     */
+    private static ClassTransformSpec newFdSpec(String binName,  String methodName, String constructorDesc, String listenermethod) {
+        return new ClassTransformSpec(binName,
+                new GenericInterceptor(methodName, constructorDesc, listenermethod)
         );
     }
 
@@ -415,4 +420,22 @@ public class AgentMain {
                     new int[]{0,1});
         }
     }
+
+    /**
+     * Intercepts the constructor.
+     */
+    private static class GenericInterceptor extends MethodAppender {
+        private final String listenerMethod;
+        public GenericInterceptor(String methodName, String constructorDesc, String listenerMethod) {
+            super(methodName, constructorDesc);
+            this.listenerMethod = listenerMethod;
+        }
+
+        protected void append(CodeGenerator g) {
+            g.invokeAppStatic(Listener.class,listenerMethod,
+                    new Class[]{Object.class},
+                    new int[]{0});
+        }
+    }
+
 }

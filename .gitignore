@@ -2,3 +2,6 @@
 /.project
 /.classpath
 /.settings/
+/.idea/*/*
+/.idea/*
+/.idea
