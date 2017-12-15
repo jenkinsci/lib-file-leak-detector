@@ -5,8 +5,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-import org.kohsuke.asm5.ClassReader;
-import org.kohsuke.asm5.util.CheckClassAdapter;
+import org.kohsuke.asm6.ClassReader;
+import org.kohsuke.asm6.util.CheckClassAdapter;
 import org.kohsuke.file_leak_detector.transform.ClassTransformSpec;
 import org.kohsuke.file_leak_detector.transform.TransformerImpl;
 

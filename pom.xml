@@ -31,8 +31,8 @@
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
-          <source>1.5</source>
-          <target>1.5</target>
+          <source>1.6</source>
+          <target>1.6</target>
         </configuration>
       </plugin>
       <plugin>
@@ -106,8 +106,8 @@
                   <shadedPattern>org.kohsuke.file_leak_detector.args4j</shadedPattern>
                 </relocation>
                 <relocation>
-                  <pattern>org.kohsuke.asm5</pattern>
-                  <shadedPattern>org.kohsuke.file_leak_detector.asm5</shadedPattern>
+                  <pattern>org.kohsuke.asm6</pattern>
+                  <shadedPattern>org.kohsuke.file_leak_detector.asm6</shadedPattern>
                 </relocation>
               </relocations>
             </configuration>
@@ -122,8 +122,8 @@
   <dependencies>
     <dependency>
       <groupId>org.kohsuke</groupId>
-      <artifactId>asm5</artifactId>
-      <version>5.0.1</version>
+      <artifactId>asm6</artifactId>
+      <version>6.0_BETA</version>
     </dependency>
     <dependency>
       <groupId>args4j</groupId>
