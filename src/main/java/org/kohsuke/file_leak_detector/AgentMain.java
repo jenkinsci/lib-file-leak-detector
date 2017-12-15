@@ -17,6 +17,7 @@ import java.net.Socket;
 import java.net.SocketImpl;
 import java.nio.channels.spi.AbstractInterruptibleChannel;
 import java.nio.channels.spi.AbstractSelectableChannel;
+import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -99,7 +100,12 @@ public class AgentMain {
             }
         }
 
+        Listener.EXCLUDES.add("sun.nio.ch.PipeImpl$Initializer$LoopbackConnector.run");
         System.err.println("File leak detector installed");
+
+        // Make sure the ActivityListener is loaded to prevent recursive death in instrumentation
+        ActivityListener.LIST.size();
+
         Listener.AGENT_INSTALLED = true;
         instrumentation.addTransformer(new TransformerImpl(createSpec()),true);
         
@@ -113,14 +119,14 @@ public class AgentMain {
                 AbstractInterruptibleChannel.class
                 );
 
-        if (serverPort>=0)
-            runHttpServer(serverPort);
 
-        // still haven't fully figured out how to intercept NIO, especially with close, so commenting out
 //                Socket.class,
 //                SocketChannel.class,
 //                AbstractInterruptibleChannel.class,
 //                ServerSocket.class);
+
+        if (serverPort>=0)
+            runHttpServer(serverPort);
     }
 
     private static void runHttpServer(int port) throws IOException {
@@ -212,7 +218,14 @@ public class AgentMain {
                     // a file descriptor.
                     new CloseInterceptor("socketClose")
             ),
+            // Later versions of the JDK abstracted out the parts of PlainSocketImpl above into a super class
+            new ClassTransformSpec("java/net/AbstractPlainSocketImpl",
+                new OpenSocketInterceptor("create", "(Z)V"),
+                new AcceptInterceptor("accept","(Ljava/net/SocketImpl;)V"),
+                new CloseInterceptor("socketClose")
+            ),
             new ClassTransformSpec("sun/nio/ch/SocketChannelImpl",
+                    new OpenSocketInterceptor("<init>", "(Ljava/nio/channels/spi/SelectorProvider;Ljava/io/FileDescriptor;Ljava/net/InetSocketAddress;)V"),
                     new OpenSocketInterceptor("<init>", "(Ljava/nio/channels/spi/SelectorProvider;)V"),
                     new CloseInterceptor("kill")
             )
