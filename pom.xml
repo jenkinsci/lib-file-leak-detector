@@ -3,11 +3,11 @@
   <parent>
     <groupId>org.kohsuke</groupId>
     <artifactId>pom</artifactId>
-    <version>9</version>
+    <version>19</version>
   </parent>
   <groupId>org.kohsuke</groupId>
   <artifactId>file-leak-detector</artifactId>
-  <version>1.9-SNAPSHOT</version>
+  <version>1.10-SNAPSHOT</version>
   <name>File Leak Detector</name>
 
   <url>http://${project.artifactId}.kohsuke.org/</url>
