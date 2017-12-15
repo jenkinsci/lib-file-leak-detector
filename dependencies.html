@@ -53,7 +53,7 @@
         </li>
               
     <li class="none">
-              <a href="http://search.maven.org/remotecontent?filepath=org/kohsuke/file-leak-detector/1.8/file-leak-detector-1.8-jar-with-dependencies.jar">Download</a>
+              <a href="http://search.maven.org/remotecontent?filepath=org/kohsuke/file-leak-detector/1.9-SNAPSHOT/file-leak-detector-1.9-SNAPSHOT-jar-with-dependencies.jar">Download</a>
         </li>
               
     <li class="none">
@@ -88,7 +88,7 @@
 <th>ArtifactId</th>
 <th>Version</th>
 <th>Type</th>
-<th>License</th></tr>
+<th>Licenses</th></tr>
 <tr class="b">
 <td>args4j</td>
 <td><a class="externalLink" href="http://args4j.dev.java.net/args4j/">args4j</a></td>
@@ -97,8 +97,8 @@
 <td>-</td></tr>
 <tr class="a">
 <td>org.kohsuke</td>
-<td><a class="externalLink" href="http://kohsuke.org/">asm3</a></td>
-<td>3.3.0</td>
+<td><a class="externalLink" href="http://kohsuke.org/">asm6</a></td>
+<td>6.0_BETA</td>
 <td>jar</td>
 <td><a class="externalLink" href="http://asm.ow2.org/license.html">BSD License</a></td></tr></table></div><a name="Project_Dependencies_test"></a>
 <div class="section">
@@ -110,7 +110,7 @@
 <th>ArtifactId</th>
 <th>Version</th>
 <th>Type</th>
-<th>License</th></tr>
+<th>Licenses</th></tr>
 <tr class="b">
 <td>commons-io</td>
 <td><a class="externalLink" href="http://commons.apache.org/io/">commons-io</a></td>
@@ -132,7 +132,7 @@
 <th>ArtifactId</th>
 <th>Version</th>
 <th>Type</th>
-<th>License</th></tr>
+<th>Licenses</th></tr>
 <tr class="b">
 <td>com.sun</td>
 <td>tools</td>
@@ -151,7 +151,7 @@
 <th>ArtifactId</th>
 <th>Version</th>
 <th>Type</th>
-<th>License</th></tr>
+<th>Licenses</th></tr>
 <tr class="b">
 <td>org.hamcrest</td>
 <td>hamcrest-core</td>
@@ -159,8 +159,9 @@
 <td>jar</td>
 <td><a class="externalLink" href="http://www.opensource.org/licenses/bsd-license.php">BSD style</a></td></tr></table></div></div><a name="Project_Dependency_Graph"></a>
 <div class="section">
-<h2>Project Dependency Graph<a name="Project_Dependency_Graph"></a></h2><script language="javascript" type="text/javascript">
-      function toggleDependencyDetail( divId, imgId )
+<h2>Project Dependency Graph<a name="Project_Dependency_Graph"></a></h2>
+<script language="javascript" type="text/javascript">
+      function toggleDependencyDetails( divId, imgId )
       {
         var div = document.getElementById( divId );
         var img = document.getElementById( imgId );
@@ -168,11 +169,13 @@
         {
           div.style.display = 'none';
           img.src='./images/icon_info_sml.gif';
+          img.alt='[Information]';
         }
         else
         {
           div.style.display = '';
           img.src='./images/close.gif';
+          img.alt='[Close]';
         }
       }
 </script>
@@ -180,7 +183,7 @@
 <div class="section">
 <h3>Dependency Tree<a name="Dependency_Tree"></a></h3>
 <ul>
-<li>org.kohsuke:file-leak-detector:jar:1.8 <img id="_img1" src="./images/icon_info_sml.gif" alt="Information" onclick="toggleDependencyDetail( '_dep0', '_img1' );" style="cursor: pointer;vertical-align:text-bottom;"></img><div id="_dep0" style="display:none">
+<li>org.kohsuke:file-leak-detector:jar:1.9-SNAPSHOT <img id="_img1" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep0', '_img1' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep0" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>File Leak Detector</th></tr>
@@ -188,18 +191,18 @@
 <td>
 <p><b>Description: </b>File Leak Detector</p>
 <p><b>URL: </b><a class="externalLink" href="http://file-leak-detector.kohsuke.org/">http://file-leak-detector.kohsuke.org/</a></p>
-<p><b>Project License: </b><a class="externalLink" href="http://www.opensource.org/licenses/mit-license.php">MIT license</a></p></td></tr></table></div>
+<p><b>Project Licenses: </b><a class="externalLink" href="http://www.opensource.org/licenses/mit-license.php">The MIT license</a></p></td></tr></table></div>
 <ul>
-<li>org.kohsuke:asm3:jar:3.3.0 (compile) <img id="_img3" src="./images/icon_info_sml.gif" alt="Information" onclick="toggleDependencyDetail( '_dep2', '_img3' );" style="cursor: pointer;vertical-align:text-bottom;"></img><div id="_dep2" style="display:none">
+<li>org.kohsuke:asm6:jar:6.0_BETA (compile) <img id="_img3" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep2', '_img3' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep2" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
-<th>asm3</th></tr>
+<th>asm6</th></tr>
 <tr class="b">
 <td>
 <p><b>Description: </b>ObjectWeb ASM package-renamed to isolate incompatibilities between major versions</p>
 <p><b>URL: </b><a class="externalLink" href="http://kohsuke.org/">http://kohsuke.org/</a></p>
-<p><b>Project License: </b><a class="externalLink" href="http://asm.ow2.org/license.html">BSD License</a></p></td></tr></table></div></li>
-<li>args4j:args4j:jar:2.0.16 (compile) <img id="_img5" src="./images/icon_info_sml.gif" alt="Information" onclick="toggleDependencyDetail( '_dep4', '_img5' );" style="cursor: pointer;vertical-align:text-bottom;"></img><div id="_dep4" style="display:none">
+<p><b>Project Licenses: </b><a class="externalLink" href="http://asm.ow2.org/license.html">BSD License</a></p></td></tr></table></div></li>
+<li>args4j:args4j:jar:2.0.16 (compile) <img id="_img5" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep4', '_img5' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep4" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>args4j</th></tr>
@@ -207,15 +210,15 @@
 <td>
 <p><b>Description: </b>args4j : Java command line arguments parser</p>
 <p><b>URL: </b><a class="externalLink" href="http://args4j.dev.java.net/args4j/">http://args4j.dev.java.net/args4j/</a></p>
-<p><b>Project License: </b>No license is defined for this project.</p></td></tr></table></div></li>
-<li>com.sun:tools:jar:6.0 (system) <img id="_img7" src="./images/icon_info_sml.gif" alt="Information" onclick="toggleDependencyDetail( '_dep6', '_img7' );" style="cursor: pointer;vertical-align:text-bottom;"></img><div id="_dep6" style="display:none">
+<p><b>Project Licenses: </b>No licenses are defined for this project.</p></td></tr></table></div></li>
+<li>com.sun:tools:jar:6.0 (system) <img id="_img7" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep6', '_img7' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep6" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>com.sun:tools:jar:6.0</th></tr>
 <tr class="b">
 <td>
 <p><b>Description: </b>There is currently no description associated with this project.</p></td></tr></table></div></li>
-<li>commons-io:commons-io:jar:2.0.1 (test) <img id="_img9" src="./images/icon_info_sml.gif" alt="Information" onclick="toggleDependencyDetail( '_dep8', '_img9' );" style="cursor: pointer;vertical-align:text-bottom;"></img><div id="_dep8" style="display:none">
+<li>commons-io:commons-io:jar:2.0.1 (test) <img id="_img9" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep8', '_img9' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep8" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>Commons IO</th></tr>
@@ -223,8 +226,8 @@
 <td>
 <p><b>Description: </b>Commons-IO contains utility classes, stream implementations, file filters, file comparators and endian classes.</p>
 <p><b>URL: </b><a class="externalLink" href="http://commons.apache.org/io/">http://commons.apache.org/io/</a></p>
-<p><b>Project License: </b><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">The Apache Software License, Version 2.0</a></p></td></tr></table></div></li>
-<li>junit:junit:jar:4.9 (test) <img id="_img11" src="./images/icon_info_sml.gif" alt="Information" onclick="toggleDependencyDetail( '_dep10', '_img11' );" style="cursor: pointer;vertical-align:text-bottom;"></img><div id="_dep10" style="display:none">
+<p><b>Project Licenses: </b><a class="externalLink" href="http://www.apache.org/licenses/LICENSE-2.0.txt">The Apache Software License, Version 2.0</a></p></td></tr></table></div></li>
+<li>junit:junit:jar:4.9 (test) <img id="_img11" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep10', '_img11' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep10" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>JUnit</th></tr>
@@ -233,24 +236,24 @@
 <p><b>Description: </b>JUnit is a regression testing framework written by Erich Gamma and Kent Beck.
         It is used by the developer who implements unit tests in Java.</p>
 <p><b>URL: </b><a class="externalLink" href="http://junit.org">http://junit.org</a></p>
-<p><b>Project License: </b><a class="externalLink" href="http://www.opensource.org/licenses/cpl1.0.txt">Common Public License Version 1.0</a></p></td></tr></table></div>
+<p><b>Project Licenses: </b><a class="externalLink" href="http://www.opensource.org/licenses/cpl1.0.txt">Common Public License Version 1.0</a></p></td></tr></table></div>
 <ul>
-<li>org.hamcrest:hamcrest-core:jar:1.1 (test) <img id="_img13" src="./images/icon_info_sml.gif" alt="Information" onclick="toggleDependencyDetail( '_dep12', '_img13' );" style="cursor: pointer;vertical-align:text-bottom;"></img><div id="_dep12" style="display:none">
+<li>org.hamcrest:hamcrest-core:jar:1.1 (test) <img id="_img13" src="./images/icon_info_sml.gif" alt="[Information]" onclick="toggleDependencyDetails( '_dep12', '_img13' );" style="cursor: pointer; vertical-align: text-bottom;"></img><div id="_dep12" style="display:none">
 <table border="0" class="bodyTable">
 <tr class="a">
 <th>Hamcrest Core</th></tr>
 <tr class="b">
 <td>
 <p><b>Description: </b>There is currently no description associated with this project.</p>
-<p><b>Project License: </b><a class="externalLink" href="http://www.opensource.org/licenses/bsd-license.php">BSD style</a></p></td></tr></table></div></li></ul></li></ul></li></ul></div></div><a name="Licenses"></a>
+<p><b>Project Licenses: </b><a class="externalLink" href="http://www.opensource.org/licenses/bsd-license.php">BSD style</a></p></td></tr></table></div></li></ul></li></ul></li></ul></div></div><a name="Licenses"></a>
 <div class="section">
 <h2>Licenses<a name="Licenses"></a></h2>
 <p><b>BSD style: </b>Hamcrest Core</p>
-<p><b>MIT license: </b>File Leak Detector</p>
 <p><b>Unknown: </b>args4j</p>
-<p><b>BSD License: </b>asm3</p>
-<p><b>Common Public License Version 1.0: </b>JUnit</p>
-<p><b>The Apache Software License, Version 2.0: </b>Commons IO</p></div><a name="Dependency_File_Details"></a>
+<p><b>BSD License: </b>asm6</p>
+<p><b>The MIT license: </b>File Leak Detector</p>
+<p><b>The Apache Software License, Version 2.0: </b>Commons IO</p>
+<p><b>Common Public License Version 1.0: </b>JUnit</p></div><a name="Dependency_File_Details"></a>
 <div class="section">
 <h2>Dependency File Details<a name="Dependency_File_Details"></a></h2>
 <table border="0" class="bodyTable">
@@ -260,75 +263,75 @@
 <th>Entries</th>
 <th>Classes</th>
 <th>Packages</th>
-<th>JDK Rev</th>
-<th>Debug</th></tr>
+<th>Java Version</th>
+<th title="Indicates whether these dependencies have been compiled with debug information.">Debug Information</th></tr>
 <tr class="b">
 <td>args4j-2.0.16.jar</td>
-<td>54.98 kB</td>
+<td>56.3 kB</td>
 <td>66</td>
 <td>49</td>
 <td>2</td>
 <td>1.5</td>
-<td>debug</td></tr>
+<td>Yes</td></tr>
 <tr class="a">
 <td>commons-io-2.0.1.jar</td>
-<td>155.77 kB</td>
+<td>159.5 kB</td>
 <td>122</td>
 <td>104</td>
 <td>6</td>
 <td>1.5</td>
-<td>debug</td></tr>
+<td>Yes</td></tr>
 <tr class="b">
 <td>junit-4.9.jar</td>
-<td>243.16 kB</td>
+<td>249 kB</td>
 <td>288</td>
 <td>250</td>
 <td>31</td>
 <td>1.5</td>
-<td>debug</td></tr>
+<td>Yes</td></tr>
 <tr class="a">
 <td>hamcrest-core-1.1.jar</td>
-<td>74.85 kB</td>
+<td>76.6 kB</td>
 <td>54</td>
 <td>21</td>
 <td>3</td>
 <td>1.5</td>
-<td>debug</td></tr>
+<td>Yes</td></tr>
 <tr class="b">
-<td>asm3-3.3.0.jar</td>
-<td>336.03 kB</td>
-<td>200</td>
-<td>174</td>
-<td>8</td>
-<td>1.6</td>
-<td>debug</td></tr>
+<td>asm6-6.0_BETA.jar</td>
+<td>828.9 kB</td>
+<td>338</td>
+<td>187</td>
+<td>7</td>
+<td>1.5</td>
+<td>Yes</td></tr>
 <tr class="a">
 <th>Total</th>
 <th>Size</th>
 <th>Entries</th>
 <th>Classes</th>
 <th>Packages</th>
-<th>JDK Rev</th>
-<th>Debug</th></tr>
+<th>Java Version</th>
+<th>Debug Information</th></tr>
 <tr class="b">
 <td>5</td>
-<td>864.78 kB</td>
-<td>730</td>
-<td>598</td>
-<td>50</td>
-<td>1.6</td>
+<td>1.4 MB</td>
+<td>868</td>
+<td>611</td>
+<td>49</td>
+<td>1.5</td>
 <td>5</td></tr>
 <tr class="a">
 <td>compile: 2</td>
-<td>compile: 391.01 kB</td>
-<td>compile: 266</td>
-<td>compile: 223</td>
-<td>compile: 10</td>
+<td>compile: 885.2 kB</td>
+<td>compile: 404</td>
+<td>compile: 236</td>
+<td>compile: 9</td>
 <td>-</td>
 <td>compile: 2</td></tr>
 <tr class="b">
 <td>test: 3</td>
-<td>test: 473.78 kB</td>
+<td>test: 485.1 kB</td>
 <td>test: 464</td>
 <td>test: 375</td>
 <td>test: 40</td>
@@ -345,9 +348,9 @@
 <th>Blacklisted</th></tr>
 <tr class="b">
 <td>central</td>
-<td><a class="externalLink" href="http://repo.maven.apache.org/maven2">http://repo.maven.apache.org/maven2</a></td>
+<td><a class="externalLink" href="https://repo.maven.apache.org/maven2">https://repo.maven.apache.org/maven2</a></td>
 <td>Yes</td>
-<td>-</td>
+<td>No</td>
 <td>Yes</td></tr></table>
 <p>Repository locations for each of the Dependencies.</p>
 <table border="0" class="bodyTable">
@@ -364,7 +367,7 @@
 <tr class="b">
 <td>org.hamcrest:hamcrest-core:jar:1.1</td></tr>
 <tr class="a">
-<td>org.kohsuke:asm3:jar:3.3.0</td></tr>
+<td>org.kohsuke:asm6:jar:6.0_BETA</td></tr>
 <tr class="b">
 <th>Total</th></tr>
 <tr class="a">
@@ -373,7 +376,7 @@
     </div>
     <div id="footer">
       <div class="xright">&#169;  
-          2014
+          2017
     
           <a href="http://kohsuke.org/">Kohsuke Kawaguchi</a> and other contributors
           
@@ -381,8 +384,8 @@
 
   
   
-  &nbsp;| Last Published: 2014-07-02
-  &nbsp;| Version: 1.8
+  &nbsp;| Last Published: 2017-12-15
+  &nbsp;| Version: 1.9-SNAPSHOT
 </div>
       <div class="clear">
         <hr/>
