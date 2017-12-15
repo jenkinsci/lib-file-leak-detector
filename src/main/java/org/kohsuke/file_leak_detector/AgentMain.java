@@ -194,8 +194,8 @@ public class AgentMain {
             newSpec(FileInputStream.class, "(Ljava/io/File;)V"),
             newSpec(RandomAccessFile.class, "(Ljava/io/File;Ljava/lang/String;)V"),
             newSpec(ZipFile.class, "(Ljava/io/File;I)V"),
-                newFdSpec("java/nio/channels/spi/AbstractInterruptibleChannel", "close","()V", "close"),
-                newFdSpec("java/nio/channels/spi/AbstractSelectableChannel", "<init>","(Ljava/nio/channels/spi/SelectorProvider;)V", "ch_open"),
+            newFdSpec("java/nio/channels/spi/AbstractInterruptibleChannel", "close","()V", "close"),
+            newFdSpec("java/nio/channels/spi/AbstractSelectableChannel", "<init>","(Ljava/nio/channels/spi/SelectorProvider;)V", "ch_open"),
             /*
                 java.net.Socket/ServerSocket uses SocketImpl, and this is where FileDescriptors
                 are actually managed.
