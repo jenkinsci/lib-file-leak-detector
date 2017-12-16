@@ -249,7 +249,7 @@ public class AgentMain {
                 java.net.Socket/ServerSocket uses SocketImpl, and this is where FileDescriptors
                 are actually managed.
 
-                SocketInputStream/SocketOutputStream does not maintain a separate FileDescritor.
+                SocketInputStream/SocketOutputStream does not maintain a separate FileDescriptor.
                 They just all piggy back on the same SocketImpl instance.
              */
             new ClassTransformSpec("java/net/PlainSocketImpl",
