@@ -236,9 +236,10 @@ public class AgentMain {
      * Creates {@link ClassTransformSpec} that intercepts
      * a constructor and the close method.
      */
-    private static ClassTransformSpec newSpec(final Class c, String constructorDesc) {
+    private static ClassTransformSpec newSpec(final Class<?> c, String constructorDesc) {
         final String binName = c.getName().replace('.', '/');
         return new ClassTransformSpec(binName,
+            new ConstructorOpenInterceptor(constructorDesc, binName),
             new CloseInterceptor()
         );
     }
