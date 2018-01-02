@@ -96,6 +96,11 @@ public class Listener {
             pw.println(prefix + file + " by thread:" + threadName + " on " + format(time));
             super.dump(prefix,pw);
         }
+
+        @Override
+        public String toString() {
+            return "FileRecord[file=" + file + "]";
+        }
     }
 
     public static final class SourceChannelRecord extends Record {
@@ -149,6 +154,11 @@ public class Listener {
 
             ps.println(prefix+"socket to "+peer+" by thread:"+threadName+" on "+format(time));
             super.dump(prefix,ps);
+        }
+
+        @Override
+        public String toString() {
+            return "SocketRecord[socket=" + socket + ",peer=" + peer + "]";
         }
     }
 
