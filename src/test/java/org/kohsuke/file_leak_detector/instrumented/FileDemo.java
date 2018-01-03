@@ -14,12 +14,15 @@ import java.nio.file.StandardOpenOption;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.kohsuke.file_leak_detector.Listener;
 import org.kohsuke.file_leak_detector.Listener.FileRecord;
 import org.kohsuke.file_leak_detector.Listener.Record;
 
+/**
+ * 
+ * @author Andreas Dangel
+ */
 public class FileDemo {
     private static StringWriter output = new StringWriter();
     private File tempFile;
@@ -55,7 +58,6 @@ public class FileDemo {
     }
 
     @Test
-    @Ignore
     public void openCloseFileChannel() throws Exception {
         FileChannel fileChannel = FileChannel.open(tempFile.toPath(), StandardOpenOption.APPEND);
         assertNotNull("No file record for file=" + tempFile + " found", findFileRecord(tempFile));

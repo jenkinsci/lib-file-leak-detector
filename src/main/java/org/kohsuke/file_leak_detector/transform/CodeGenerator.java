@@ -1,10 +1,24 @@
 package org.kohsuke.file_leak_detector.transform;
 
+import static org.kohsuke.asm6.Opcodes.AASTORE;
+import static org.kohsuke.asm6.Opcodes.ACONST_NULL;
+import static org.kohsuke.asm6.Opcodes.ALOAD;
+import static org.kohsuke.asm6.Opcodes.ANEWARRAY;
+import static org.kohsuke.asm6.Opcodes.ASM6;
+import static org.kohsuke.asm6.Opcodes.ASTORE;
+import static org.kohsuke.asm6.Opcodes.ATHROW;
+import static org.kohsuke.asm6.Opcodes.DUP;
+import static org.kohsuke.asm6.Opcodes.GETSTATIC;
+import static org.kohsuke.asm6.Opcodes.GOTO;
+import static org.kohsuke.asm6.Opcodes.ICONST_0;
+import static org.kohsuke.asm6.Opcodes.IFEQ;
+import static org.kohsuke.asm6.Opcodes.INVOKESTATIC;
+import static org.kohsuke.asm6.Opcodes.INVOKEVIRTUAL;
+import static org.kohsuke.asm6.Opcodes.POP;
+
 import org.kohsuke.asm6.Label;
 import org.kohsuke.asm6.MethodVisitor;
 import org.kohsuke.asm6.Type;
-
-import static org.kohsuke.asm6.Opcodes.*;
 
 /**
  * Convenience method to generate bytecode.
@@ -19,7 +33,7 @@ public class CodeGenerator extends MethodVisitor {
     public void println(String msg) {
         super.visitFieldInsn(GETSTATIC,"java/lang/System","out","Ljava/io/PrintStream;");
         ldc(msg);
-        super.visitMethodInsn(INVOKEVIRTUAL,"java/io/PrintStream","println","(Ljava/lang/String;)V");
+        invokeVirtual("java/io/PrintStream","println","(Ljava/lang/String;)V");
     }
 
     public void _null() {
@@ -50,18 +64,22 @@ public class CodeGenerator extends MethodVisitor {
         super.visitIntInsn(ALOAD,i);
     }
 
+    public void astore(int i) {
+        super.visitIntInsn(ASTORE, i);
+    }
+
     public void pop() {
         super.visitInsn(POP);
     }
 
     public void ldc(Object o) {
         if(o.getClass()==Class.class)
-            o = Type.getType((Class)o);
+            o = Type.getType((Class<?>)o);
         super.visitLdcInsn(o);
     }
 
     public void invokeVirtual(String owner, String name, String desc) {
-        super.visitMethodInsn(INVOKEVIRTUAL, owner, name, desc);
+        super.visitMethodInsn(INVOKEVIRTUAL, owner, name, desc, false);
     }
 
     /**
@@ -84,11 +102,11 @@ public class CodeGenerator extends MethodVisitor {
 //    }
 
 
-    public void invokeAppStatic(Class userClass, String userMethodName, Class[] argTypes, int[] localIndex) {
+    public void invokeAppStatic(Class<?> userClass, String userMethodName, Class<?>[] argTypes, int[] localIndex) {
         invokeAppStatic(userClass.getName(),userMethodName,argTypes,localIndex);
     }
 
-    public void invokeAppStatic(String userClassName, String userMethodName, Class[] argTypes, int[] localIndex) {
+    public void invokeAppStatic(String userClassName, String userMethodName, Class<?>[] argTypes, int[] localIndex) {
         Label s = new Label();
         Label e = new Label();
         Label h = new Label();
@@ -96,7 +114,7 @@ public class CodeGenerator extends MethodVisitor {
         visitTryCatchBlock(s,e,h,"java/lang/Exception");
         visitLabel(s);
         // [RESULT] m = ClassLoader.getSystemClassLoadeR().loadClass($userClassName).getDeclaredMethod($userMethodName,[...]);
-        visitMethodInsn(INVOKESTATIC,"java/lang/ClassLoader","getSystemClassLoader","()Ljava/lang/ClassLoader;");
+        visitMethodInsn(INVOKESTATIC,"java/lang/ClassLoader","getSystemClassLoader","()Ljava/lang/ClassLoader;", false);
         ldc(userClassName);
         invokeVirtual("java/lang/ClassLoader","loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
         ldc(userMethodName);
@@ -117,7 +135,7 @@ public class CodeGenerator extends MethodVisitor {
             aastore();
         }
 
-        visitMethodInsn(INVOKEVIRTUAL, "java/lang/reflect/Method", "invoke", "(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;");
+        invokeVirtual("java/lang/reflect/Method", "invoke", "(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;");
         pop();
         _goto(tail);
 

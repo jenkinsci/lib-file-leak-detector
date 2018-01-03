@@ -1,23 +1,29 @@
 package org.kohsuke.file_leak_detector;
 
-import org.kohsuke.asm6.Label;
-import org.kohsuke.asm6.MethodVisitor;
-import org.kohsuke.asm6.Type;
-import org.kohsuke.asm6.commons.LocalVariablesSorter;
-import org.kohsuke.file_leak_detector.transform.ClassTransformSpec;
-import org.kohsuke.file_leak_detector.transform.CodeGenerator;
-import org.kohsuke.file_leak_detector.transform.MethodAppender;
-import org.kohsuke.file_leak_detector.transform.TransformerImpl;
+import static org.kohsuke.asm6.Opcodes.ALOAD;
+import static org.kohsuke.asm6.Opcodes.ASM5;
+import static org.kohsuke.asm6.Opcodes.ASTORE;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.io.RandomAccessFile;
 import java.lang.instrument.Instrumentation;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketImpl;
+import java.nio.channels.FileChannel;
 import java.nio.channels.spi.AbstractInterruptibleChannel;
 import java.nio.channels.spi.AbstractSelectableChannel;
-import java.nio.channels.SocketChannel;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -26,7 +32,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.zip.ZipFile;
 
-import static org.kohsuke.asm6.Opcodes.*;
+import org.kohsuke.asm6.Label;
+import org.kohsuke.asm6.MethodVisitor;
+import org.kohsuke.asm6.Type;
+import org.kohsuke.asm6.commons.LocalVariablesSorter;
+import org.kohsuke.file_leak_detector.transform.ClassTransformSpec;
+import org.kohsuke.file_leak_detector.transform.CodeGenerator;
+import org.kohsuke.file_leak_detector.transform.MethodAppender;
+import org.kohsuke.file_leak_detector.transform.TransformerImpl;
 
 /**
  * Java agent that instruments JDK classes to keep track of where file descriptors are opened.
@@ -116,7 +129,8 @@ public class AgentMain {
                 Class.forName("java.net.PlainSocketImpl"),
                 ZipFile.class,
                 AbstractSelectableChannel.class,
-                AbstractInterruptibleChannel.class
+                AbstractInterruptibleChannel.class,
+                FileChannel.class
                 );
 
 
@@ -194,8 +208,22 @@ public class AgentMain {
             newSpec(FileInputStream.class, "(Ljava/io/File;)V"),
             newSpec(RandomAccessFile.class, "(Ljava/io/File;Ljava/lang/String;)V"),
             newSpec(ZipFile.class, "(Ljava/io/File;I)V"),
-            newFdSpec("java/nio/channels/spi/AbstractInterruptibleChannel", "close","()V", "close"),
-            newFdSpec("java/nio/channels/spi/AbstractSelectableChannel", "<init>","(Ljava/nio/channels/spi/SelectorProvider;)V", "ch_open"),
+
+            /*
+             * Detect the files opened via FileChannel.open(...) calls
+             */
+            new ClassTransformSpec(FileChannel.class,
+                    new ReturnFromStaticMethodInterceptor("open",
+                            "(Ljava/nio/file/Path;Ljava/util/Set;[Ljava/nio/file/attribute/FileAttribute;)Ljava/nio/channels/FileChannel;", 4, "open_filechannel", FileChannel.class, Path.class)),
+            /*
+             * Detect new Pipes
+             */
+            newOpenChannelSpec(AbstractSelectableChannel.class,"(Ljava/nio/channels/spi/SelectorProvider;)V"),
+            /*
+             * AbstractInterruptibleChannel is used by FileChannel and Pipes
+             */
+            newCloseOnlySpec(AbstractInterruptibleChannel.class),
+
             /*
                 java.net.Socket/ServerSocket uses SocketImpl, and this is where FileDescriptors
                 are actually managed.
@@ -240,32 +268,44 @@ public class AgentMain {
         final String binName = c.getName().replace('.', '/');
         return new ClassTransformSpec(binName,
             new ConstructorOpenInterceptor(constructorDesc, binName),
-            new CloseInterceptor()
+            new CloseInterceptor("close")
+        );
+    }
+
+    /**
+     * Creates a {@link ClassTransformSpec} that intercepts the close method.
+     */
+    private static ClassTransformSpec newCloseOnlySpec(final Class<?> c) {
+        final String binName = c.getName().replace('.', '/');
+        return new ClassTransformSpec(binName,
+            new CloseInterceptor("close")
         );
     }
 
     /**
      * Creates {@link ClassTransformSpec} that intercepts
-     * a constructor and the close method.
+     * a constructor and calls the {@link Listener#ch_open(Object)} method
      */
-    private static ClassTransformSpec newFdSpec(String binName,  String methodName, String constructorDesc, String listenermethod) {
-        return new ClassTransformSpec(binName,
-                new GenericInterceptor(methodName, constructorDesc, listenermethod)
-        );
+    private static ClassTransformSpec newOpenChannelSpec(final Class<?> c, String constructorDesc) {
+        final String binName = c.getName().replace('.', '/');
+        return new ClassTransformSpec(binName, new MethodAppender("<init>", constructorDesc) {
+            @Override
+            protected void append(CodeGenerator g) {
+                g.invokeAppStatic(Listener.class,"ch_open",
+                        new Class[]{Object.class},
+                        new int[]{0});
+            }
+        });
     }
 
     /**
-     * Intercepts the {@code void close()} method and calls {@link Listener#close(Object)} in the end.
+     * Intercepts a void method used to close a handle and calls {@link Listener#close(Object)} in the end.
      */
     private static class CloseInterceptor extends MethodAppender {
-        public CloseInterceptor() {
-            this("close");
-        }
-
         public CloseInterceptor(String methodName) {
             super(methodName, "()V");
         }
-        
+
         protected void append(CodeGenerator g) {
             g.invokeAppStatic(Listener.class,"close",
                     new Class[]{Object.class},
@@ -435,21 +475,47 @@ public class AgentMain {
         }
     }
 
-    /**
-     * Intercepts the constructor.
-     */
-    private static class GenericInterceptor extends MethodAppender {
+    private static class ReturnFromStaticMethodInterceptor extends MethodAppender {
         private final String listenerMethod;
-        public GenericInterceptor(String methodName, String constructorDesc, String listenerMethod) {
-            super(methodName, constructorDesc);
+        private final Class<?>[] listenerMethodArgs;
+        private final int returnLocalVarIndex;
+        public ReturnFromStaticMethodInterceptor(String methodName, String methodDesc, int returnLocalVarIndex,
+                String listenerMethod, Class<?> ... listenerMethodArgs) {
+            super(methodName, methodDesc);
+            this.returnLocalVarIndex = returnLocalVarIndex;
             this.listenerMethod = listenerMethod;
+            if (listenerMethodArgs.length == 0) {
+                this.listenerMethodArgs = new Class[] { Object.class };
+            } else {
+                this.listenerMethodArgs = listenerMethodArgs;
+            }
         }
 
         protected void append(CodeGenerator g) {
-            g.invokeAppStatic(Listener.class,listenerMethod,
-                    new Class[]{Object.class},
-                    new int[]{0});
+            int[] index = new int[listenerMethodArgs.length];
+            // first parameter is from the additional local variable, that holds
+            // the return value of the intercepted method
+            index[0] = returnLocalVarIndex;
+            // remaining parameters
+            for (int i = 1; i < index.length; i++) {
+                index[i] = i - 1;
+            }
+
+            Label start = new Label();
+            Label end = new Label();
+            g.visitLocalVariable("result", "java/lang/Object", null, start, end, returnLocalVarIndex);
+            g.visitLabel(start);
+
+            // return value is currently on top of the stack
+            // result = {return value}
+            g.astore(returnLocalVarIndex);
+
+            g.invokeAppStatic(Listener.class, listenerMethod, listenerMethodArgs, index);
+
+            g.visitLabel(end);
+
+            // restore the stack so that the ARETURN has something to return
+            g.aload(returnLocalVarIndex);
         }
     }
-
 }

@@ -1,18 +1,27 @@
 package org.kohsuke.file_leak_detector;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.io.RandomAccessFile;
+import java.io.Writer;
 import java.lang.reflect.Field;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketImpl;
+import java.nio.channels.FileChannel;
 import java.nio.channels.Pipe;
+import java.nio.channels.SocketChannel;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Date;
-import java.net.Socket;
-import java.net.ServerSocket;
-import java.nio.channels.SocketChannel;
 import java.util.WeakHashMap;
 import java.util.zip.ZipFile;
 
@@ -111,7 +120,7 @@ public class Listener {
         }
 
         public void dump(String prefix, PrintWriter pw) {
-            pw.println(prefix + " Pipe Source Channel by thread:" + threadName + " on " + format(time));
+            pw.println(prefix + "Pipe Source Channel by thread:" + threadName + " on " + format(time));
             super.dump(prefix,pw);
         }
     }
@@ -124,7 +133,7 @@ public class Listener {
         }
 
         public void dump(String prefix, PrintWriter pw) {
-            pw.println(prefix + " Pipe Sink Channel by thread:" + threadName + " on " + format(time));
+            pw.println(prefix + "Pipe Sink Channel by thread:" + threadName + " on " + format(time));
             super.dump(prefix,pw);
         }
     }
@@ -281,11 +290,10 @@ public class Listener {
                 al.fd_open(_this);
             }
         }
-
     }
 
-    public static synchronized void ch_close(Object _this) {
-        close(_this);
+    public static synchronized void open_filechannel(FileChannel fileChannel, Path path) {
+        open(fileChannel, path.toFile());
     }
 
     /**
