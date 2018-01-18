@@ -23,6 +23,7 @@ import java.net.SocketImpl;
 import java.nio.channels.FileChannel;
 import java.nio.channels.spi.AbstractInterruptibleChannel;
 import java.nio.channels.spi.AbstractSelectableChannel;
+import java.nio.channels.spi.AbstractSelector;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
@@ -130,7 +131,8 @@ public class AgentMain {
                 ZipFile.class,
                 AbstractSelectableChannel.class,
                 AbstractInterruptibleChannel.class,
-                FileChannel.class
+                FileChannel.class,
+                AbstractSelector.class
                 );
 
 
@@ -218,11 +220,20 @@ public class AgentMain {
             /*
              * Detect new Pipes
              */
-            newOpenChannelSpec(AbstractSelectableChannel.class,"(Ljava/nio/channels/spi/SelectorProvider;)V"),
+            new ClassTransformSpec(AbstractSelectableChannel.class,
+                    new ConstructorInterceptor("(Ljava/nio/channels/spi/SelectorProvider;)V", "openPipe")),
             /*
              * AbstractInterruptibleChannel is used by FileChannel and Pipes
              */
-            newCloseOnlySpec(AbstractInterruptibleChannel.class),
+            new ClassTransformSpec(AbstractInterruptibleChannel.class,
+                    new CloseInterceptor("close")),
+
+            /**
+             * Detect selectors, which may open native pipes and anonymous inodes for event polling.
+             */
+            new ClassTransformSpec(AbstractSelector.class,
+                    new ConstructorInterceptor("(Ljava/nio/channels/spi/SelectorProvider;)V", "openSelector"),
+                    new CloseInterceptor("close")),
 
             /*
                 java.net.Socket/ServerSocket uses SocketImpl, and this is where FileDescriptors
@@ -273,32 +284,6 @@ public class AgentMain {
     }
 
     /**
-     * Creates a {@link ClassTransformSpec} that intercepts the close method.
-     */
-    private static ClassTransformSpec newCloseOnlySpec(final Class<?> c) {
-        final String binName = c.getName().replace('.', '/');
-        return new ClassTransformSpec(binName,
-            new CloseInterceptor("close")
-        );
-    }
-
-    /**
-     * Creates {@link ClassTransformSpec} that intercepts
-     * a constructor and calls the {@link Listener#ch_open(Object)} method
-     */
-    private static ClassTransformSpec newOpenChannelSpec(final Class<?> c, String constructorDesc) {
-        final String binName = c.getName().replace('.', '/');
-        return new ClassTransformSpec(binName, new MethodAppender("<init>", constructorDesc) {
-            @Override
-            protected void append(CodeGenerator g) {
-                g.invokeAppStatic(Listener.class,"ch_open",
-                        new Class[]{Object.class},
-                        new int[]{0});
-            }
-        });
-    }
-
-    /**
      * Intercepts a void method used to close a handle and calls {@link Listener#close(Object)} in the end.
      */
     private static class CloseInterceptor extends MethodAppender {
@@ -308,6 +293,25 @@ public class AgentMain {
 
         protected void append(CodeGenerator g) {
             g.invokeAppStatic(Listener.class,"close",
+                    new Class[]{Object.class},
+                    new int[]{0});
+        }
+    }
+
+    /**
+     * Intercepts a constructor invocation and calls the given method on {@link Listener} at the end of the constructor.
+     */
+    private static class ConstructorInterceptor extends MethodAppender {
+        private final String listenerMethod;
+
+        public ConstructorInterceptor(String constructorDesc, String listenerMethod) {
+            super("<init>", constructorDesc);
+            this.listenerMethod = listenerMethod;
+        }
+
+        @Override
+        protected void append(CodeGenerator g) {
+            g.invokeAppStatic(Listener.class, listenerMethod,
                     new Class[]{Object.class},
                     new int[]{0});
         }

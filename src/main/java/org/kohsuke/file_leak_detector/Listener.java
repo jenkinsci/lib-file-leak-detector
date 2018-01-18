@@ -15,6 +15,7 @@ import java.net.SocketAddress;
 import java.net.SocketImpl;
 import java.nio.channels.FileChannel;
 import java.nio.channels.Pipe;
+import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -214,6 +215,19 @@ public class Listener {
         }
     }
 
+    public static final class SelectorRecord extends Record {
+        public final Selector selector;
+
+        private SelectorRecord(Selector selector) {
+            this.selector = selector;
+        }
+
+        public void dump(String prefix, PrintWriter ps) {
+            ps.println(prefix+"selector by thread:"+threadName+" on "+format(time));
+            super.dump(prefix,ps);
+        }
+    }
+
     /**
      * Files that are currently open, keyed by the owner object (like {@link FileInputStream}.
      */
@@ -277,14 +291,13 @@ public class Listener {
         }
     }
 
-    public static synchronized void ch_open(Object _this) {
+    public static synchronized void openPipe(Object _this) {
         if (_this instanceof Pipe.SourceChannel) {
             put(_this, new SourceChannelRecord((Pipe.SourceChannel)_this));
             for (ActivityListener al : ActivityListener.LIST) {
                 al.fd_open(_this);
             }
-        }
-        if (_this instanceof Pipe.SinkChannel) {
+        } if (_this instanceof Pipe.SinkChannel) {
             put(_this, new SinkChannelRecord((Pipe.SinkChannel)_this));
             for (ActivityListener al : ActivityListener.LIST) {
                 al.fd_open(_this);
@@ -294,6 +307,15 @@ public class Listener {
 
     public static synchronized void open_filechannel(FileChannel fileChannel, Path path) {
         open(fileChannel, path.toFile());
+    }
+
+    public static synchronized void openSelector(Object _this) {
+        if (_this instanceof Selector) {
+            put(_this, new SelectorRecord((Selector)_this));
+            for (ActivityListener al : ActivityListener.LIST) {
+                al.fd_open(_this);
+            }
+        }
     }
 
     /**
