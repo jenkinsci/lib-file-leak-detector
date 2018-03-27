@@ -25,8 +25,14 @@ public abstract class MethodAppender extends MethodTransformSpec {
         return new MethodVisitor(ASM6,base) {
             @Override
             public void visitInsn(int opcode) {
-                if(opcode==RETURN)
+                switch (opcode) {
+                case RETURN:
+                case ARETURN:
                     append(cg);
+                    break;
+                default:
+                    // ignored
+                }
                 super.visitInsn(opcode);
             }
         };

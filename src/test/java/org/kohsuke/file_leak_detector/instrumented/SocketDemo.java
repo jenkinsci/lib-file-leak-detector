@@ -1,4 +1,4 @@
-package org.kohsuke.file_leak_detector;
+package org.kohsuke.file_leak_detector.instrumented;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -19,6 +19,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.junit.Test;
+import org.kohsuke.file_leak_detector.Listener;
+import org.kohsuke.file_leak_detector.Listener.Record;
+import org.kohsuke.file_leak_detector.Listener.SocketChannelRecord;
+import org.kohsuke.file_leak_detector.Listener.SocketRecord;
 
 /**
  * @author Kohsuke Kawaguchi
