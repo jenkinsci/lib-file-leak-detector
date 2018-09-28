@@ -6,11 +6,14 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
+import java.util.List;
 
+import org.apache.commons.io.IOUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -53,8 +56,8 @@ public class FileDemo {
         assertNull("File record for file=" + tempFile + " not removed", findFileRecord(tempFile));
 
         String traceOutput = output.toString();
-        assertTrue(traceOutput.contains("Opened " + tempFile));
-        assertTrue(traceOutput.contains("Closed " + tempFile));
+        assertContainsAdjacentLines(traceOutput, "Opened " + tempFile, "at java.io.FileInputStream.<init>(");
+        assertContainsAdjacentLines(traceOutput, "Closed " + tempFile, "at java.io.FileInputStream.close(");
     }
 
     @Test
@@ -66,8 +69,8 @@ public class FileDemo {
         assertNull("File record for file=" + tempFile + " not removed", findFileRecord(tempFile));
 
         String traceOutput = output.toString();
-        assertTrue(traceOutput.contains("Opened " + tempFile));
-        assertTrue(traceOutput.contains("Closed " + tempFile));
+        assertContainsAdjacentLines(traceOutput, "Opened " + tempFile, "Channel.open(");
+        assertContainsAdjacentLines(traceOutput, "Closed " + tempFile, "Channel.close(");
     }
 
     private static FileRecord findFileRecord(File file) {
@@ -80,5 +83,21 @@ public class FileDemo {
             }
         }
         return null;
+    }
+
+    private static void assertContainsAdjacentLines(String output, String thisLineContent, String nextLineContent) throws IOException {
+        List<String> lines = IOUtils.readLines(IOUtils.toInputStream(output));
+        int index = findIndexOf(lines, thisLineContent);
+        assertTrue(index != -1);
+        assertTrue(lines.get(index + 1).contains(nextLineContent));
+    }
+
+    private static int findIndexOf(List<String> lines, String target) {
+        for (int i = 0; i < lines.size(); ++i) {
+            if (lines.get(i).contains(target)) {
+                return i;
+            }
+        }
+        return -1;
     }
 }
