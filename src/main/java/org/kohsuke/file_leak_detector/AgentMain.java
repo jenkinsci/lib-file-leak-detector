@@ -58,7 +58,8 @@ public class AgentMain {
         if(agentArguments!=null) {
             for (String t : agentArguments.split(",")) {
                 if(t.equals("help")) {
-                    usageAndQuit();
+                    usage();
+                    return;
                 } else
                 if(t.startsWith("threshold=")) {
                     Listener.THRESHOLD = Integer.parseInt(t.substring(t.indexOf('=')+1));
@@ -109,7 +110,8 @@ public class AgentMain {
                     }
                 } else {
                     System.err.println("Unknown option: "+t);
-                    usageAndQuit();
+                    usage();
+                    return;
                 }
             }
         }
@@ -181,10 +183,9 @@ public class AgentMain {
         });
     }
 
-    private static void usageAndQuit() {
+    private static void usage() {
         System.err.println("File leak detector arguments (to specify multiple values, separate them by ',':");
         printOptions();
-        System.exit(-1);
     }
 
     static void printOptions() {

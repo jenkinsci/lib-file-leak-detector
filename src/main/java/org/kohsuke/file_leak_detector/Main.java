@@ -40,7 +40,6 @@ public class Main {
             p.printUsage(System.err);
             System.err.println("\nOptions:");
             AgentMain.printOptions();
-            System.exit(1);
         }
     }
 
