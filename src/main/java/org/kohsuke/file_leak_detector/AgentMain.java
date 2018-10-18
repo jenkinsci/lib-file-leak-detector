@@ -48,6 +48,8 @@ import org.kohsuke.file_leak_detector.transform.TransformerImpl;
  */
 @SuppressWarnings("Since15")
 public class AgentMain {
+    private static boolean noexit;
+
     public static void agentmain(String agentArguments, Instrumentation instrumentation) throws Exception {
         premain(agentArguments,instrumentation);
     }
@@ -56,7 +58,14 @@ public class AgentMain {
         int serverPort = -1;
         
         if(agentArguments!=null) {
-            for (String t : agentArguments.split(",")) {
+            String[] arguments = agentArguments.split(",");
+
+            // Check it first to establish the flag before any error in the arguments process
+            if(Arrays.asList(arguments).contains("-noexit")) {
+                noexit = true;
+            }
+
+            for (String t : arguments) {
                 if(t.equals("help")) {
                     usageAndQuit();
                 } else
@@ -184,11 +193,13 @@ public class AgentMain {
     private static void usageAndQuit() {
         System.err.println("File leak detector arguments (to specify multiple values, separate them by ',':");
         printOptions();
-        System.exit(-1);
+        if (!noexit)
+            System.exit(-1);
     }
 
     static void printOptions() {
         System.err.println("  help          - show the help screen.");
+        System.err.println("  -noexit       - do not exit with error code terminating the JVM");
         System.err.println("  trace         - log every open/close operation to stderr.");
         System.err.println("  trace=FILE    - log every open/close operation to the given file.");
         System.err.println("  error=FILE    - if 'too many open files' error is detected, send the dump here.");

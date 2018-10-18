@@ -3,6 +3,7 @@ package org.kohsuke.file_leak_detector;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
+import org.kohsuke.args4j.Option;
 
 import java.io.File;
 import java.lang.reflect.Method;
@@ -28,6 +29,9 @@ public class Main {
     @Argument(index=1,metaVar="OPTSTR",usage="Packed option string of the form key1[=value1],key2[=value2],...")
     public String options;
 
+    @Option(name = "-noexit", usage = "Indicate whether the process is not going to exit with a return code to avoid terminating the currently running Java Virtual Machine")
+    public boolean noexit;
+
     public static void main(String[] args) throws Exception {
         Main main = new Main();
         CmdLineParser p = new CmdLineParser(main);
@@ -40,7 +44,8 @@ public class Main {
             p.printUsage(System.err);
             System.err.println("\nOptions:");
             AgentMain.printOptions();
-            System.exit(1);
+            if (!main.noexit)
+                System.exit(1);
         }
     }
 
