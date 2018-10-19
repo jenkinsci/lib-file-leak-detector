@@ -33,6 +33,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.zip.ZipFile;
 
+import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.asm6.Label;
 import org.kohsuke.asm6.MethodVisitor;
 import org.kohsuke.asm6.Type;
@@ -111,7 +112,7 @@ public class AgentMain {
                 } else {
                     System.err.println("Unknown option: "+t);
                     usage();
-                    return;
+                    throw new CmdLineException("Unknown option: "+t);
                 }
             }
         }

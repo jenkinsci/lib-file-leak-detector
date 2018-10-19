@@ -1,7 +1,6 @@
 package org.kohsuke.file_leak_detector;
 
 import org.kohsuke.args4j.Argument;
-import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 
 import java.io.File;
@@ -34,7 +33,11 @@ public class Main {
         try {
             p.parseArgument(args);
             main.run();
-        } catch (CmdLineException e) {
+        } catch (Exception e) {
+            /* The main cause of the exception in the agent is lost outside of the loadAgent method.
+            The instrumentation framework remove it in the AgentInitializationException object. We only can print
+            an error to let the parent invoker know something went wrong
+             */
             System.err.println(e.getMessage());
             System.err.println("java -jar file-leak-detector.jar PID [OPTSTR]");
             p.printUsage(System.err);
