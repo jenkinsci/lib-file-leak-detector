@@ -57,10 +57,17 @@ public class AgentMain {
         int serverPort = -1;
         
         if(agentArguments!=null) {
+            // used by Main to prevent the termination of target JVM
+            boolean quit = true;
+
             for (String t : agentArguments.split(",")) {
+                if(t.equals("noexit")) {
+                    quit = false;
+                } else
                 if(t.equals("help")) {
                     usage();
-                    return;
+                    if (quit)   System.exit(-1);
+                    else        return;
                 } else
                 if(t.startsWith("threshold=")) {
                     Listener.THRESHOLD = Integer.parseInt(t.substring(t.indexOf('=')+1));
@@ -112,6 +119,7 @@ public class AgentMain {
                 } else {
                     System.err.println("Unknown option: "+t);
                     usage();
+                    if (quit)       System.exit(-1);
                     throw new CmdLineException("Unknown option: "+t);
                 }
             }

@@ -1,9 +1,11 @@
 package org.kohsuke.file_leak_detector;
 
 import org.kohsuke.args4j.Argument;
+import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -27,23 +29,34 @@ public class Main {
     @Argument(index=1,metaVar="OPTSTR",usage="Packed option string of the form key1[=value1],key2[=value2],...")
     public String options;
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         Main main = new Main();
         CmdLineParser p = new CmdLineParser(main);
         try {
             p.parseArgument(args);
             main.run();
-        } catch (Exception e) {
+        } catch (CmdLineException e) {
+            System.err.println(e.getMessage());
+            fail(p);
+        } catch (InvocationTargetException e) {
             /* The main cause of the exception in the agent is lost outside of the loadAgent method.
             The instrumentation framework remove it in the AgentInitializationException object. We only can print
             an error to let the parent invoker know something went wrong
              */
-            System.err.println(e.getMessage());
-            System.err.println("java -jar file-leak-detector.jar PID [OPTSTR]");
-            p.printUsage(System.err);
-            System.err.println("\nOptions:");
-            AgentMain.printOptions();
+            e.getCause().printStackTrace();
+            fail(p);
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail(p);
         }
+    }
+
+    private static void fail(CmdLineParser p) {
+        System.err.println("java -jar file-leak-detector.jar PID [OPTSTR]");
+        p.printUsage(System.err);
+        System.err.println("\nOptions:");
+        AgentMain.printOptions();
+        System.exit(1);
     }
 
     public void run() throws Exception {
@@ -56,7 +69,8 @@ public class Main {
             File agentJar = whichJar(getClass());
             System.out.println("Activating file leak detector at "+agentJar);
             // load a specified agent onto the JVM
-            api.getMethod("loadAgent",String.class,String.class).invoke(vm, agentJar.getPath(), options);
+            // pass the hidden option to prevent this from killing the target JVM if the options were wrong
+            api.getMethod("loadAgent",String.class,String.class).invoke(vm, agentJar.getPath(), "noexit,"+options);
         } finally {
             api.getMethod("detach").invoke(vm);
         }
