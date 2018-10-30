@@ -5,3 +5,4 @@
 /.idea/*/*
 /.idea/*
 /.idea
+/file-leak-detector.iml
