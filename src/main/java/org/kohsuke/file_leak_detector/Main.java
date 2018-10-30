@@ -70,7 +70,7 @@ public class Main {
             System.out.println("Activating file leak detector at "+agentJar);
             // load a specified agent onto the JVM
             // pass the hidden option to prevent this from killing the target JVM if the options were wrong
-            api.getMethod("loadAgent",String.class,String.class).invoke(vm, agentJar.getPath(), "noexit,"+options);
+            api.getMethod("loadAgent",String.class,String.class).invoke(vm, agentJar.getPath(), options == null ? "noexit" : "noexit,"+options);
         } finally {
             api.getMethod("detach").invoke(vm);
         }
