@@ -22,7 +22,7 @@ public abstract class MethodAppender extends MethodTransformSpec {
     @Override
     public MethodVisitor newAdapter(MethodVisitor base, int access, String name, String desc, String signature, String[] exceptions) {
         final CodeGenerator cg = new CodeGenerator(base);
-        return new MethodVisitor(ASM6,base) {
+        return new MethodVisitor(ASM7,base) {
             @Override
             public void visitInsn(int opcode) {
                 switch (opcode) {

@@ -37,8 +37,8 @@ public class TransformerImpl implements ClassFileTransformer {
             return classfileBuffer;
 
         ClassReader cr = new ClassReader(classfileBuffer);
-        ClassWriter cw = new ClassWriter(/*ClassWriter.COMPUTE_FRAMES|*/ClassWriter.COMPUTE_MAXS);
-        cr.accept(new ClassVisitor(ASM6,cw) {
+        ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES|ClassWriter.COMPUTE_MAXS);
+        cr.accept(new ClassVisitor(ASM7,cw) {
             @Override
             public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
                 MethodVisitor base = super.visitMethod(access, name, desc, signature, exceptions);

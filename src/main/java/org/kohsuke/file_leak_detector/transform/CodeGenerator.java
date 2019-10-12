@@ -4,7 +4,7 @@ import static org.objectweb.asm.Opcodes.AASTORE;
 import static org.objectweb.asm.Opcodes.ACONST_NULL;
 import static org.objectweb.asm.Opcodes.ALOAD;
 import static org.objectweb.asm.Opcodes.ANEWARRAY;
-import static org.objectweb.asm.Opcodes.ASM6;
+import static org.objectweb.asm.Opcodes.ASM7;
 import static org.objectweb.asm.Opcodes.ASTORE;
 import static org.objectweb.asm.Opcodes.ATHROW;
 import static org.objectweb.asm.Opcodes.DUP;
@@ -27,7 +27,7 @@ import org.objectweb.asm.Type;
  */
 public class CodeGenerator extends MethodVisitor {
     public CodeGenerator(MethodVisitor mv) {
-        super(ASM6,mv);
+        super(ASM7,mv);
     }
 
     public void println(String msg) {
