@@ -1,24 +1,24 @@
 package org.kohsuke.file_leak_detector.transform;
 
-import static org.kohsuke.asm6.Opcodes.AASTORE;
-import static org.kohsuke.asm6.Opcodes.ACONST_NULL;
-import static org.kohsuke.asm6.Opcodes.ALOAD;
-import static org.kohsuke.asm6.Opcodes.ANEWARRAY;
-import static org.kohsuke.asm6.Opcodes.ASM6;
-import static org.kohsuke.asm6.Opcodes.ASTORE;
-import static org.kohsuke.asm6.Opcodes.ATHROW;
-import static org.kohsuke.asm6.Opcodes.DUP;
-import static org.kohsuke.asm6.Opcodes.GETSTATIC;
-import static org.kohsuke.asm6.Opcodes.GOTO;
-import static org.kohsuke.asm6.Opcodes.ICONST_0;
-import static org.kohsuke.asm6.Opcodes.IFEQ;
-import static org.kohsuke.asm6.Opcodes.INVOKESTATIC;
-import static org.kohsuke.asm6.Opcodes.INVOKEVIRTUAL;
-import static org.kohsuke.asm6.Opcodes.POP;
+import static org.objectweb.asm.Opcodes.AASTORE;
+import static org.objectweb.asm.Opcodes.ACONST_NULL;
+import static org.objectweb.asm.Opcodes.ALOAD;
+import static org.objectweb.asm.Opcodes.ANEWARRAY;
+import static org.objectweb.asm.Opcodes.ASM6;
+import static org.objectweb.asm.Opcodes.ASTORE;
+import static org.objectweb.asm.Opcodes.ATHROW;
+import static org.objectweb.asm.Opcodes.DUP;
+import static org.objectweb.asm.Opcodes.GETSTATIC;
+import static org.objectweb.asm.Opcodes.GOTO;
+import static org.objectweb.asm.Opcodes.ICONST_0;
+import static org.objectweb.asm.Opcodes.IFEQ;
+import static org.objectweb.asm.Opcodes.INVOKESTATIC;
+import static org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
+import static org.objectweb.asm.Opcodes.POP;
 
-import org.kohsuke.asm6.Label;
-import org.kohsuke.asm6.MethodVisitor;
-import org.kohsuke.asm6.Type;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Type;
 
 /**
  * Convenience method to generate bytecode.

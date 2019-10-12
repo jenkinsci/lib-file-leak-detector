@@ -1,8 +1,8 @@
 package org.kohsuke.file_leak_detector.transform;
 
-import org.kohsuke.asm6.MethodVisitor;
+import org.objectweb.asm.MethodVisitor;
 
-import static org.kohsuke.asm6.Opcodes.*;
+import static org.objectweb.asm.Opcodes.*;
 
 /**
  * {@link MethodTransformSpec} that adds some code right before the return statement.

@@ -106,7 +106,7 @@
                   <shadedPattern>org.kohsuke.file_leak_detector.args4j</shadedPattern>
                 </relocation>
                 <relocation>
-                  <pattern>org.kohsuke.asm6</pattern>
+                  <pattern>org.objectweb.asm</pattern>
                   <shadedPattern>org.kohsuke.file_leak_detector.asm6</shadedPattern>
                 </relocation>
               </relocations>
@@ -119,11 +119,32 @@
     </plugins>
   </build>
 
+  <properties>
+    <asm.version>6.0_BETA</asm.version>
+  </properties>
+
   <dependencies>
     <dependency>
-      <groupId>org.kohsuke</groupId>
-      <artifactId>asm6</artifactId>
-      <version>6.0_BETA</version>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm</artifactId>
+      <version>${asm.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-commons</artifactId>
+      <version>${asm.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-util</artifactId>
+      <version>${asm.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-analysis</artifactId>
+      <version>${asm.version}</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>args4j</groupId>
