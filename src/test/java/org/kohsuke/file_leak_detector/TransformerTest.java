@@ -10,10 +10,13 @@ import org.kohsuke.asm6.util.CheckClassAdapter;
 import org.kohsuke.file_leak_detector.transform.ClassTransformSpec;
 import org.kohsuke.file_leak_detector.transform.TransformerImpl;
 
+import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.zip.ZipFile;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Kohsuke Kawaguchi
@@ -42,7 +45,13 @@ public class TransformerTest {
 //        o.write(data2);
 //        o.close();
 
-        CheckClassAdapter.verify(new ClassReader(data2), false, new PrintWriter(System.err));
+        String errors;
+        ClassReader classReader = new ClassReader(data2);
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            CheckClassAdapter.verify(classReader, false, new PrintWriter(baos));
+            errors = new String(baos.toByteArray(), UTF_8);
+        }
+        assertTrue("Verification failed for " + c + "\n" + errors, errors.isEmpty());
     }
     
     @Parameters
