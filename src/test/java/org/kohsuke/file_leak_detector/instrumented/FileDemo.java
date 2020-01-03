@@ -88,6 +88,20 @@ public class FileDemo {
         assertTrue(traceOutput.contains("Closed " + tempFile));
     }
 
+    /* This is only available in Java 8 and newer...
+    @Test
+    public void openCloseFileLines() throws Exception {
+        Stream<String> stream = Files.lines(tempFile.toPath());
+        assertNotNull("No file record for file=" + tempFile + " found", findFileRecord(tempFile));
+
+        stream.close();
+        assertNull("File record for file=" + tempFile + " not removed", findFileRecord(tempFile));
+
+        String traceOutput = output.toString();
+        assertTrue(traceOutput.contains("Opened " + tempFile));
+        assertTrue(traceOutput.contains("Closed " + tempFile));
+    }*/
+
     private static FileRecord findFileRecord(File file) {
         for (Record record : Listener.getCurrentOpenFiles()) {
             if (record instanceof FileRecord) {
