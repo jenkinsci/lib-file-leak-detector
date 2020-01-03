@@ -53,6 +53,7 @@
             </includes>
             <excludes>
               <exclude>**/TransformerTest.java</exclude>
+              <exclude>**/AgentMainTest.java</exclude>
             </excludes>
             <argLine>
               -javaagent:"${project.build.directory}/file-leak-detector-${project.version}-jar-with-dependencies.jar"
@@ -67,9 +68,8 @@
               </goals>
               <configuration>
                 <includes>
-                  <include>
-                    **/TransformerTest.java
-                  </include>
+                  <include>**/TransformerTest.java</include>
+                  <include>**/AgentMainTest.java</include>
                 </includes>
                 <excludes>
                   <exclude>**/instrumented/*.java</exclude>
@@ -155,6 +155,12 @@
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>4.12</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>3.2.4</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
