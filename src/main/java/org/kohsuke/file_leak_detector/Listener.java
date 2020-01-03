@@ -15,6 +15,7 @@ import java.net.SocketAddress;
 import java.net.SocketImpl;
 import java.nio.channels.FileChannel;
 import java.nio.channels.Pipe;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
@@ -28,7 +29,7 @@ import java.util.zip.ZipFile;
 
 /**
  * Intercepted JDK calls land here.
- * 
+ *
  * @author Kohsuke Kawaguchi
  */
 public class Listener {
@@ -60,7 +61,7 @@ public class Listener {
                 pw.println("\tat " + trace[i]);
             pw.flush();
         }
-        
+
         public boolean exclude() {
         	if(EXCLUDES.isEmpty()) {
         		return false;
@@ -75,7 +76,7 @@ public class Listener {
                     break;
                 }
 			}
-            
+
             // check the rest
             for (; i < trace.length; i++) {
             	String t = trace[i].toString();
@@ -244,7 +245,7 @@ public class Listener {
     public static PrintWriter ERROR = new PrintWriter(System.err);
 
     /**
-     * Allows to provide stacktrace-lines which cause the element to be excluded 
+     * Allows to provide stacktrace-lines which cause the element to be excluded
      */
     public static final List<String> EXCLUDES = new ArrayList<String>();
 
@@ -270,7 +271,7 @@ public class Listener {
     public static boolean isAgentInstalled() {
         return AGENT_INSTALLED;
     }
-    
+
     public static synchronized void makeStrong() {
         TABLE = new LinkedHashMap<Object, Record>(TABLE);
     }
@@ -307,6 +308,10 @@ public class Listener {
 
     public static synchronized void open_filechannel(FileChannel fileChannel, Path path) {
         open(fileChannel, path.toFile());
+    }
+
+    public static synchronized void open_filechannel(SeekableByteChannel byteChannel, Path path) {
+        open(byteChannel, path.toFile());
     }
 
     public static synchronized void openSelector(Object _this) {
@@ -353,11 +358,11 @@ public class Listener {
             }
         }
     }
-    
+
     public static synchronized List<Record> getCurrentOpenFiles() {
         return new ArrayList<Record>(TABLE.values());
     }
-    
+
     private static synchronized void put(Object _this, Record r) {
     	// handle excludes
     	if(r.exclude()) {
@@ -435,7 +440,7 @@ public class Listener {
             tracing = false;
         }
     }
-    
+
     private static String format(long time) {
         try {
             return new Date(time).toString();
@@ -445,7 +450,7 @@ public class Listener {
     }
 
     private static Field SOCKETIMPL_SOCKET,SOCKETIMPL_SERVER_SOCKET;
-    
+
     static {
         try {
             SOCKETIMPL_SOCKET = SocketImpl.class.getDeclaredField("socket");
