@@ -135,8 +135,8 @@ public class AgentMain {
 
         Listener.AGENT_INSTALLED = true;
         instrumentation.addTransformer(new TransformerImpl(createSpec()),true);
-        
-        instrumentation.retransformClasses(
+
+        List<Class> classes = Arrays.asList(new Class[] {
                 FileInputStream.class,
                 FileOutputStream.class,
                 RandomAccessFile.class,
@@ -145,8 +145,13 @@ public class AgentMain {
                 AbstractSelectableChannel.class,
                 AbstractInterruptibleChannel.class,
                 FileChannel.class,
-                AbstractSelector.class
-                );
+                AbstractSelector.class,
+                Files.class});
+
+        addIfFound(classes, "sun/nio/ch/SocketChannelImpl");
+        addIfFound(classes, "java/net/AbstractPlainSocketImpl");
+
+        instrumentation.retransformClasses(classes.toArray(new Class[0]));
 
 
 //                Socket.class,
@@ -156,6 +161,14 @@ public class AgentMain {
 
         if (serverPort>=0)
             runHttpServer(serverPort);
+    }
+
+    private static void addIfFound(List<Class> classes, String className) {
+        try {
+            classes.add(Class.forName(className));
+        } catch(ClassNotFoundException e) {
+            // ignored here
+        }
     }
 
     private static void runHttpServer(int port) throws IOException {
