@@ -25,6 +25,7 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.channels.spi.AbstractInterruptibleChannel;
 import java.nio.channels.spi.AbstractSelectableChannel;
 import java.nio.channels.spi.AbstractSelector;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -150,6 +151,8 @@ public class AgentMain {
 
         addIfFound(classes, "sun/nio/ch/SocketChannelImpl");
         addIfFound(classes, "java/net/AbstractPlainSocketImpl");
+        addIfFound(classes, "sun/nio/fs/UnixDirectoryStream");
+        addIfFound(classes, "sun/nio/fs/UnixSecureDirectoryStream");
 
         instrumentation.retransformClasses(classes.toArray(new Class[0]));
 
@@ -243,11 +246,21 @@ public class AgentMain {
                     new ReturnFromStaticMethodInterceptor("open",
                             "(Ljava/nio/file/Path;Ljava/util/Set;[Ljava/nio/file/attribute/FileAttribute;)Ljava/nio/channels/FileChannel;", 4, "open_filechannel", FileChannel.class, Path.class)),
             /*
-            SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs)
+             * Detect instances opened via static methods in class java.nio.file.Files
              */
             new ClassTransformSpec(Files.class,
+                    // SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs)
                     new ReturnFromStaticMethodInterceptor("newByteChannel",
-                            "(Ljava/nio/file/Path;Ljava/util/Set;[Ljava/nio/file/attribute/FileAttribute;)Ljava/nio/channels/SeekableByteChannel;", 4, "open_filechannel", SeekableByteChannel.class, Path.class)),
+                            "(Ljava/nio/file/Path;Ljava/util/Set;[Ljava/nio/file/attribute/FileAttribute;)Ljava/nio/channels/SeekableByteChannel;", 4, "open_filechannel", SeekableByteChannel.class, Path.class),
+                    // DirectoryStream<Path> newDirectoryStream(Path dir)
+                    new ReturnFromStaticMethodInterceptor("newDirectoryStream",
+                            "(Ljava/nio/file/Path;)Ljava/nio/file/DirectoryStream;", 2, "open_directorystream", DirectoryStream.class, Path.class),
+                    // DirectoryStream<Path> newDirectoryStream(Path dir, String glob)
+                    new ReturnFromStaticMethodInterceptor("newDirectoryStream",
+                            "(Ljava/nio/file/Path;Ljava/lang/String;)Ljava/nio/file/DirectoryStream;", 6, "open_directorystream", DirectoryStream.class, Path.class),
+                    // DirectoryStream<Path> newDirectoryStream(Path dir, DirectoryStream.Filter<? super Path> filter)
+                    new ReturnFromStaticMethodInterceptor("newDirectoryStream",
+                            "(Ljava/nio/file/Path;Ljava/nio/file/DirectoryStream$Filter;)Ljava/nio/file/DirectoryStream;", 3, "open_directorystream", DirectoryStream.class, Path.class)),
             /*
              * Detect new Pipes
              */
@@ -257,6 +270,14 @@ public class AgentMain {
              * AbstractInterruptibleChannel is used by FileChannel and Pipes
              */
             new ClassTransformSpec(AbstractInterruptibleChannel.class,
+                    new CloseInterceptor("close")),
+            /*
+             * We need to see closing of DirectoryStream instances,
+             * however they are OS-specific, so we need to list them via String-name
+             */
+            new ClassTransformSpec("sun/nio/fs/UnixDirectoryStream",
+                    new CloseInterceptor("close")),
+            new ClassTransformSpec("sun/nio/fs/UnixSecureDirectoryStream",
                     new CloseInterceptor("close")),
 
             /**

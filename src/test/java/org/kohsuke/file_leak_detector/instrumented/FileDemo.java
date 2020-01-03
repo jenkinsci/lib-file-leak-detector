@@ -10,7 +10,9 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
 import org.junit.After;
@@ -81,6 +83,75 @@ public class FileDemo {
         assertNotNull("No file record for file=" + tempFile + " found", findFileRecord(tempFile));
 
         fileChannel.close();
+        assertNull("File record for file=" + tempFile + " not removed", findFileRecord(tempFile));
+
+        String traceOutput = output.toString();
+        assertTrue(traceOutput.contains("Opened " + tempFile));
+        assertTrue(traceOutput.contains("Closed " + tempFile));
+    }
+
+    @Test
+    public void openCloseFilesNewDirectoryStream() throws Exception {
+        assertTrue(tempFile.delete());
+        assertTrue(tempFile.mkdirs());
+
+        DirectoryStream<Path> stream = Files.newDirectoryStream(tempFile.toPath());
+        assertNotNull("No file record for file=" + tempFile + " found", findFileRecord(tempFile));
+
+        stream.close();
+        assertNull("File record for file=" + tempFile + " not removed", findFileRecord(tempFile));
+
+        String traceOutput = output.toString();
+        assertTrue(traceOutput.contains("Opened " + tempFile));
+        assertTrue(traceOutput.contains("Closed " + tempFile));
+    }
+
+    @Test
+    public void openCloseFilesNewDirectoryStreamWithStarGlob() throws Exception {
+        assertTrue(tempFile.delete());
+        assertTrue(tempFile.mkdirs());
+
+        DirectoryStream<Path> stream = Files.newDirectoryStream(tempFile.toPath(), "*");
+        assertNotNull("No file record for file=" + tempFile + " found", findFileRecord(tempFile));
+
+        stream.close();
+        assertNull("File record for file=" + tempFile + " not removed", findFileRecord(tempFile));
+
+        String traceOutput = output.toString();
+        assertTrue(traceOutput.contains("Opened " + tempFile));
+        assertTrue(traceOutput.contains("Closed " + tempFile));
+    }
+
+    @Test
+    public void openCloseFilesNewDirectoryStreamWithNonStarGlob() throws Exception {
+        assertTrue(tempFile.delete());
+        assertTrue(tempFile.mkdirs());
+
+        DirectoryStream<Path> stream = Files.newDirectoryStream(tempFile.toPath(), "my*test*glob");
+        assertNotNull("No file record for file=" + tempFile + " found", findFileRecord(tempFile));
+
+        stream.close();
+        assertNull("File record for file=" + tempFile + " not removed", findFileRecord(tempFile));
+
+        String traceOutput = output.toString();
+        assertTrue(traceOutput.contains("Opened " + tempFile));
+        assertTrue(traceOutput.contains("Closed " + tempFile));
+    }
+
+    @Test
+    public void openCloseFilesNewDirectoryStreamWithFilter() throws Exception {
+        assertTrue(tempFile.delete());
+        assertTrue(tempFile.mkdirs());
+
+        DirectoryStream<Path> stream = Files.newDirectoryStream(tempFile.toPath(), new DirectoryStream.Filter<Path>() {
+            @Override
+            public boolean accept(Path entry) {
+                return true;
+            }
+        });
+        assertNotNull("No file record for file=" + tempFile + " found", findFileRecord(tempFile));
+
+        stream.close();
         assertNull("File record for file=" + tempFile + " not removed", findFileRecord(tempFile));
 
         String traceOutput = output.toString();
