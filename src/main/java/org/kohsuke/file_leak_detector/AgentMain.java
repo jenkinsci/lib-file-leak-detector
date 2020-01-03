@@ -431,6 +431,7 @@ public class AgentMain {
     /**
      * Used to intercept {@link java.net.PlainSocketImpl#accept(SocketImpl)}
      */
+    @SuppressWarnings("JavadocReference")
     private static class AcceptInterceptor extends MethodAppender {
         public AcceptInterceptor(String name, String desc) {
             super(name, desc);

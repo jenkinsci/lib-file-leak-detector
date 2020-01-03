@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Set;
 import org.junit.Test;
 import org.kohsuke.file_leak_detector.transform.ClassTransformSpec;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 public class AgentMainTest {
@@ -38,23 +37,20 @@ public class AgentMainTest {
         }
 
         Instrumentation instrumentation = mock(Instrumentation.class);
-        doAnswer(new Answer<Object>() {
-            @Override
-            public Object answer(InvocationOnMock invocationOnMock) {
-                for (Object obj : invocationOnMock.getArguments()) {
-                    Class<?> clazz = (Class<?>) obj;
-                    String name = clazz.getName().replace(".", "/");
-                    assertTrue(
-                            "Tried to transform a class which is not contained in the specs: "
-                                    + name
-                                    + " ("
-                                    + clazz
-                                    + "), having remaining classes: "
-                                    + seenClasses,
-                            seenClasses.remove(name));
-                }
-                return null;
+        doAnswer((Answer<Object>) invocationOnMock -> {
+            for (Object obj : invocationOnMock.getArguments()) {
+                Class<?> clazz = (Class<?>) obj;
+                String name = clazz.getName().replace(".", "/");
+                assertTrue(
+                        "Tried to transform a class which is not contained in the specs: "
+                                + name
+                                + " ("
+                                + clazz
+                                + "), having remaining classes: "
+                                + seenClasses,
+                        seenClasses.remove(name));
             }
+            return null;
         }).when(instrumentation).retransformClasses((Class<?>) any());
 
         AgentMain.premain(null, instrumentation);
