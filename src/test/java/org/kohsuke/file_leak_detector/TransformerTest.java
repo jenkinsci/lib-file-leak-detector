@@ -11,11 +11,13 @@ import org.kohsuke.file_leak_detector.transform.ClassTransformSpec;
 import org.kohsuke.file_leak_detector.transform.TransformerImpl;
 
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -23,9 +25,9 @@ import static org.junit.Assert.assertTrue;
  */
 @RunWith(Parameterized.class)
 public class TransformerTest {
-    List<ClassTransformSpec> specs = AgentMain.createSpec();
+    private final static List<ClassTransformSpec> specs = AgentMain.createSpec();
 
-    Class<?> c;
+    private final Class<?> c;
 
     public TransformerTest(Class<?> c) {
         this.c = c;
@@ -36,7 +38,9 @@ public class TransformerTest {
         TransformerImpl t = new TransformerImpl(specs);
 
         String name = c.getName().replace('.', '/');
-        byte[] data = IOUtils.toByteArray(getClass().getClassLoader().getResourceAsStream(name + ".class"));
+        InputStream resource = getClass().getClassLoader().getResourceAsStream(name + ".class");
+        assertNotNull("Could not load " + name + ".class", resource);
+        byte[] data = IOUtils.toByteArray(resource);
         byte[] data2 = t.transform(name,data);
 
 //        File classFile = new File("/tmp/" + name + ".class");
@@ -45,7 +49,7 @@ public class TransformerTest {
 //        o.write(data2);
 //        o.close();
 
-        String errors;
+        final String errors;
         ClassReader classReader = new ClassReader(data2);
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             CheckClassAdapter.verify(classReader, false, new PrintWriter(baos));
@@ -54,10 +58,10 @@ public class TransformerTest {
         assertTrue("Verification failed for " + c + "\n" + errors, errors.isEmpty());
     }
 
-    @Parameters
+    @Parameters(name = "{index} - {0}")
     public static List<Object[]> specs() throws Exception {
         List<Object[]> r = new ArrayList<Object[]>();
-        for (ClassTransformSpec s : AgentMain.createSpec()) {
+        for (ClassTransformSpec s : specs) {
             Class<?> c = TransformerTest.class.getClassLoader().loadClass(s.name.replace('/', '.'));
             r.add(new Object[]{c});
         }
