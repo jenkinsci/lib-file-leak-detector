@@ -125,7 +125,7 @@
                 <exclude>**/TransformerTest.java</exclude>
                 <exclude>**/AgentMainTest.java</exclude>
               </excludes>
-              <argLine>-javaagent:"${project.build.directory}/file-leak-detector-${project.version}-jar-with-dependencies.jar"</argLine>
+              <argLine>-javaagent:"${project.build.directory}/file-leak-detector-${project.version}-jar-with-dependencies.jar" -Xverify:none</argLine>
             </configuration>
           </execution>
           <execution>
