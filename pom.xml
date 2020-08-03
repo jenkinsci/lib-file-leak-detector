@@ -31,8 +31,8 @@
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
-          <source>1.6</source>
-          <target>1.6</target>
+          <source>11</source>
+          <target>11</target>
         </configuration>
       </plugin>
       <plugin>
@@ -80,6 +80,7 @@
       </plugin>
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
+        <version>3.2.4</version>
         <executions>
           <execution>
             <goals>
@@ -106,8 +107,8 @@
                   <shadedPattern>org.kohsuke.file_leak_detector.args4j</shadedPattern>
                 </relocation>
                 <relocation>
-                  <pattern>org.kohsuke.asm6</pattern>
-                  <shadedPattern>org.kohsuke.file_leak_detector.asm6</shadedPattern>
+                  <pattern>org.objectweb.asm</pattern>
+                  <shadedPattern>org.kohsuke.file_leak_detector.asm</shadedPattern>
                 </relocation>
               </relocations>
             </configuration>
@@ -121,21 +122,26 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.kohsuke</groupId>
-      <artifactId>asm6</artifactId>
-      <version>6.0_BETA</version>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm</artifactId>
+      <version>8.0.1</version>
     </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-commons</artifactId>
+      <version>8.0.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-util</artifactId>
+      <version>8.0.1</version>
+      <scope>test</scope>
+    </dependency>
+
     <dependency>
       <groupId>args4j</groupId>
       <artifactId>args4j</artifactId>
       <version>2.0.16</version>
-    </dependency>
-    <dependency>
-      <groupId>com.sun</groupId>
-      <artifactId>tools</artifactId>
-      <version>6.0</version>
-      <scope>system</scope>
-      <systemPath>${toolsjar}</systemPath>
     </dependency>
     <dependency>
       <groupId>commons-io</groupId>
@@ -150,33 +156,6 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-
-  <profiles>
-    <profile>
-        <id>default-profile</id>
-        <activation>
-            <activeByDefault>true</activeByDefault>
-            <file>
-                <exists>${java.home}/../lib/tools.jar</exists>
-            </file>
-        </activation>
-        <properties>
-            <toolsjar>${java.home}/../lib/tools.jar</toolsjar>
-        </properties>
-    </profile>
-    <profile>
-        <id>mac-profile</id>
-        <activation>
-            <activeByDefault>false</activeByDefault>
-            <file>
-                <exists>${java.home}/../Classes/classes.jar</exists>
-            </file>
-        </activation>
-        <properties>
-            <toolsjar>${java.home}/../Classes/classes.jar</toolsjar>
-        </properties>
-    </profile>
-  </profiles>
 
   <licenses>
     <license>

@@ -1,8 +1,8 @@
 package org.kohsuke.file_leak_detector.transform;
 
-import org.kohsuke.asm6.MethodVisitor;
+import org.objectweb.asm.MethodVisitor;
 
-import static org.kohsuke.asm6.Opcodes.*;
+import static org.objectweb.asm.Opcodes.*;
 
 /**
  * {@link MethodTransformSpec} that adds some code right before the return statement.
@@ -22,7 +22,7 @@ public abstract class MethodAppender extends MethodTransformSpec {
     @Override
     public MethodVisitor newAdapter(MethodVisitor base, int access, String name, String desc, String signature, String[] exceptions) {
         final CodeGenerator cg = new CodeGenerator(base);
-        return new MethodVisitor(ASM6,base) {
+        return new MethodVisitor(ASM8,base) {
             @Override
             public void visitInsn(int opcode) {
                 switch (opcode) {
