@@ -14,6 +14,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.stream.Stream;
 
 import org.junit.After;
 import org.junit.Before;
@@ -29,7 +30,7 @@ import org.kohsuke.file_leak_detector.Listener.Record;
  * @author Andreas Dangel
  */
 public class FileDemo {
-    private static StringWriter output = new StringWriter();
+    private static final StringWriter output = new StringWriter();
     private File tempFile;
     private Object obj;
 
@@ -214,7 +215,6 @@ public class FileDemo {
         assertTrue(traceOutput.contains("Closed " + tempFile));
     }
 
-    /* This is only available in Java 8 and newer...
     @Test
     public void openCloseFileLines() throws Exception {
         Stream<String> stream = Files.lines(tempFile.toPath());
@@ -224,12 +224,12 @@ public class FileDemo {
         assertNull("File record for file=" + tempFile + " not removed", findFileRecord(tempFile));
 
         assertTrue("Did not have the expected type of 'marker' object: " + obj,
-                obj instanceof Stream);
+                obj instanceof SeekableByteChannel);
 
         String traceOutput = output.toString();
         assertTrue(traceOutput.contains("Opened " + tempFile));
         assertTrue(traceOutput.contains("Closed " + tempFile));
-    }*/
+    }
 
     private static FileRecord findFileRecord(File file) {
         for (Record record : Listener.getCurrentOpenFiles()) {
