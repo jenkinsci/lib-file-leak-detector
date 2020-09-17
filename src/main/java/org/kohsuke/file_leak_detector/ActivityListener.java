@@ -7,6 +7,7 @@ import java.io.RandomAccessFile;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.channels.SocketChannel;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.zip.ZipFile;
@@ -31,6 +32,9 @@ public abstract class ActivityListener {
      *      File being opened.
      */
     public void open(Object obj, File file) {
+    }
+
+    public void open(Object obj, Path file) {
     }
 
     /**

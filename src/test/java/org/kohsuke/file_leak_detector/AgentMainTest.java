@@ -66,6 +66,8 @@ public class AgentMainTest {
             seenClasses.remove("java/net/AbstractPlainSocketImpl");
             seenClasses.remove("java/net/PlainSocketImpl");
         }
+        seenClasses.remove("sun/nio/fs/UnixDirectoryStream");
+        seenClasses.remove("sun/nio/fs/UnixSecureDirectoryStream");
 
         assertTrue(
                 "Had classes in the spec which were not instrumented: " + seenClasses,
