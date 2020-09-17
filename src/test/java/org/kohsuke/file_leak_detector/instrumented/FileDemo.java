@@ -34,7 +34,6 @@ import org.apache.commons.io.file.NoopPathVisitor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.kohsuke.file_leak_detector.ActivityListener;
 import org.kohsuke.file_leak_detector.Listener;
@@ -392,7 +391,6 @@ public class FileDemo {
         assertThat(traceOutput, containsString("Closed " + new File(url.getFile()).getAbsolutePath()));
     }
 
-    @Disabled("Reported as https://bugs.openjdk.org/browse/JDK-8348037")
     @Test
     public void testZipFileLeakWalkFileTree() {
         URL url = getClass().getResource("/test.zip");
@@ -428,7 +426,6 @@ public class FileDemo {
         assertThat(traceOutput, containsString("Closed " + new File(url.getFile()).getAbsolutePath()));
     }
 
-    @Disabled("Reported as https://bugs.openjdk.org/browse/JDK-8348037")
     @Test
     public void testWalkFileTree() throws IOException {
         Files.walkFileTree(Path.of("."), new NoopPathVisitor());
