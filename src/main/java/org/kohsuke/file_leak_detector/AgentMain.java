@@ -30,7 +30,10 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipFile;
 
 import org.kohsuke.args4j.CmdLineException;
@@ -49,13 +52,16 @@ import org.kohsuke.file_leak_detector.transform.TransformerImpl;
  */
 @SuppressWarnings("Since15")
 public class AgentMain {
+
+    private static ScheduledExecutorService executorService;
+
     public static void agentmain(String agentArguments, Instrumentation instrumentation) throws Exception {
         premain(agentArguments,instrumentation);
     }
-    
+
     public static void premain(String agentArguments, Instrumentation instrumentation) throws Exception {
         int serverPort = -1;
-        
+
         if(agentArguments!=null) {
             // used by Main to prevent the termination of target JVM
             boolean quit = true;
@@ -95,8 +101,25 @@ public class AgentMain {
                         @Override
                         public void run() {
                             Listener.dump(System.err);
+                            executorService.shutdownNow();
                         }
                     });
+                } else
+                if(t.startsWith("dumpatinterval=")) {
+                    String value = t.substring(15);
+                    try {
+                        int interval = Integer.parseInt(value, 10);
+                        if (interval < 1 ) {
+                            System.err.println("Invalid number for interval - ignoring no scheduled dumps");
+                        } else {
+                            executorService = Executors.newSingleThreadScheduledExecutor();
+                            Runnable runnable = new ScheduledDump();
+                            executorService.scheduleAtFixedRate(runnable, 0, interval, TimeUnit.SECONDS);
+                        }
+                    } catch (NumberFormatException e) {
+                        System.err.println("Invalid number for interval - ignoring no scheduled dumps");
+                        // ignore invalid setting
+                    }
                 } else
                 if(t.startsWith("excludes=")) {
                     BufferedReader reader = new BufferedReader(new FileReader(t.substring(9)));
@@ -133,7 +156,7 @@ public class AgentMain {
 
         Listener.AGENT_INSTALLED = true;
         instrumentation.addTransformer(new TransformerImpl(createSpec()),true);
-        
+
         instrumentation.retransformClasses(
                 FileInputStream.class,
                 FileOutputStream.class,
@@ -210,6 +233,7 @@ public class AgentMain {
         System.err.println("  strong        - Don't let GC auto-close leaking file descriptors");
         System.err.println("  listener=S    - Specify the fully qualified name of ActivityListener class to activate from beginning");
         System.err.println("  dumpatshutdown- Dump open file handles at shutdown");
+        System.err.println("  dumpatinterval- Dump open file handles at interval in seconds after threshold is reached");
         System.err.println("  excludes=FILE - Ignore files opened directly/indirectly in specific methods.");
         System.err.println("                  File lists 'some.pkg.ClassName.methodName' patterns.");
     }
@@ -398,7 +422,7 @@ public class AgentMain {
          * Decide if this is the method that needs interception.
          */
         protected abstract boolean toIntercept(String owner, String name);
-        
+
         protected Class<? extends Exception> getExpectedException() {
             return IOException.class;
         }
@@ -407,7 +431,7 @@ public class AgentMain {
         public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
             if(toIntercept(owner,name)) {
                 Type exceptionType = Type.getType(getExpectedException());
-                
+
                 CodeGenerator g = new CodeGenerator(mv);
                 Label s = new Label(); // start of the try block
                 Label e = new Label();  // end of the try block
