@@ -58,7 +58,7 @@ public class AgentMainTest {
         verify(instrumentation, times(1)).addTransformer((ClassFileTransformer) any(), anyBoolean());
         verify(instrumentation, times(1)).retransformClasses((Class<?>) any());
 
-        // the following two are not available in all JVMs
+        // the following are not available in all JVMs
         seenClasses.remove("sun/nio/ch/SocketChannelImpl");
         seenClasses.remove("java/net/AbstractPlainSocketImpl");
         seenClasses.remove("sun/nio/fs/UnixDirectoryStream");

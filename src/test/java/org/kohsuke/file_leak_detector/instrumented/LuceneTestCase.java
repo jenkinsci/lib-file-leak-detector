@@ -117,7 +117,8 @@ public class LuceneTestCase {
 
 		directoryStream.close();
 
-		assertNull("File record for file=" + tempDir + " not removed", findFileRecord(tempDir.toFile()));
+		assertNull("File record for file=" + tempDir + " not removed, having class: " + directoryStream.getClass(),
+				findFileRecord(tempDir.toFile()));
 
 		fileSystem.close();
 

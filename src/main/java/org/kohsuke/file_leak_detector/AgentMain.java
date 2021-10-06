@@ -162,6 +162,9 @@ public class AgentMain {
 //                AbstractInterruptibleChannel.class,
 //                ServerSocket.class);
 
+        /*instrumentation.addTransformer(new InterfaceTransformerImpl(createSpec()),true);
+        instrumentation.retransformClasses(classes.toArray(new Class[0]));*/
+
         if (serverPort>=0)
             runHttpServer(serverPort);
     }
@@ -279,6 +282,8 @@ public class AgentMain {
                     new CloseInterceptor("close")),
             new ClassTransformSpec("sun/nio/fs/UnixSecureDirectoryStream",
                     new CloseInterceptor("close")),
+            /*new ClassTransformSpec("java/nio/file/DirectoryStream",
+                    new CloseInterceptor("close")),*/
 
             /**
              * Detect selectors, which may open native pipes and anonymous inodes for event polling.
