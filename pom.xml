@@ -108,6 +108,16 @@
                   <shadedPattern>org.kohsuke.file_leak_detector.asm6</shadedPattern>
                 </relocation>
               </relocations>
+              <filters>
+                <filter>
+                  <artifact>args4j:args4j</artifact>
+                  <excludes>
+                    <exclude>LICENSE</exclude>
+                    <exclude>OSGI-OPT/**/*.html</exclude>
+                    <exclude>OSGI-OPT/**/*.java</exclude>
+                  </excludes>
+                </filter>
+              </filters>
             </configuration>
           </execution>
         </executions>
