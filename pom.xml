@@ -113,6 +113,7 @@
                   <artifact>args4j:args4j</artifact>
                   <excludes>
                     <exclude>LICENSE</exclude>
+                    <exclude>META-INF/MANIFEST.MF</exclude>
                     <exclude>OSGI-OPT/**/*.html</exclude>
                     <exclude>OSGI-OPT/**/*.java</exclude>
                   </excludes>
