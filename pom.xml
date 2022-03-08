@@ -36,44 +36,44 @@
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <executions>
-        <execution>
-          <id>instrumented-tests</id>
-          <phase>integration-test</phase>
-          <goals>
-            <goal>test</goal>
-          </goals>
-          <configuration>
-            <reuseForks>false</reuseForks>
-            <includes>
-              <include>
+          <execution>
+            <id>instrumented-tests</id>
+            <phase>integration-test</phase>
+            <goals>
+              <goal>test</goal>
+            </goals>
+            <configuration>
+              <reuseForks>false</reuseForks>
+              <includes>
+                <include>
                 **/instrumented/*.java
               </include>
-            </includes>
-            <excludes>
-              <exclude>**/TransformerTest.java</exclude>
-              <exclude>**/AgentMainTest.java</exclude>
-            </excludes>
-            <argLine>
+              </includes>
+              <excludes>
+                <exclude>**/TransformerTest.java</exclude>
+                <exclude>**/AgentMainTest.java</exclude>
+              </excludes>
+              <argLine>
               -javaagent:"${project.build.directory}/file-leak-detector-${project.version}-jar-with-dependencies.jar"
             </argLine>
-          </configuration>
-        </execution>
-            <execution>
-              <id>default-test</id>
-              <phase>test</phase>
-              <goals>
-                <goal>test</goal>
-              </goals>
-              <configuration>
-                <includes>
-                  <include>**/TransformerTest.java</include>
-                  <include>**/AgentMainTest.java</include>
-                </includes>
-                <excludes>
-                  <exclude>**/instrumented/*.java</exclude>
-                </excludes>
-              </configuration>
-            </execution>
+            </configuration>
+          </execution>
+          <execution>
+            <id>default-test</id>
+            <phase>test</phase>
+            <goals>
+              <goal>test</goal>
+            </goals>
+            <configuration>
+              <includes>
+                <include>**/TransformerTest.java</include>
+                <include>**/AgentMainTest.java</include>
+              </includes>
+              <excludes>
+                <exclude>**/instrumented/*.java</exclude>
+              </excludes>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
       <plugin>
@@ -90,13 +90,13 @@
               <shadedClassifierName>jar-with-dependencies</shadedClassifierName>
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                <manifestEntries>
-                  <Agent-Class>org.kohsuke.file_leak_detector.AgentMain</Agent-Class>
-                  <Premain-Class>org.kohsuke.file_leak_detector.AgentMain</Premain-Class>
-                  <Main-Class>org.kohsuke.file_leak_detector.Main</Main-Class>
-                  <Can-Retransform-Classes>true</Can-Retransform-Classes>
-                  <Can-Redefine-Classes>true</Can-Redefine-Classes>
-                </manifestEntries>
+                  <manifestEntries>
+                    <Agent-Class>org.kohsuke.file_leak_detector.AgentMain</Agent-Class>
+                    <Premain-Class>org.kohsuke.file_leak_detector.AgentMain</Premain-Class>
+                    <Main-Class>org.kohsuke.file_leak_detector.Main</Main-Class>
+                    <Can-Retransform-Classes>true</Can-Retransform-Classes>
+                    <Can-Redefine-Classes>true</Can-Redefine-Classes>
+                  </manifestEntries>
                 </transformer>
               </transformers>
               <relocations>
