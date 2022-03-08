@@ -1,11 +1,9 @@
 package org.kohsuke.file_leak_detector.instrumented;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
+import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -20,9 +18,6 @@ import java.util.concurrent.Executors;
 
 import org.junit.Test;
 import org.kohsuke.file_leak_detector.Listener;
-import org.kohsuke.file_leak_detector.Listener.Record;
-import org.kohsuke.file_leak_detector.Listener.SocketChannelRecord;
-import org.kohsuke.file_leak_detector.Listener.SocketRecord;
 
 /**
  * @author Kohsuke Kawaguchi
@@ -35,10 +30,12 @@ public class SocketDemo {
         ss.bind(new InetSocketAddress("localhost",0));
 
         es.submit(new Callable<Object>() {
+            @Override
             public Object call() throws Exception {
                 while (true) {
                     final Socket s = ss.accept();
                     es.submit(new Callable<Object>() {
+                        @Override
                         public Object call() throws Exception {
                             s.close();
 //                            s.shutdownInput();
@@ -74,14 +71,15 @@ public class SocketDemo {
         final ServerSocketChannel serverSocket = ServerSocketChannel.open();
         serverSocket.bind(new InetSocketAddress("", 0));
 
-        final Set<SocketChannel> sockets = Collections.synchronizedSet(new HashSet<SocketChannel>());
+        final Set<SocketChannel> sockets = Collections.synchronizedSet(new HashSet<>());
         es.execute(new Runnable() {
+            @Override
             public void run() {
                 try {
                     sockets.add(serverSocket.accept());
                 }
                 catch (IOException ioe) {
-
+                    throw new UncheckedIOException(ioe);
                 }
             }
         });
@@ -111,14 +109,15 @@ public class SocketDemo {
         final ServerSocket ss = new ServerSocket();
         ss.bind(new InetSocketAddress("localhost",0));
 
-        final Set<Socket> sockets = Collections.synchronizedSet(new HashSet<Socket>());
+        final Set<Socket> sockets = Collections.synchronizedSet(new HashSet<>());
         es.execute(new Runnable() {
+            @Override
             public void run() {
                 try {
                     sockets.add(ss.accept());
                 }
                 catch (IOException ioe) {
-
+                    throw new UncheckedIOException(ioe);
                 }
             }
         });

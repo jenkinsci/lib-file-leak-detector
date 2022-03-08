@@ -3,18 +3,17 @@ package org.kohsuke.file_leak_detector;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.junit.Test;
 import org.kohsuke.file_leak_detector.transform.ClassTransformSpec;
-import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -39,14 +38,14 @@ public class AgentMainTest {
         }
 
         Instrumentation instrumentation = mock(Instrumentation.class);
-        Mockito.doAnswer(new Answer<Object>() {
+        doAnswer(new Answer<Object>() {
             @Override
-            public Object answer(InvocationOnMock invocationOnMock) throws Throwable {
+            public Object answer(InvocationOnMock invocationOnMock) {
                 for (Object obj : invocationOnMock.getArguments()) {
                     Class<?> clazz = (Class<?>) obj;
                     String name = clazz.getName().replace(".", "/");
                     assertTrue(
-                            "Tried to transform a class wihch is not contained in the specs: "
+                            "Tried to transform a class which is not contained in the specs: "
                                     + name
                                     + " ("
                                     + clazz
@@ -60,7 +59,7 @@ public class AgentMainTest {
 
         AgentMain.premain(null, instrumentation);
 
-        verify(instrumentation, times(1)).addTransformer((ClassFileTransformer) any(), anyBoolean());
+        verify(instrumentation, times(1)).addTransformer(any(), anyBoolean());
         verify(instrumentation, times(1)).retransformClasses((Class<?>) any());
 
         // the following are not available in all JVMs

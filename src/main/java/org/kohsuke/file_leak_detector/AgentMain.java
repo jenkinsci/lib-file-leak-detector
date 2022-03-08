@@ -1,9 +1,5 @@
 package org.kohsuke.file_leak_detector;
 
-import static org.objectweb.asm.Opcodes.ALOAD;
-import static org.objectweb.asm.Opcodes.ASM5;
-import static org.objectweb.asm.Opcodes.ASTORE;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -24,6 +20,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.spi.AbstractInterruptibleChannel;
 import java.nio.channels.spi.AbstractSelectableChannel;
 import java.nio.channels.spi.AbstractSelector;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
@@ -34,20 +31,20 @@ import java.util.concurrent.ThreadFactory;
 import java.util.zip.ZipFile;
 
 import org.kohsuke.args4j.CmdLineException;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Type;
-import org.objectweb.asm.commons.LocalVariablesSorter;
 import org.kohsuke.file_leak_detector.transform.ClassTransformSpec;
 import org.kohsuke.file_leak_detector.transform.CodeGenerator;
 import org.kohsuke.file_leak_detector.transform.MethodAppender;
 import org.kohsuke.file_leak_detector.transform.TransformerImpl;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.LocalVariablesSorter;
 
 /**
  * Java agent that instruments JDK classes to keep track of where file descriptors are opened.
  * @author Kohsuke Kawaguchi
  */
-@SuppressWarnings("Since15")
 public class AgentMain {
     public static void agentmain(String agentArguments, Instrumentation instrumentation) throws Exception {
         premain(agentArguments,instrumentation);
@@ -99,8 +96,7 @@ public class AgentMain {
                     });
                 } else
                 if(t.startsWith("excludes=")) {
-                    BufferedReader reader = new BufferedReader(new FileReader(t.substring(9)));
-                    try {
+                    try (BufferedReader reader = new BufferedReader(new FileReader(t.substring(9)))) {
 	                    while (true) {
 	                    	String line = reader.readLine();
 	                    	if(line == null) {
@@ -113,8 +109,6 @@ public class AgentMain {
 	                    		Listener.EXCLUDES.add(str);
 	                    	}
 	                    }
-                    } finally {
-                    	reader.close();
                     }
                 } else {
                     System.err.println("Unknown option: "+t);
@@ -161,6 +155,7 @@ public class AgentMain {
         ss.bind(new InetSocketAddress("localhost", port));
         System.err.println("Serving file leak stats on http://localhost:"+ss.getLocalPort()+"/ for stats");
         final ExecutorService es = Executors.newCachedThreadPool(new ThreadFactory() {
+            @Override
             public Thread newThread(Runnable r) {
                 Thread t = new Thread(r);
                 t.setDaemon(true);
@@ -168,17 +163,19 @@ public class AgentMain {
             }
         });
         es.submit(new Callable<Object>() {
+            @Override
             public Object call() throws Exception {
                 while (true) {
                     final Socket s = ss.accept();
                     es.submit(new Callable<Void>() {
+                        @Override
                         public Void call() throws Exception {
                             try {
                                 BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
                                 // Read the request line (and ignore it)
                                 in.readLine();
 
-                                PrintWriter w = new PrintWriter(new OutputStreamWriter(s.getOutputStream(),"UTF-8"));
+                                PrintWriter w = new PrintWriter(new OutputStreamWriter(s.getOutputStream(), StandardCharsets.UTF_8));
                                 w.print("HTTP/1.0 200 OK\r\nContent-Type: text/plain;charset=UTF-8\r\n\r\n");
                                 Listener.dump(w);
                             } finally {
@@ -239,7 +236,7 @@ public class AgentMain {
             new ClassTransformSpec(AbstractInterruptibleChannel.class,
                     new CloseInterceptor("close")),
 
-            /**
+            /*
              * Detect selectors, which may open native pipes and anonymous inodes for event polling.
              */
             new ClassTransformSpec(AbstractSelector.class,
@@ -250,7 +247,7 @@ public class AgentMain {
                 java.net.Socket/ServerSocket uses SocketImpl, and this is where FileDescriptors
                 are actually managed.
 
-                SocketInputStream/SocketOutputStream does not maintain a separate FileDescritor.
+                SocketInputStream/SocketOutputStream does not maintain a separate FileDescriptor.
                 They just all piggy back on the same SocketImpl instance.
              */
             new ClassTransformSpec("java/net/PlainSocketImpl",
@@ -302,6 +299,7 @@ public class AgentMain {
             super(methodName, "()V");
         }
 
+        @Override
         protected void append(CodeGenerator g) {
             g.invokeAppStatic(Listener.class,"close",
                     new Class[]{Object.class},
@@ -344,6 +342,7 @@ public class AgentMain {
             };
         }
 
+        @Override
         protected void append(CodeGenerator g) {
             g.invokeAppStatic(Listener.class,"openSocket",
                     new Class[]{Object.class},
@@ -370,6 +369,7 @@ public class AgentMain {
             };
         }
 
+        @Override
         protected void append(CodeGenerator g) {
             // the 's' parameter is the new socket that will own the socket
             g.invokeAppStatic(Listener.class,"openSocket",
@@ -389,7 +389,7 @@ public class AgentMain {
         private final LocalVariablesSorter lvs;
         private final MethodVisitor base;
         private OpenInterceptionAdapter(MethodVisitor base, int access, String desc) {
-            super(ASM5);
+            super(Opcodes.ASM9);
             lvs = new LocalVariablesSorter(access,desc, base);
             mv = lvs;
             this.base = base;
@@ -427,7 +427,7 @@ public class AgentMain {
                 //    boolean b = ex.getMessage().contains("Too many open files");
                 int ex = lvs.newLocal(exceptionType);
                 g.dup();
-                base.visitVarInsn(ASTORE, ex);
+                base.visitVarInsn(Opcodes.ASTORE, ex);
                 g.invokeVirtual(exceptionType.getInternalName(),"getMessage","()Ljava/lang/String;");
                 g.ldc("Too many open files");
                 g.invokeVirtual("java/lang/String","contains","(Ljava/lang/CharSequence;)Z");
@@ -442,7 +442,7 @@ public class AgentMain {
 
                 // rethrow the FileNotFoundException
                 g.visitLabel(rethrow);
-                base.visitVarInsn(ALOAD, ex);
+                base.visitVarInsn(Opcodes.ALOAD, ex);
                 g.athrow();
 
                 // normal execution continues here
@@ -483,6 +483,7 @@ public class AgentMain {
             };
         }
 
+        @Override
         protected void append(CodeGenerator g) {
             g.invokeAppStatic(Listener.class,"open",
                     new Class[]{Object.class, File.class},
@@ -506,6 +507,7 @@ public class AgentMain {
             }
         }
 
+        @Override
         protected void append(CodeGenerator g) {
             int[] index = new int[listenerMethodArgs.length];
             // first parameter is from the additional local variable, that holds

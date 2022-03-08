@@ -60,7 +60,7 @@ public class Main {
     }
 
     public void run() throws Exception {
-        Class api = loadAttachApi();
+        Class<?> api = loadAttachApi();
 
         System.out.println("Connecting to "+pid);
         Object vm = api.getMethod("attach",String.class).invoke(null,pid);
@@ -77,9 +77,9 @@ public class Main {
     }
 
     /**
-     * Loads the {@link VirtualMachine} class as the entry point to the attach API.
+     * Loads the {@code VirtualMachine} class as the entry point to the attach API.
      */
-    private Class loadAttachApi() throws MalformedURLException, ClassNotFoundException {
+    private Class<?> loadAttachApi() throws MalformedURLException, ClassNotFoundException {
         File toolsJar = locateToolsJar();
 
         ClassLoader cl = wrapIntoClassLoader(toolsJar);
@@ -130,7 +130,7 @@ public class Main {
     /**
      * Finds the jar file from a reference to class within.
      */
-    private File whichJar(Class c) {
+    private File whichJar(Class<?> c) {
         try {
             ProtectionDomain pd = c.getProtectionDomain();
             CodeSource cs = pd.getCodeSource();
