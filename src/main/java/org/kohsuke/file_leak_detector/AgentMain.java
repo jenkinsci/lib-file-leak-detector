@@ -1,8 +1,8 @@
 package org.kohsuke.file_leak_detector;
 
-import static org.kohsuke.asm6.Opcodes.ALOAD;
-import static org.kohsuke.asm6.Opcodes.ASM5;
-import static org.kohsuke.asm6.Opcodes.ASTORE;
+import static org.objectweb.asm.Opcodes.ALOAD;
+import static org.objectweb.asm.Opcodes.ASM5;
+import static org.objectweb.asm.Opcodes.ASTORE;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -34,10 +34,10 @@ import java.util.concurrent.ThreadFactory;
 import java.util.zip.ZipFile;
 
 import org.kohsuke.args4j.CmdLineException;
-import org.kohsuke.asm6.Label;
-import org.kohsuke.asm6.MethodVisitor;
-import org.kohsuke.asm6.Type;
-import org.kohsuke.asm6.commons.LocalVariablesSorter;
+import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.LocalVariablesSorter;
 import org.kohsuke.file_leak_detector.transform.ClassTransformSpec;
 import org.kohsuke.file_leak_detector.transform.CodeGenerator;
 import org.kohsuke.file_leak_detector.transform.MethodAppender;

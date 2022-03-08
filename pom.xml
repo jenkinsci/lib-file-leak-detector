@@ -19,6 +19,7 @@
     <changelist>-SNAPSHOT</changelist>
     <java.level>8</java.level>
     <gitHubRepo>jenkinsci/lib-${project.artifactId}</gitHubRepo>
+    <asm.version>9.2</asm.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <spotbugs.skip>true</spotbugs.skip> <!-- TODO lots of violations -->
   </properties>
@@ -104,8 +105,8 @@
                   <shadedPattern>org.kohsuke.file_leak_detector.args4j</shadedPattern>
                 </relocation>
                 <relocation>
-                  <pattern>org.kohsuke.asm6</pattern>
-                  <shadedPattern>org.kohsuke.file_leak_detector.asm6</shadedPattern>
+                  <pattern>org.objectweb.asm</pattern>
+                  <shadedPattern>org.kohsuke.file_leak_detector.asm</shadedPattern>
                 </relocation>
               </relocations>
               <filters>
@@ -116,6 +117,12 @@
                     <exclude>META-INF/MANIFEST.MF</exclude>
                     <exclude>OSGI-OPT/**/*.html</exclude>
                     <exclude>OSGI-OPT/**/*.java</exclude>
+                  </excludes>
+                </filter>
+                <filter>
+                  <artifact>org.ow2.asm:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/MANIFEST.MF</exclude>
                   </excludes>
                 </filter>
               </filters>
@@ -130,21 +137,34 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.kohsuke</groupId>
-      <artifactId>asm6</artifactId>
-      <version>6.0_BETA</version>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm</artifactId>
+      <version>${asm.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-analysis</artifactId>
+      <version>${asm.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-commons</artifactId>
+      <version>${asm.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-tree</artifactId>
+      <version>${asm.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-util</artifactId>
+      <version>${asm.version}</version>
     </dependency>
     <dependency>
       <groupId>args4j</groupId>
       <artifactId>args4j</artifactId>
       <version>2.33</version>
-    </dependency>
-    <dependency>
-      <groupId>com.sun</groupId>
-      <artifactId>tools</artifactId>
-      <version>6.0</version>
-      <scope>system</scope>
-      <systemPath>${java.home}/../lib/tools.jar</systemPath>
     </dependency>
     <dependency>
       <groupId>commons-io</groupId>

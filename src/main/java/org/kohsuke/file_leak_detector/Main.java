@@ -101,6 +101,9 @@ public class Main {
         URL jar = toolsJar.toURI().toURL();
 
         ClassLoader base = getClass().getClassLoader();
+        if (!toolsJar.exists()) {
+            return base;
+        }
         if (base instanceof URLClassLoader) {
             try {
                 Method addURL = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
