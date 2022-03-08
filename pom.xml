@@ -1,33 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.kohsuke</groupId>
-    <artifactId>pom</artifactId>
-    <version>19</version>
+    <groupId>org.jenkins-ci</groupId>
+    <artifactId>jenkins</artifactId>
+    <version>1.71</version>
+    <relativePath />
   </parent>
   <groupId>org.kohsuke</groupId>
   <artifactId>file-leak-detector</artifactId>
-  <version>1.14-SNAPSHOT</version>
+  <version>${revision}${changelist}</version>
   <name>File Leak Detector</name>
 
-  <url>http://${project.artifactId}.kohsuke.org/</url>
+  <url>https://github.com/jenkinsci/lib-${project.artifactId}</url>
+
+  <properties>
+    <revision>1.14</revision>
+    <changelist>-SNAPSHOT</changelist>
+    <java.level>8</java.level>
+    <gitHubRepo>jenkinsci/lib-${project.artifactId}</gitHubRepo>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <spotbugs.skip>true</spotbugs.skip> <!-- TODO lots of violations -->
+  </properties>
 
   <scm>
-    <connection>scm:git:git@github.com/kohsuke/${project.artifactId}.git</connection>
-    <developerConnection>scm:git:ssh://git@github.com/kohsuke/${project.artifactId}.git</developerConnection>
-    <url>http://${project.artifactId}.kohsuke.org/</url>
-    <tag>HEAD</tag>
+    <connection>scm:git:git://github.com/${gitHubRepo}.git</connection>
+    <developerConnection>scm:git:git@github.com:${gitHubRepo}.git</developerConnection>
+    <tag>${scmTag}</tag>
+    <url>https://github.com/${gitHubRepo}</url>
   </scm>
 
   <build>
     <plugins>
-      <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>1.8</source>
-          <target>1.8</target>
-        </configuration>
-      </plugin>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <executions>
@@ -73,6 +77,7 @@
       </plugin>
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
+        <version>3.2.4</version>
         <executions>
           <execution>
             <goals>
@@ -128,7 +133,7 @@
       <artifactId>tools</artifactId>
       <version>6.0</version>
       <scope>system</scope>
-      <systemPath>${toolsjar}</systemPath>
+      <systemPath>${java.home}/../lib/tools.jar</systemPath>
     </dependency>
     <dependency>
       <groupId>commons-io</groupId>
@@ -150,38 +155,25 @@
     </dependency>
   </dependencies>
 
-  <profiles>
-    <profile>
-        <id>default-profile</id>
-        <activation>
-            <activeByDefault>true</activeByDefault>
-            <file>
-                <exists>${java.home}/../lib/tools.jar</exists>
-            </file>
-        </activation>
-        <properties>
-            <toolsjar>${java.home}/../lib/tools.jar</toolsjar>
-        </properties>
-    </profile>
-    <profile>
-        <id>mac-profile</id>
-        <activation>
-            <activeByDefault>false</activeByDefault>
-            <file>
-                <exists>${java.home}/../Classes/classes.jar</exists>
-            </file>
-        </activation>
-        <properties>
-            <toolsjar>${java.home}/../Classes/classes.jar</toolsjar>
-        </properties>
-    </profile>
-  </profiles>
-
   <licenses>
     <license>
-      <name>The MIT license</name>
-      <url>http://www.opensource.org/licenses/mit-license.php</url>
+      <name>The MIT License</name>
+      <url>https://opensource.org/licenses/MIT</url>
       <distribution>repo</distribution>
     </license>
   </licenses>
+
+  <repositories>
+    <repository>
+      <id>repo.jenkins-ci.org</id>
+      <url>https://repo.jenkins-ci.org/public/</url>
+    </repository>
+  </repositories>
+
+  <pluginRepositories>
+    <pluginRepository>
+      <id>repo.jenkins-ci.org</id>
+      <url>https://repo.jenkins-ci.org/public/</url>
+    </pluginRepository>
+  </pluginRepositories>
 </project>
