@@ -1,0 +1,69 @@
+= File Leak Detector
+
+== What is this?
+
+This little Java agent is a tool that keeps track of where/when/who opened files in your JVM.
+You can have the agent trace these operations to find out about the access pattern or file descriptor leaks,
+and dump the list of currently open files and where/when/who opened them.
+
+In addition, upon a "too many open files" exception, this agent will dump the list,
+allowing you to find out where a large number of file descriptors are in use.
+
+For a long running application, you can have it run a mini HTTP server to access the information on demand.
+This tool can be also loaded as a regular dependency JAR,
+and the file descriptor table can be https://javadoc.jenkins.io/component/file-leak-detector/org/kohsuke/file_leak_detector/Listener.html[programmatically accessed].
+
+== Download
+
+Download File Leak Detector from https://repo.jenkins-ci.org/releases/org/kohsuke/file-leak-detector/[the Jenkins repository].
+
+== Usage
+
+Without any options, this tool silently records file open/close operations and upon a "too many open files" exception, the file descriptor table will be dumped to standard error.
+
+[source,sh]
+----
+$ java -javaagent:path/to/file-leak-detector.jar ...your usual Java arguments follow...
+----
+
+There are several options you can pass to the agent.
+For example, to dump the open file descriptors when the total number reaches 200, you can do the following:
+
+[source,sh]
+----
+$ java -javaagent:path/to/file-leak-detector.jar=threshold=200 ...your usual Java arguments follow...
+----
+
+Or to have it run a mini HTTP server so that you can access the information from your browser, do the following and open http://localhost:19999/:
+
+[source,sh]
+----
+$ java -javaagent:path/to/file-leak-detector.jar=http=19999 ...your usual Java arguments follow...
+----
+
+Use the help option to see the help screen for the complete list of options:
+
+[source,sh]
+----
+$ java -javaagent:path/to/file-leak-detector.jar=help
+----
+
+== Attaching after JVM startup
+
+When run as a regular JAR file, this tool can be used to attach the detector into other JVMs on the same system.
+You specify the JVM by its PID.
+The following example attaches File Leak Detector to PID 1500.
+Options can be specified in the second argument in the same format you do to the agent.
+
+[source,sh]
+----
+$ java -jar path/to/file-leak-detector.jar 1500 threshold=200,strong
+----
+
+== Documentation
+
+* https://javadoc.jenkins.io/component/file-leak-detector/[Javadoc]
+
+== Contributing
+
+Refer to our https://github.com/jenkinsci/.github/blob/master/CONTRIBUTING.md[contribution guidelines].
