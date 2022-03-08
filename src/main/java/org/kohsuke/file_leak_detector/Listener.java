@@ -15,8 +15,10 @@ import java.net.SocketAddress;
 import java.net.SocketImpl;
 import java.nio.channels.FileChannel;
 import java.nio.channels.Pipe;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Date;
@@ -312,8 +314,16 @@ public class Listener {
         }
     }
 
-    public static synchronized void open_filechannel(FileChannel fileChannel, Path path) {
+    public static synchronized void openFileChannel(FileChannel fileChannel, Path path) {
         open(fileChannel, path.toFile());
+    }
+
+    public static synchronized void openFileChannel(SeekableByteChannel byteChannel, Path path) {
+        open(byteChannel, path.toFile());
+    }
+
+    public static synchronized void openDirectoryStream(DirectoryStream<?> directoryStream, Path path) {
+        open(directoryStream, path.toFile());
     }
 
     public static synchronized void openSelector(Object _this) {

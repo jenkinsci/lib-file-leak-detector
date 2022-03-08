@@ -17,12 +17,17 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketImpl;
 import java.nio.channels.FileChannel;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.channels.spi.AbstractInterruptibleChannel;
 import java.nio.channels.spi.AbstractSelectableChannel;
 import java.nio.channels.spi.AbstractSelector;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -128,7 +133,9 @@ public class AgentMain {
         Listener.AGENT_INSTALLED = true;
         instrumentation.addTransformer(new TransformerImpl(createSpec()),true);
         
-        instrumentation.retransformClasses(
+        List<Class<?>> classes = new ArrayList<>();
+        Collections.addAll(
+                classes,
                 FileInputStream.class,
                 FileOutputStream.class,
                 RandomAccessFile.class,
@@ -137,8 +144,15 @@ public class AgentMain {
                 AbstractSelectableChannel.class,
                 AbstractInterruptibleChannel.class,
                 FileChannel.class,
-                AbstractSelector.class
-                );
+                AbstractSelector.class,
+                Files.class);
+
+        addIfFound(classes, "sun.nio.ch.SocketChannelImpl");
+        addIfFound(classes, "java.net.AbstractPlainSocketImpl");
+        addIfFound(classes, "sun.nio.fs.UnixDirectoryStream");
+        addIfFound(classes, "sun.nio.fs.UnixSecureDirectoryStream");
+
+        instrumentation.retransformClasses(classes.toArray(new Class[0]));
 
 
 //                Socket.class,
@@ -148,6 +162,14 @@ public class AgentMain {
 
         if (serverPort>=0)
             runHttpServer(serverPort);
+    }
+
+    private static void addIfFound(List<Class<?>> classes, String className) {
+        try {
+            classes.add(Class.forName(className));
+        } catch (ClassNotFoundException e) {
+            // ignored here
+        }
     }
 
     private static void runHttpServer(int port) throws IOException {
@@ -224,7 +246,44 @@ public class AgentMain {
              */
             new ClassTransformSpec(FileChannel.class,
                     new ReturnFromStaticMethodInterceptor("open",
-                            "(Ljava/nio/file/Path;Ljava/util/Set;[Ljava/nio/file/attribute/FileAttribute;)Ljava/nio/channels/FileChannel;", 4, "open_filechannel", FileChannel.class, Path.class)),
+                            "(Ljava/nio/file/Path;Ljava/util/Set;[Ljava/nio/file/attribute/FileAttribute;)Ljava/nio/channels/FileChannel;", 4, "openFileChannel", FileChannel.class, Path.class)),
+            /*
+             * Detect instances opened via static methods in class java.nio.file.Files
+             */
+            new ClassTransformSpec(
+                    Files.class,
+                    // SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs)
+                    new ReturnFromStaticMethodInterceptor(
+                            "newByteChannel",
+                            "(Ljava/nio/file/Path;Ljava/util/Set;[Ljava/nio/file/attribute/FileAttribute;)Ljava/nio/channels/SeekableByteChannel;",
+                            4,
+                            "openFileChannel",
+                            SeekableByteChannel.class,
+                            Path.class),
+                    // DirectoryStream<Path> newDirectoryStream(Path dir)
+                    new ReturnFromStaticMethodInterceptor(
+                            "newDirectoryStream",
+                            "(Ljava/nio/file/Path;)Ljava/nio/file/DirectoryStream;",
+                            2,
+                            "openDirectoryStream",
+                            DirectoryStream.class,
+                            Path.class),
+                    // DirectoryStream<Path> newDirectoryStream(Path dir, String glob)
+                    new ReturnFromStaticMethodInterceptor(
+                            "newDirectoryStream",
+                            "(Ljava/nio/file/Path;Ljava/lang/String;)Ljava/nio/file/DirectoryStream;",
+                            6,
+                            "openDirectoryStream",
+                            DirectoryStream.class,
+                            Path.class),
+                    // DirectoryStream<Path> newDirectoryStream(Path dir, DirectoryStream.Filter<? super Path> filter)
+                    new ReturnFromStaticMethodInterceptor(
+                            "newDirectoryStream",
+                            "(Ljava/nio/file/Path;Ljava/nio/file/DirectoryStream$Filter;)Ljava/nio/file/DirectoryStream;",
+                            3,
+                            "openDirectoryStream",
+                            DirectoryStream.class,
+                            Path.class)),
             /*
              * Detect new Pipes
              */
@@ -235,6 +294,14 @@ public class AgentMain {
              */
             new ClassTransformSpec(AbstractInterruptibleChannel.class,
                     new CloseInterceptor("close")),
+            /*
+             * We need to see closing of DirectoryStream instances,
+             * however they are OS-specific, so we need to list them via String-name
+             */
+            new ClassTransformSpec(
+                    "sun/nio/fs/UnixDirectoryStream", new CloseInterceptor("close")),
+            new ClassTransformSpec(
+                    "sun/nio/fs/UnixSecureDirectoryStream", new CloseInterceptor("close")),
 
             /*
              * Detect selectors, which may open native pipes and anonymous inodes for event polling.
