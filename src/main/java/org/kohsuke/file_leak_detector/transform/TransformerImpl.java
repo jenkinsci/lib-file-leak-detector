@@ -4,6 +4,7 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
@@ -12,21 +13,19 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.objectweb.asm.ClassReader.*;
-import static org.objectweb.asm.Opcodes.*;
-
 /**
  * @author Kohsuke Kawaguchi
  */
 public class TransformerImpl implements ClassFileTransformer {
 
-    private final Map<String,ClassTransformSpec> specs = new HashMap<String,ClassTransformSpec>();
+    private final Map<String,ClassTransformSpec> specs = new HashMap<>();
 
     public TransformerImpl(Collection<ClassTransformSpec> specs) {
         for (ClassTransformSpec spec : specs)
             this.specs.put(spec.name,spec);
     }
 
+    @Override
     public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) throws IllegalClassFormatException {
         return transform(className,classfileBuffer);
     }
@@ -38,7 +37,7 @@ public class TransformerImpl implements ClassFileTransformer {
 
         ClassReader cr = new ClassReader(classfileBuffer);
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES|ClassWriter.COMPUTE_MAXS);
-        cr.accept(new ClassVisitor(ASM9,cw) {
+        cr.accept(new ClassVisitor(Opcodes.ASM9,cw) {
             @Override
             public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
                 MethodVisitor base = super.visitMethod(access, name, desc, signature, exceptions);
@@ -49,7 +48,7 @@ public class TransformerImpl implements ClassFileTransformer {
 
                 return ms.newAdapter(base,access,name,desc,signature,exceptions);
             }
-        }, SKIP_FRAMES);
+        }, ClassReader.SKIP_FRAMES);
 
 //        System.out.println("Transforming "+className);
         return cw.toByteArray();

@@ -102,6 +102,7 @@ public class Listener {
             this.file = file;
         }
 
+        @Override
         public void dump(String prefix, PrintWriter pw) {
             pw.println(prefix + file + " by thread:" + threadName + " on " + format(time));
             super.dump(prefix,pw);
@@ -120,6 +121,7 @@ public class Listener {
             this.source = source;
         }
 
+        @Override
         public void dump(String prefix, PrintWriter pw) {
             pw.println(prefix + "Pipe Source Channel by thread:" + threadName + " on " + format(time));
             super.dump(prefix,pw);
@@ -133,6 +135,7 @@ public class Listener {
             this.sink = sink;
         }
 
+        @Override
         public void dump(String prefix, PrintWriter pw) {
             pw.println(prefix + "Pipe Sink Channel by thread:" + threadName + " on " + format(time));
             super.dump(prefix,pw);
@@ -157,6 +160,7 @@ public class Listener {
             return ra!=null ? ra.toString() : null;
         }
 
+        @Override
         public void dump(String prefix, PrintWriter ps) {
             // best effort at showing where it is/was listening
             String peer = this.peer;
@@ -189,6 +193,7 @@ public class Listener {
             return la!=null ? la.toString() : null;
         }
 
+        @Override
         public void dump(String prefix, PrintWriter ps) {
             // best effort at showing where it is/was listening
             String address = this.address;
@@ -209,6 +214,7 @@ public class Listener {
             this.socket = socket;
         }
 
+        @Override
         public void dump(String prefix, PrintWriter ps) {
             ps.println(prefix+"socket channel by thread:"+threadName+" on "+format(time));
             super.dump(prefix,ps);
@@ -222,6 +228,7 @@ public class Listener {
             this.selector = selector;
         }
 
+        @Override
         public void dump(String prefix, PrintWriter ps) {
             ps.println(prefix+"selector by thread:"+threadName+" on "+format(time));
             super.dump(prefix,ps);
@@ -231,7 +238,7 @@ public class Listener {
     /**
      * Files that are currently open, keyed by the owner object (like {@link FileInputStream}.
      */
-    private static Map<Object,Record> TABLE = new WeakHashMap<Object,Record>();
+    private static Map<Object,Record> TABLE = new WeakHashMap<>();
 
     /**
      * Trace the open/close op
@@ -246,7 +253,7 @@ public class Listener {
     /**
      * Allows to provide stacktrace-lines which cause the element to be excluded 
      */
-    public static final List<String> EXCLUDES = new ArrayList<String>();
+    public static final List<String> EXCLUDES = new ArrayList<>();
 
     /**
      * Tracing may cause additional files to be opened.
@@ -272,7 +279,7 @@ public class Listener {
     }
     
     public static synchronized void makeStrong() {
-        TABLE = new LinkedHashMap<Object, Record>(TABLE);
+        TABLE = new LinkedHashMap<>(TABLE);
     }
 
     /**
@@ -355,7 +362,7 @@ public class Listener {
     }
     
     public static synchronized List<Record> getCurrentOpenFiles() {
-        return new ArrayList<Record>(TABLE.values());
+        return new ArrayList<>(TABLE.values());
     }
     
     private static synchronized void put(Object _this, Record r) {

@@ -10,9 +10,9 @@ import java.util.HashMap;
  */
 public final class ClassTransformSpec {
     public final String name;
-    /*package*/ Map<String,MethodTransformSpec> methodSpecs = new HashMap<String,MethodTransformSpec>();
+    /*package*/ Map<String,MethodTransformSpec> methodSpecs = new HashMap<>();
 
-    public ClassTransformSpec(Class clazz, MethodTransformSpec... methodSpecs) {
+    public ClassTransformSpec(Class<?> clazz, MethodTransformSpec... methodSpecs) {
         this(clazz.getName().replace('.', '/'),methodSpecs);
     }
 

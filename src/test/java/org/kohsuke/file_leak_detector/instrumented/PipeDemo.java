@@ -33,7 +33,7 @@ public class PipeDemo {
     }
 
     @Before
-    public void prepareOutput() throws Exception {
+    public void prepareOutput() {
         output.getBuffer().setLength(0);
     }
 

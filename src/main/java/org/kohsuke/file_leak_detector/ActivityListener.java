@@ -60,7 +60,7 @@ public abstract class ActivityListener {
     /**
      * These listeners get called.
      */
-    public static final List<ActivityListener> LIST = new CopyOnWriteArrayList<ActivityListener>();
+    public static final List<ActivityListener> LIST = new CopyOnWriteArrayList<>();
 
 
 }
