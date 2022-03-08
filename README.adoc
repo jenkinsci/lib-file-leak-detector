@@ -60,6 +60,13 @@ Options can be specified in the second argument in the same format you do to the
 $ java -jar path/to/file-leak-detector.jar 1500 threshold=200,strong
 ----
 
+== Implementation details
+
+This project uses the JVM's support for instrumenting Java classes during startup.
+
+It adds code to various places where files or sockets are opened and closed
+to print out which file descriptors have not been closed correctly.
+
 == Documentation
 
 * https://javadoc.jenkins.io/component/file-leak-detector/[Javadoc]
@@ -67,3 +74,22 @@ $ java -jar path/to/file-leak-detector.jar 1500 threshold=200,strong
 == Contributing
 
 Refer to our https://github.com/jenkinsci/.github/blob/master/CONTRIBUTING.md[contribution guidelines].
+
+To build the package:
+
+[source,sh]
+----
+$ mvn package
+----
+
+The resulting package will be at `file-leak-detector-${VERSION}-SNAPSHOT-jar-with-dependencies.jar`.
+
+To run integration tests:
+
+[source,sh]
+----
+$ mvn verify
+----
+
+This will run the tests in the `org.kohsuke.file_leak_detector.instrumented` package,
+which are executed with instrumentation via the Java agent being active.
