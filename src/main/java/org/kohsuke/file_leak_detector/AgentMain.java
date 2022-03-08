@@ -26,7 +26,6 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -235,7 +234,9 @@ public class AgentMain {
     }
 
     static List<ClassTransformSpec> createSpec() {
-        return Arrays.asList(
+        List<ClassTransformSpec> spec = new ArrayList<>();
+        Collections.addAll(
+            spec,
             newSpec(FileOutputStream.class, "(Ljava/io/File;Z)V"),
             newSpec(FileInputStream.class, "(Ljava/io/File;)V"),
             newSpec(RandomAccessFile.class, "(Ljava/io/File;Ljava/lang/String;)V"),
@@ -293,16 +294,23 @@ public class AgentMain {
              * AbstractInterruptibleChannel is used by FileChannel and Pipes
              */
             new ClassTransformSpec(AbstractInterruptibleChannel.class,
-                    new CloseInterceptor("close")),
-            /*
-             * We need to see closing of DirectoryStream instances,
-             * however they are OS-specific, so we need to list them via String-name
-             */
-            new ClassTransformSpec(
-                    "sun/nio/fs/UnixDirectoryStream", new CloseInterceptor("close")),
-            new ClassTransformSpec(
-                    "sun/nio/fs/UnixSecureDirectoryStream", new CloseInterceptor("close")),
-
+                    new CloseInterceptor("close"))
+        );
+        if (!System.getProperty("os.name").startsWith("Windows")) {
+            Collections.addAll(
+                    spec,
+                    /*
+                     * We need to see closing of DirectoryStream instances,
+                     * however they are OS-specific, so we need to list them via String-name
+                     */
+                    new ClassTransformSpec(
+                            "sun/nio/fs/UnixDirectoryStream", new CloseInterceptor("close")),
+                    new ClassTransformSpec(
+                            "sun/nio/fs/UnixSecureDirectoryStream", new CloseInterceptor("close"))
+            );
+        }
+        Collections.addAll(
+            spec,
             /*
              * Detect selectors, which may open native pipes and anonymous inodes for event polling.
              */
@@ -344,6 +352,7 @@ public class AgentMain {
                     new CloseInterceptor("kill")
             )
         );
+        return spec;
     }
 
     /**
