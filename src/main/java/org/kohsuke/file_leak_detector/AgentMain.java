@@ -150,6 +150,7 @@ public class AgentMain {
         addIfFound(classes, "java.net.AbstractPlainSocketImpl");
         addIfFound(classes, "sun.nio.fs.UnixDirectoryStream");
         addIfFound(classes, "sun.nio.fs.UnixSecureDirectoryStream");
+        addIfFound(classes, "sun.nio.fs.WindowsDirectoryStream");
 
         instrumentation.retransformClasses(classes.toArray(new Class[0]));
 
@@ -296,17 +297,23 @@ public class AgentMain {
             new ClassTransformSpec(AbstractInterruptibleChannel.class,
                     new CloseInterceptor("close"))
         );
+        /*
+         * We need to see closing of DirectoryStream instances,
+         * however they are OS-specific, so we need to list them via String-name
+         */
         if (!System.getProperty("os.name").startsWith("Windows")) {
             Collections.addAll(
                     spec,
-                    /*
-                     * We need to see closing of DirectoryStream instances,
-                     * however they are OS-specific, so we need to list them via String-name
-                     */
                     new ClassTransformSpec(
                             "sun/nio/fs/UnixDirectoryStream", new CloseInterceptor("close")),
                     new ClassTransformSpec(
                             "sun/nio/fs/UnixSecureDirectoryStream", new CloseInterceptor("close"))
+            );
+        } else {
+            Collections.addAll(
+                    spec,
+                    new ClassTransformSpec(
+                            "sun/nio/fs/WindowsDirectoryStream", new CloseInterceptor("close"))
             );
         }
         Collections.addAll(
