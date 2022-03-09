@@ -18,19 +18,6 @@
     - If it is not a false positive, fix the bug, then remove the exclusion from this section.
    -->
   <Match>
-    <Confidence value="1"/>
-    <Or>
-      <And>
-        <Bug pattern="DM_DEFAULT_ENCODING"/>
-        <Or>
-          <Class name="org.kohsuke.file_leak_detector.AgentMain"/>
-          <Class name="org.kohsuke.file_leak_detector.AgentMain$3$1"/>
-          <Class name="org.kohsuke.file_leak_detector.Listener"/>
-        </Or>
-      </And>
-    </Or>
-  </Match>
-  <Match>
     <Confidence value="2"/>
     <Or>
       <And>

@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -21,10 +20,12 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.channels.spi.AbstractInterruptibleChannel;
 import java.nio.channels.spi.AbstractSelectableChannel;
 import java.nio.channels.spi.AbstractSelector;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -74,7 +75,7 @@ public class AgentMain {
                     Listener.THRESHOLD = Integer.parseInt(t.substring(t.indexOf('=')+1));
                 } else
                 if(t.equals("trace")) {
-                    Listener.TRACE = new PrintWriter(System.err);
+                    Listener.TRACE = new PrintWriter(new OutputStreamWriter(System.err, Charset.defaultCharset()));
                 } else
                 if(t.equals("strong")) {
                     Listener.makeStrong();
@@ -83,10 +84,10 @@ public class AgentMain {
                     serverPort = Integer.parseInt(t.substring(t.indexOf('=')+1));
                 } else
                 if(t.startsWith("trace=")) {
-                    Listener.TRACE = new PrintWriter(new FileOutputStream(t.substring(6)));
+                    Listener.TRACE = new PrintWriter(new OutputStreamWriter(new FileOutputStream(t.substring(6)), StandardCharsets.UTF_8));
                 } else
                 if(t.startsWith("error=")) {
-                    Listener.ERROR = new PrintWriter(new FileOutputStream(t.substring(6)));
+                    Listener.ERROR = new PrintWriter(new OutputStreamWriter(new FileOutputStream(t.substring(6)), StandardCharsets.UTF_8));
                 } else
                 if(t.startsWith("listener=")) {
                     ActivityListener.LIST.add((ActivityListener) AgentMain.class.getClassLoader().loadClass(t.substring(9)).newInstance());
@@ -100,7 +101,7 @@ public class AgentMain {
                     });
                 } else
                 if(t.startsWith("excludes=")) {
-                    try (BufferedReader reader = new BufferedReader(new FileReader(t.substring(9)))) {
+                    try (BufferedReader reader = Files.newBufferedReader(Paths.get(t.substring(9)), StandardCharsets.UTF_8)) {
 	                    while (true) {
 	                    	String line = reader.readLine();
 	                    	if(line == null) {
@@ -193,7 +194,7 @@ public class AgentMain {
                         @Override
                         public Void call() throws Exception {
                             try {
-                                BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
+                                BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream(), StandardCharsets.UTF_8));
                                 // Read the request line (and ignore it)
                                 in.readLine();
 
