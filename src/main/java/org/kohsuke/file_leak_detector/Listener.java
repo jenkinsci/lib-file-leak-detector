@@ -51,10 +51,10 @@ public class Listener {
 
         public void dump(String prefix, PrintWriter pw) {
             StackTraceElement[] trace = stackTrace.getStackTrace();
-            int i=0;
+            int i = 0;
             // skip until we find the Method.invoke() that called us
-            for (; i<trace.length; i++) {
-                if(trace[i].getClassName().equals("java.lang.reflect.Method")) {
+            for (; i < trace.length; i++) {
+                if (trace[i].getClassName().equals("java.lang.reflect.Method")) {
                     i++;
                     break;
                 }
@@ -67,15 +67,15 @@ public class Listener {
         }
 
         public boolean exclude() {
-            if(EXCLUDES.isEmpty()) {
+            if (EXCLUDES.isEmpty()) {
                 return false;
             }
 
             StackTraceElement[] trace = stackTrace.getStackTrace();
-            int i=0;
+            int i = 0;
             // skip until we find the Method.invoke() that called us
-            for (; i<trace.length; i++) {
-                if(trace[i].getClassName().equals("java.lang.reflect.Method")) {
+            for (; i < trace.length; i++) {
+                if (trace[i].getClassName().equals("java.lang.reflect.Method")) {
                     i++;
                     break;
                 }
@@ -84,9 +84,9 @@ public class Listener {
             // check the rest
             for (; i < trace.length; i++) {
                 String t = trace[i].toString();
-                for(String exclude : EXCLUDES) {
+                for (String exclude : EXCLUDES) {
                     // skip empty lines
-                    if(t.contains(exclude)) {
+                    if (t.contains(exclude)) {
                         return true;
                     }
                 }
@@ -110,7 +110,7 @@ public class Listener {
         @Override
         public void dump(String prefix, PrintWriter pw) {
             pw.println(prefix + file + " by thread:" + threadName + " on " + format(time));
-            super.dump(prefix,pw);
+            super.dump(prefix, pw);
         }
 
         @Override
@@ -129,7 +129,7 @@ public class Listener {
         @Override
         public void dump(String prefix, PrintWriter pw) {
             pw.println(prefix + "Pipe Source Channel by thread:" + threadName + " on " + format(time));
-            super.dump(prefix,pw);
+            super.dump(prefix, pw);
         }
     }
 
@@ -143,7 +143,7 @@ public class Listener {
         @Override
         public void dump(String prefix, PrintWriter pw) {
             pw.println(prefix + "Pipe Sink Channel by thread:" + threadName + " on " + format(time));
-            super.dump(prefix,pw);
+            super.dump(prefix, pw);
         }
     }
 
@@ -162,19 +162,19 @@ public class Listener {
 
         private String getRemoteAddress(Socket socket) {
             SocketAddress ra = socket.getRemoteSocketAddress();
-            return ra!=null ? ra.toString() : null;
+            return ra != null ? ra.toString() : null;
         }
 
         @Override
         public void dump(String prefix, PrintWriter ps) {
             // best effort at showing where it is/was listening
             String peer = this.peer;
-            if (peer==null) {
-                peer=getRemoteAddress(socket);
+            if (peer == null) {
+                peer = getRemoteAddress(socket);
             }
 
-            ps.println(prefix+"socket to "+peer+" by thread:"+threadName+" on "+format(time));
-            super.dump(prefix,ps);
+            ps.println(prefix + "socket to " + peer + " by thread:" + threadName + " on " + format(time));
+            super.dump(prefix, ps);
         }
 
         @Override
@@ -197,19 +197,19 @@ public class Listener {
 
         private String getLocalAddress(ServerSocket socket) {
             SocketAddress la = socket.getLocalSocketAddress();
-            return la!=null ? la.toString() : null;
+            return la != null ? la.toString() : null;
         }
 
         @Override
         public void dump(String prefix, PrintWriter ps) {
             // best effort at showing where it is/was listening
             String address = this.address;
-            if (address==null) {
-                address=getLocalAddress(socket);
+            if (address == null) {
+                address = getLocalAddress(socket);
             }
 
-            ps.println(prefix+"server socket at "+address+" by thread:"+threadName+" on "+format(time));
-            super.dump(prefix,ps);
+            ps.println(prefix + "server socket at " + address + " by thread:" + threadName + " on " + format(time));
+            super.dump(prefix, ps);
         }
     }
 
@@ -225,8 +225,8 @@ public class Listener {
 
         @Override
         public void dump(String prefix, PrintWriter ps) {
-            ps.println(prefix+"socket channel by thread:"+threadName+" on "+format(time));
-            super.dump(prefix,ps);
+            ps.println(prefix + "socket channel by thread:" + threadName + " on " + format(time));
+            super.dump(prefix, ps);
         }
     }
 
@@ -239,15 +239,15 @@ public class Listener {
 
         @Override
         public void dump(String prefix, PrintWriter ps) {
-            ps.println(prefix+"selector by thread:"+threadName+" on "+format(time));
-            super.dump(prefix,ps);
+            ps.println(prefix + "selector by thread:" + threadName + " on " + format(time));
+            super.dump(prefix, ps);
         }
     }
 
     /**
      * Files that are currently open, keyed by the owner object (like {@link FileInputStream}.
      */
-    private static Map<Object,Record> TABLE = new WeakHashMap<>();
+    private static Map<Object, Record> TABLE = new WeakHashMap<>();
 
     /**
      * Trace the open/close op
@@ -303,18 +303,19 @@ public class Listener {
         put(_this, new FileRecord(f));
 
         for (ActivityListener al : ActivityListener.LIST) {
-            al.open(_this,f);
+            al.open(_this, f);
         }
     }
 
     public static synchronized void openPipe(Object _this) {
         if (_this instanceof Pipe.SourceChannel) {
-            put(_this, new SourceChannelRecord((Pipe.SourceChannel)_this));
+            put(_this, new SourceChannelRecord((Pipe.SourceChannel) _this));
             for (ActivityListener al : ActivityListener.LIST) {
                 al.fd_open(_this);
             }
-        } if (_this instanceof Pipe.SinkChannel) {
-            put(_this, new SinkChannelRecord((Pipe.SinkChannel)_this));
+        }
+        if (_this instanceof Pipe.SinkChannel) {
+            put(_this, new SinkChannelRecord((Pipe.SinkChannel) _this));
             for (ActivityListener al : ActivityListener.LIST) {
                 al.fd_open(_this);
             }
@@ -335,7 +336,7 @@ public class Listener {
 
     public static synchronized void openSelector(Object _this) {
         if (_this instanceof Selector) {
-            put(_this, new SelectorRecord((Selector)_this));
+            put(_this, new SelectorRecord((Selector) _this));
             for (ActivityListener al : ActivityListener.LIST) {
                 al.fd_open(_this);
             }
@@ -351,15 +352,15 @@ public class Listener {
             try {
                 // one of the following must be true
                 SocketImpl si = (SocketImpl) _this;
-                Socket s = (Socket)SOCKETIMPL_SOCKET.get(si);
-                if (s!=null) {
+                Socket s = (Socket) SOCKETIMPL_SOCKET.get(si);
+                if (s != null) {
                     put(_this, new SocketRecord(s));
                     for (ActivityListener al : ActivityListener.LIST) {
                         al.openSocket(s);
                     }
                 }
-                ServerSocket ss = (ServerSocket)SOCKETIMPL_SERVER_SOCKET.get(si);
-                if (ss!=null) {
+                ServerSocket ss = (ServerSocket) SOCKETIMPL_SERVER_SOCKET.get(si);
+                if (ss != null) {
                     put(_this, new ServerSocketRecord(ss));
                     for (ActivityListener al : ActivityListener.LIST) {
                         al.openSocket(ss);
@@ -384,23 +385,23 @@ public class Listener {
 
     private static synchronized void put(Object _this, Record r) {
         // handle excludes
-        if(r.exclude()) {
-            if(TRACE!=null && !tracing) {
+        if (r.exclude()) {
+            if (TRACE != null && !tracing) {
                 tracing = true;
-                r.dump("Excluded ",TRACE);
+                r.dump("Excluded ", TRACE);
                 tracing = false;
             }
             return;
         }
 
         TABLE.put(_this, r);
-        if(TABLE.size()>THRESHOLD) {
-            THRESHOLD=999999;
+        if (TABLE.size() > THRESHOLD) {
+            THRESHOLD = 999999;
             dump(ERROR);
         }
-        if(TRACE!=null && !tracing) {
+        if (TRACE != null && !tracing) {
             tracing = true;
-            r.dump("Opened ",TRACE);
+            r.dump("Opened ", TRACE);
             tracing = false;
         }
     }
@@ -415,9 +416,9 @@ public class Listener {
      */
     public static synchronized void close(Object _this) {
         Record r = TABLE.remove(_this);
-        if(r!=null && TRACE!=null && !tracing) {
+        if (r != null && TRACE != null && !tracing) {
             tracing = true;
-            r.dump("Closed ",TRACE);
+            r.dump("Closed ", TRACE);
             tracing = false;
         }
 
@@ -435,14 +436,15 @@ public class Listener {
     public static synchronized void dump(OutputStream out) {
         dump(new OutputStreamWriter(out, Charset.defaultCharset()));
     }
+
     public static synchronized void dump(Writer w) {
         PrintWriter pw = new PrintWriter(w);
         Record[] records = TABLE.values().toArray(new Record[0]);
 
-        pw.println(records.length+" descriptors are open");
-        int i=0;
+        pw.println(records.length + " descriptors are open");
+        int i = 0;
         for (Record r : records) {
-            r.dump("#"+(++i)+" ",pw);
+            r.dump("#" + (++i) + " ", pw);
         }
         pw.println("----");
         pw.flush();
@@ -452,7 +454,7 @@ public class Listener {
      * Called when the system has too many open files.
      */
     public static synchronized void outOfDescriptors() {
-        if(ERROR!=null && !tracing) {
+        if (ERROR != null && !tracing) {
             tracing = true;
             ERROR.println("Too many open files");
             dump(ERROR);

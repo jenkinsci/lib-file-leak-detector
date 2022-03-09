@@ -27,13 +27,13 @@ import org.objectweb.asm.Type;
  */
 public class CodeGenerator extends MethodVisitor {
     public CodeGenerator(MethodVisitor mv) {
-        super(ASM9,mv);
+        super(ASM9, mv);
     }
 
     public void println(String msg) {
-        super.visitFieldInsn(GETSTATIC,"java/lang/System","out","Ljava/io/PrintStream;");
+        super.visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
         ldc(msg);
-        invokeVirtual("java/io/PrintStream","println","(Ljava/lang/String;)V");
+        invokeVirtual("java/io/PrintStream", "println", "(Ljava/lang/String;)V");
     }
 
     public void _null() {
@@ -42,12 +42,12 @@ public class CodeGenerator extends MethodVisitor {
 
     public void newArray(String type, int size) {
         iconst(size);
-        super.visitTypeInsn(ANEWARRAY,type);
+        super.visitTypeInsn(ANEWARRAY, type);
     }
 
     public void iconst(int i) {
-        if(i<=5) {
-            super.visitInsn(ICONST_0+i);
+        if (i <= 5) {
+            super.visitInsn(ICONST_0 + i);
         } else {
             super.visitLdcInsn(i);
         }
@@ -62,7 +62,7 @@ public class CodeGenerator extends MethodVisitor {
     }
 
     public void aload(int i) {
-        super.visitIntInsn(ALOAD,i);
+        super.visitIntInsn(ALOAD, i);
     }
 
     public void astore(int i) {
@@ -74,8 +74,9 @@ public class CodeGenerator extends MethodVisitor {
     }
 
     public void ldc(Object o) {
-        if(o.getClass()==Class.class)
-            o = Type.getType((Class<?>)o);
+        if (o.getClass() == Class.class) {
+            o = Type.getType((Class<?>) o);
+        }
         super.visitLdcInsn(o);
     }
 
@@ -112,14 +113,14 @@ public class CodeGenerator extends MethodVisitor {
         Label e = new Label();
         Label h = new Label();
         Label tail = new Label();
-        visitTryCatchBlock(s,e,h,"java/lang/Exception");
+        visitTryCatchBlock(s, e, h, "java/lang/Exception");
         visitLabel(s);
         // [RESULT] m = ClassLoader.getSystemClassLoadeR().loadClass($userClassName).getDeclaredMethod($userMethodName,[...]);
         visitMethodInsn(INVOKESTATIC,"java/lang/ClassLoader","getSystemClassLoader","()Ljava/lang/ClassLoader;", false);
         ldc(userClassName);
         invokeVirtual("java/lang/ClassLoader","loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
         ldc(userMethodName);
-        newArray("java/lang/Class",argTypes.length);
+        newArray("java/lang/Class", argTypes.length);
         for (int i = 0; i < argTypes.length; i++) {
             storeConst(i, argTypes[i]);
         }
@@ -128,7 +129,7 @@ public class CodeGenerator extends MethodVisitor {
 
         // [RESULT] m.invoke(null,new Object[]{this,file})
         _null();
-        newArray("java/lang/Object",argTypes.length);
+        newArray("java/lang/Object", argTypes.length);
 
         for (int i = 0; i < localIndex.length; i++) {
             dup();
@@ -145,8 +146,8 @@ public class CodeGenerator extends MethodVisitor {
         visitLabel(h);
 
         // [RESULT] catch(e) { e.printStackTrace(System.out); }
-        visitFieldInsn(GETSTATIC,"java/lang/System","out","Ljava/io/PrintStream;");
-        invokeVirtual("java/lang/Exception","printStackTrace","(Ljava/io/PrintStream;)V");
+        visitFieldInsn(GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+        invokeVirtual("java/lang/Exception", "printStackTrace", "(Ljava/io/PrintStream;)V");
 
         visitLabel(tail);
     }
@@ -164,11 +165,11 @@ public class CodeGenerator extends MethodVisitor {
     }
 
     public void _goto(Label l) {
-        visitJumpInsn(GOTO,l);
+        visitJumpInsn(GOTO, l);
     }
 
     public void ifFalse(Label label) {
-        visitJumpInsn(IFEQ,label);
+        visitJumpInsn(IFEQ, label);
     }
 
     public void athrow() {
