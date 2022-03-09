@@ -31,7 +31,7 @@ import java.util.zip.ZipFile;
 
 /**
  * Intercepted JDK calls land here.
- * 
+ *
  * @author Kohsuke Kawaguchi
  */
 public class Listener {
@@ -53,42 +53,44 @@ public class Listener {
             StackTraceElement[] trace = stackTrace.getStackTrace();
             int i=0;
             // skip until we find the Method.invoke() that called us
-            for (; i<trace.length; i++)
+            for (; i<trace.length; i++) {
                 if(trace[i].getClassName().equals("java.lang.reflect.Method")) {
                     i++;
                     break;
                 }
+            }
             // print the rest
-            for (; i < trace.length; i++)
+            for (; i < trace.length; i++) {
                 pw.println("\tat " + trace[i]);
+            }
             pw.flush();
         }
-        
+
         public boolean exclude() {
-        	if(EXCLUDES.isEmpty()) {
-        		return false;
-        	}
+            if(EXCLUDES.isEmpty()) {
+                return false;
+            }
 
             StackTraceElement[] trace = stackTrace.getStackTrace();
             int i=0;
             // skip until we find the Method.invoke() that called us
             for (; i<trace.length; i++) {
-				if(trace[i].getClassName().equals("java.lang.reflect.Method")) {
+                if(trace[i].getClassName().equals("java.lang.reflect.Method")) {
                     i++;
                     break;
                 }
-			}
-            
+            }
+
             // check the rest
             for (; i < trace.length; i++) {
-            	String t = trace[i].toString();
-            	for(String exclude : EXCLUDES) {
-            		// skip empty lines
-					if(t.contains(exclude)) {
-						return true;
-					}
-            	}
-			}
+                String t = trace[i].toString();
+                for(String exclude : EXCLUDES) {
+                    // skip empty lines
+                    if(t.contains(exclude)) {
+                        return true;
+                    }
+                }
+            }
 
             // no matchine exclude found
             return false;
@@ -167,7 +169,9 @@ public class Listener {
         public void dump(String prefix, PrintWriter ps) {
             // best effort at showing where it is/was listening
             String peer = this.peer;
-            if (peer==null)  peer=getRemoteAddress(socket);
+            if (peer==null) {
+                peer=getRemoteAddress(socket);
+            }
 
             ps.println(prefix+"socket to "+peer+" by thread:"+threadName+" on "+format(time));
             super.dump(prefix,ps);
@@ -200,7 +204,9 @@ public class Listener {
         public void dump(String prefix, PrintWriter ps) {
             // best effort at showing where it is/was listening
             String address = this.address;
-            if (address==null)  address=getLocalAddress(socket);
+            if (address==null) {
+                address=getLocalAddress(socket);
+            }
 
             ps.println(prefix+"server socket at "+address+" by thread:"+threadName+" on "+format(time));
             super.dump(prefix,ps);
@@ -254,7 +260,7 @@ public class Listener {
     public static PrintWriter ERROR = new PrintWriter(new OutputStreamWriter(System.err, Charset.defaultCharset()));
 
     /**
-     * Allows to provide stacktrace-lines which cause the element to be excluded 
+     * Allows to provide stacktrace-lines which cause the element to be excluded
      */
     public static final List<String> EXCLUDES = new ArrayList<>();
 
@@ -280,7 +286,7 @@ public class Listener {
     public static boolean isAgentInstalled() {
         return AGENT_INSTALLED;
     }
-    
+
     public static synchronized void makeStrong() {
         TABLE = new LinkedHashMap<>(TABLE);
     }
@@ -371,21 +377,21 @@ public class Listener {
             }
         }
     }
-    
+
     public static synchronized List<Record> getCurrentOpenFiles() {
         return new ArrayList<>(TABLE.values());
     }
-    
+
     private static synchronized void put(Object _this, Record r) {
-    	// handle excludes
-    	if(r.exclude()) {
+        // handle excludes
+        if(r.exclude()) {
             if(TRACE!=null && !tracing) {
                 tracing = true;
                 r.dump("Excluded ",TRACE);
                 tracing = false;
             }
-			return;
-		}
+            return;
+        }
 
         TABLE.put(_this, r);
         if(TABLE.size()>THRESHOLD) {
@@ -453,7 +459,7 @@ public class Listener {
             tracing = false;
         }
     }
-    
+
     private static String format(long time) {
         try {
             return new Date(time).toString();
@@ -462,8 +468,8 @@ public class Listener {
         }
     }
 
-    private static Field SOCKETIMPL_SOCKET,SOCKETIMPL_SERVER_SOCKET;
-    
+    private static final Field SOCKETIMPL_SOCKET, SOCKETIMPL_SERVER_SOCKET;
+
     static {
         try {
             SOCKETIMPL_SOCKET = SocketImpl.class.getDeclaredField("socket");

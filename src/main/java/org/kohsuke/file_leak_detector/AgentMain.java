@@ -54,10 +54,10 @@ public class AgentMain {
     public static void agentmain(String agentArguments, Instrumentation instrumentation) throws Exception {
         premain(agentArguments,instrumentation);
     }
-    
+
     public static void premain(String agentArguments, Instrumentation instrumentation) throws Exception {
         int serverPort = -1;
-        
+
         if(agentArguments!=null) {
             // used by Main to prevent the termination of target JVM
             boolean quit = true;
@@ -102,18 +102,18 @@ public class AgentMain {
                 } else
                 if(t.startsWith("excludes=")) {
                     try (BufferedReader reader = Files.newBufferedReader(Paths.get(t.substring(9)), StandardCharsets.UTF_8)) {
-	                    while (true) {
-	                    	String line = reader.readLine();
-	                    	if(line == null) {
-	                    		break;
-	                    	}
+                        while (true) {
+                            String line = reader.readLine();
+                            if(line == null) {
+                                break;
+                            }
 
-	                    	String str = line.trim();
-	                        // add the entries from the excludes-file, but filter out empty ones and comments
-	                    	if(!str.isEmpty() && !str.startsWith("#")) {
-	                    		Listener.EXCLUDES.add(str);
-	                    	}
-	                    }
+                            String str = line.trim();
+                            // add the entries from the excludes-file, but filter out empty ones and comments
+                            if(!str.isEmpty() && !str.startsWith("#")) {
+                                Listener.EXCLUDES.add(str);
+                            }
+                        }
                     }
                 } else {
                     System.err.println("Unknown option: "+t);
@@ -132,7 +132,7 @@ public class AgentMain {
 
         Listener.AGENT_INSTALLED = true;
         instrumentation.addTransformer(new TransformerImpl(createSpec()),true);
-        
+
         List<Class<?>> classes = new ArrayList<>();
         Collections.addAll(
                 classes,
@@ -174,40 +174,32 @@ public class AgentMain {
     }
 
     private static void runHttpServer(int port) throws IOException {
+        @SuppressWarnings("resource")
         final ServerSocket ss = new ServerSocket();
         ss.bind(new InetSocketAddress("localhost", port));
         System.err.println("Serving file leak stats on http://localhost:"+ss.getLocalPort()+"/ for stats");
-        final ExecutorService es = Executors.newCachedThreadPool(new ThreadFactory() {
-            @Override
-            public Thread newThread(Runnable r) {
-                Thread t = new Thread(r);
-                t.setDaemon(true);
-                return t;
-            }
+        final ExecutorService es = Executors.newCachedThreadPool(r -> {
+            Thread t = new Thread(r);
+            t.setDaemon(true);
+            return t;
         });
-        es.submit(new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
-                while (true) {
-                    final Socket s = ss.accept();
-                    es.submit(new Callable<Void>() {
-                        @Override
-                        public Void call() throws Exception {
-                            try {
-                                BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream(), StandardCharsets.UTF_8));
-                                // Read the request line (and ignore it)
-                                in.readLine();
+        es.submit(() -> {
+            while (true) {
+                final Socket s = ss.accept();
+                es.submit(() -> {
+                    try {
+                        BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream(), StandardCharsets.UTF_8));
+                        // Read the request line (and ignore it)
+                        in.readLine();
 
-                                PrintWriter w = new PrintWriter(new OutputStreamWriter(s.getOutputStream(), StandardCharsets.UTF_8));
-                                w.print("HTTP/1.0 200 OK\r\nContent-Type: text/plain;charset=UTF-8\r\n\r\n");
-                                Listener.dump(w);
-                            } finally {
-                                s.close();
-                            }
-                            return null;
-                        }
-                    });
-                }
+                        PrintWriter w = new PrintWriter(new OutputStreamWriter(s.getOutputStream(), StandardCharsets.UTF_8));
+                        w.print("HTTP/1.0 200 OK\r\nContent-Type: text/plain;charset=UTF-8\r\n\r\n");
+                        Listener.dump(w);
+                    } finally {
+                        s.close();
+                    }
+                    return null;
+                });
             }
         });
     }
@@ -350,8 +342,18 @@ public class AgentMain {
             ),
             // Later versions of the JDK abstracted out the parts of PlainSocketImpl above into a super class
             new ClassTransformSpec("java/net/AbstractPlainSocketImpl",
+                // this is where a new file descriptor is allocated.
+                // it'll occupy a socket even before it gets connected
                 new OpenSocketInterceptor("create", "(Z)V"),
+
+                // When a socket is accepted, it goes to "accept(SocketImpl s)"
+                // where 's' is the new socket and 'this' is the server socket
                 new AcceptInterceptor("accept","(Ljava/net/SocketImpl;)V"),
+
+                // file descriptor actually get closed in socketClose()
+                // socketPreClose() appears to do something similar, but if you read the source code
+                // of the native socketClose0() method, then you see that it actually doesn't close
+                // a file descriptor.
                 new CloseInterceptor("socketClose")
             ),
             new ClassTransformSpec("sun/nio/ch/SocketChannelImpl",
@@ -483,7 +485,7 @@ public class AgentMain {
          * Decide if this is the method that needs interception.
          */
         protected abstract boolean toIntercept(String owner, String name);
-        
+
         protected Class<? extends Exception> getExpectedException() {
             return IOException.class;
         }
@@ -492,7 +494,7 @@ public class AgentMain {
         public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
             if(toIntercept(owner,name)) {
                 Type exceptionType = Type.getType(getExpectedException());
-                
+
                 CodeGenerator g = new CodeGenerator(mv);
                 Label s = new Label(); // start of the try block
                 Label e = new Label();  // end of the try block

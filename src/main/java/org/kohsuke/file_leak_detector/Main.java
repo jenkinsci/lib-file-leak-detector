@@ -79,7 +79,7 @@ public class Main {
     /**
      * Loads the {@code VirtualMachine} class as the entry point to the attach API.
      */
-    private Class<?> loadAttachApi() throws MalformedURLException, ClassNotFoundException {
+    private Class<?> loadAttachApi() throws MalformedURLException {
         File toolsJar = locateToolsJar();
 
         ClassLoader cl = wrapIntoClassLoader(toolsJar);
@@ -136,8 +136,7 @@ public class Main {
             CodeSource cs = pd.getCodeSource();
             URL url = cs.getLocation();
             URI uri = url.toURI();
-            File f = new File(uri);
-            return f;
+            return new File(uri);
         }
         catch (URISyntaxException ex) {
             throw new IllegalStateException("Unable to figure out the file of the jar", ex);
