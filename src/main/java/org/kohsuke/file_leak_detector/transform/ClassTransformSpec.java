@@ -10,16 +10,16 @@ import java.util.Map;
  */
 public final class ClassTransformSpec {
     public final String name;
-    /*package*/ Map<String,MethodTransformSpec> methodSpecs = new HashMap<>();
+    /*package*/ Map<String, MethodTransformSpec> methodSpecs = new HashMap<>();
 
     public ClassTransformSpec(Class<?> clazz, MethodTransformSpec... methodSpecs) {
-        this(clazz.getName().replace('.', '/'),methodSpecs);
+        this(clazz.getName().replace('.', '/'), methodSpecs);
     }
 
     public ClassTransformSpec(String name, MethodTransformSpec... methodSpecs) {
         this.name = name;
         for (MethodTransformSpec s : methodSpecs) {
-            this.methodSpecs.put(s.name+s.desc,s);
+            this.methodSpecs.put(s.name + s.desc, s);
         }
     }
 }

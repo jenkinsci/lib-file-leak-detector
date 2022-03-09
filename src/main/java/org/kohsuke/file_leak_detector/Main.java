@@ -62,12 +62,12 @@ public class Main {
     public void run() throws Exception {
         Class<?> api = loadAttachApi();
 
-        System.out.println("Connecting to "+pid);
-        Object vm = api.getMethod("attach",String.class).invoke(null,pid);
+        System.out.println("Connecting to " + pid);
+        Object vm = api.getMethod("attach", String.class).invoke(null, pid);
 
         try {
             File agentJar = whichJar(getClass());
-            System.out.println("Activating file leak detector at "+agentJar);
+            System.out.println("Activating file leak detector at " + agentJar);
             // load a specified agent onto the JVM
             // pass the hidden option to prevent this from killing the target JVM if the options were wrong
             api.getMethod("loadAgent",String.class,String.class).invoke(vm, agentJar.getPath(), options == null ? "noexit" : "noexit,"+options);
@@ -108,15 +108,15 @@ public class Main {
             try {
                 Method addURL = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
                 addURL.setAccessible(true);
-                addURL.invoke(base,jar);
+                addURL.invoke(base, jar);
                 return base;
             } catch (Exception e) {
                 // if that fails, load into a separate classloader
-                LOGGER.log(Level.WARNING, "Failed to load tools.jar into appclassloader",e);
+                LOGGER.log(Level.WARNING, "Failed to load tools.jar into appclassloader", e);
             }
         }
 
-        return new URLClassLoader(new URL[]{jar}, base);
+        return new URLClassLoader(new URL[] {jar}, base);
     }
 
     /**
@@ -124,7 +124,7 @@ public class Main {
      */
     private File locateToolsJar() {
         File home = new File(System.getProperty("java.home"));
-        return new File(home,"../lib/tools.jar");
+        return new File(home, "../lib/tools.jar");
     }
 
     /**
@@ -137,8 +137,7 @@ public class Main {
             URL url = cs.getLocation();
             URI uri = url.toURI();
             return new File(uri);
-        }
-        catch (URISyntaxException ex) {
+        } catch (URISyntaxException ex) {
             throw new IllegalStateException("Unable to figure out the file of the jar", ex);
         }
     }

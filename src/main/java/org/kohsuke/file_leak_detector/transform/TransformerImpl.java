@@ -17,11 +17,11 @@ import java.util.Map;
  */
 public class TransformerImpl implements ClassFileTransformer {
 
-    private final Map<String,ClassTransformSpec> specs = new HashMap<>();
+    private final Map<String, ClassTransformSpec> specs = new HashMap<>();
 
     public TransformerImpl(Collection<ClassTransformSpec> specs) {
         for (ClassTransformSpec spec : specs) {
-            this.specs.put(spec.name,spec);
+            this.specs.put(spec.name, spec);
         }
     }
 
@@ -32,7 +32,7 @@ public class TransformerImpl implements ClassFileTransformer {
 
     public byte[] transform(String className, byte[] classfileBuffer) {
         final ClassTransformSpec cs = specs.get(className);
-        if(cs==null) {
+        if (cs == null) {
             return classfileBuffer;
         }
 

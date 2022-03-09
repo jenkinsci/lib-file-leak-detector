@@ -29,10 +29,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 import java.util.zip.ZipFile;
 
 import org.kohsuke.args4j.CmdLineException;
@@ -58,68 +56,63 @@ public class AgentMain {
     public static void premain(String agentArguments, Instrumentation instrumentation) throws Exception {
         int serverPort = -1;
 
-        if(agentArguments!=null) {
+        if (agentArguments != null) {
             // used by Main to prevent the termination of target JVM
             boolean quit = true;
 
             for (String t : agentArguments.split(",")) {
-                if(t.equals("noexit")) {
+                if (t.equals("noexit")) {
                     quit = false;
-                } else
-                if(t.equals("help")) {
+                } else if (t.equals("help")) {
                     usage();
-                    if (quit)   System.exit(-1);
-                    else        return;
-                } else
-                if(t.startsWith("threshold=")) {
-                    Listener.THRESHOLD = Integer.parseInt(t.substring(t.indexOf('=')+1));
-                } else
-                if(t.equals("trace")) {
+                    if (quit) {
+                        System.exit(-1);
+                    } else {
+                        return;
+                    }
+                } else if (t.startsWith("threshold=")) {
+                    Listener.THRESHOLD = Integer.parseInt(t.substring(t.indexOf('=') + 1));
+                } else if (t.equals("trace")) {
                     Listener.TRACE = new PrintWriter(new OutputStreamWriter(System.err, Charset.defaultCharset()));
-                } else
-                if(t.equals("strong")) {
+                } else if (t.equals("strong")) {
                     Listener.makeStrong();
-                } else
-                if(t.startsWith("http=")) {
-                    serverPort = Integer.parseInt(t.substring(t.indexOf('=')+1));
-                } else
-                if(t.startsWith("trace=")) {
+                } else if (t.startsWith("http=")) {
+                    serverPort = Integer.parseInt(t.substring(t.indexOf('=') + 1));
+                } else if (t.startsWith("trace=")) {
                     Listener.TRACE = new PrintWriter(new OutputStreamWriter(new FileOutputStream(t.substring(6)), StandardCharsets.UTF_8));
-                } else
-                if(t.startsWith("error=")) {
+                } else if (t.startsWith("error=")) {
                     Listener.ERROR = new PrintWriter(new OutputStreamWriter(new FileOutputStream(t.substring(6)), StandardCharsets.UTF_8));
-                } else
-                if(t.startsWith("listener=")) {
+                } else if (t.startsWith("listener=")) {
                     ActivityListener.LIST.add((ActivityListener) AgentMain.class.getClassLoader().loadClass(t.substring(9)).newInstance());
-                } else
-                if(t.equals("dumpatshutdown")) {
+                } else if (t.equals("dumpatshutdown")) {
                     Runtime.getRuntime().addShutdownHook(new Thread("File handles dumping shutdown hook") {
                         @Override
                         public void run() {
                             Listener.dump(System.err);
                         }
                     });
-                } else
-                if(t.startsWith("excludes=")) {
+                } else if (t.startsWith("excludes=")) {
                     try (BufferedReader reader = Files.newBufferedReader(Paths.get(t.substring(9)), StandardCharsets.UTF_8)) {
                         while (true) {
                             String line = reader.readLine();
-                            if(line == null) {
+                            if (line == null) {
                                 break;
                             }
 
                             String str = line.trim();
                             // add the entries from the excludes-file, but filter out empty ones and comments
-                            if(!str.isEmpty() && !str.startsWith("#")) {
+                            if (!str.isEmpty() && !str.startsWith("#")) {
                                 Listener.EXCLUDES.add(str);
                             }
                         }
                     }
                 } else {
-                    System.err.println("Unknown option: "+t);
+                    System.err.println("Unknown option: " + t);
                     usage();
-                    if (quit)       System.exit(-1);
-                    throw new CmdLineException("Unknown option: "+t);
+                    if (quit) {
+                        System.exit(-1);
+                    }
+                    throw new CmdLineException("Unknown option: " + t);
                 }
             }
         }
@@ -131,7 +124,7 @@ public class AgentMain {
         ActivityListener.LIST.size();
 
         Listener.AGENT_INSTALLED = true;
-        instrumentation.addTransformer(new TransformerImpl(createSpec()),true);
+        instrumentation.addTransformer(new TransformerImpl(createSpec()), true);
 
         List<Class<?>> classes = new ArrayList<>();
         Collections.addAll(
@@ -161,8 +154,9 @@ public class AgentMain {
 //                AbstractInterruptibleChannel.class,
 //                ServerSocket.class);
 
-        if (serverPort>=0)
+        if (serverPort >= 0) {
             runHttpServer(serverPort);
+        }
     }
 
     private static void addIfFound(List<Class<?>> classes, String className) {
@@ -300,14 +294,12 @@ public class AgentMain {
                     new ClassTransformSpec(
                             "sun/nio/fs/UnixDirectoryStream", new CloseInterceptor("close")),
                     new ClassTransformSpec(
-                            "sun/nio/fs/UnixSecureDirectoryStream", new CloseInterceptor("close"))
-            );
+                            "sun/nio/fs/UnixSecureDirectoryStream", new CloseInterceptor("close")));
         } else {
             Collections.addAll(
                     spec,
                     new ClassTransformSpec(
-                            "sun/nio/fs/WindowsDirectoryStream", new CloseInterceptor("close"))
-            );
+                            "sun/nio/fs/WindowsDirectoryStream", new CloseInterceptor("close")));
         }
         Collections.addAll(
             spec,
@@ -414,7 +406,7 @@ public class AgentMain {
 
     private static class OpenSocketInterceptor extends MethodAppender {
         public OpenSocketInterceptor(String name, String desc) {
-            super(name,desc);
+            super(name, desc);
         }
 
         @Override
@@ -441,7 +433,7 @@ public class AgentMain {
      */
     private static class AcceptInterceptor extends MethodAppender {
         public AcceptInterceptor(String name, String desc) {
-            super(name,desc);
+            super(name, desc);
         }
 
         @Override
@@ -471,12 +463,13 @@ public class AgentMain {
      * surround the call with try/catch, and if "too many open files" exception is thrown
      * call {@link Listener#outOfDescriptors()}.
      */
-    private static abstract class OpenInterceptionAdapter extends MethodVisitor {
+    private abstract static class OpenInterceptionAdapter extends MethodVisitor {
         private final LocalVariablesSorter lvs;
         private final MethodVisitor base;
+
         private OpenInterceptionAdapter(MethodVisitor base, int access, String desc) {
             super(Opcodes.ASM9);
-            lvs = new LocalVariablesSorter(access,desc, base);
+            lvs = new LocalVariablesSorter(access, desc, base);
             mv = lvs;
             this.base = base;
         }
@@ -516,7 +509,7 @@ public class AgentMain {
                 base.visitVarInsn(Opcodes.ASTORE, ex);
                 g.invokeVirtual(exceptionType.getInternalName(),"getMessage","()Ljava/lang/String;");
                 g.ldc("Too many open files");
-                g.invokeVirtual("java/lang/String","contains","(Ljava/lang/CharSequence;)Z");
+                g.invokeVirtual("java/lang/String", "contains", "(Ljava/lang/CharSequence;)Z");
 
                 // too many open files detected
                 //    if (b) { Listener.outOfDescriptors() }
@@ -533,9 +526,10 @@ public class AgentMain {
 
                 // normal execution continues here
                 g.visitLabel(tail);
-            } else
+            } else {
                 // no processing
                 super.visitMethodInsn(opcode, owner, name, desc, itf);
+            }
         }
     }
 
