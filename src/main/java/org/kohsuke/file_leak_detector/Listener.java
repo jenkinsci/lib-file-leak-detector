@@ -18,6 +18,7 @@ import java.nio.channels.Pipe;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.Charset;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -250,7 +251,7 @@ public class Listener {
     /**
      * Trace the "too many open files" error here
      */
-    public static PrintWriter ERROR = new PrintWriter(System.err);
+    public static PrintWriter ERROR = new PrintWriter(new OutputStreamWriter(System.err, Charset.defaultCharset()));
 
     /**
      * Allows to provide stacktrace-lines which cause the element to be excluded 
@@ -426,7 +427,7 @@ public class Listener {
      * Dumps all files that are currently open.
      */
     public static synchronized void dump(OutputStream out) {
-        dump(new OutputStreamWriter(out));
+        dump(new OutputStreamWriter(out, Charset.defaultCharset()));
     }
     public static synchronized void dump(Writer w) {
         PrintWriter pw = new PrintWriter(w);

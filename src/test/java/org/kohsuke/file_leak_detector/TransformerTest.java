@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -50,8 +51,10 @@ public class TransformerTest {
 
         final String errors;
         ClassReader classReader = new ClassReader(data2);
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-            CheckClassAdapter.verify(classReader, false, new PrintWriter(baos));
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                OutputStreamWriter osw = new OutputStreamWriter(baos, StandardCharsets.UTF_8);
+                PrintWriter pw = new PrintWriter(osw)) {
+            CheckClassAdapter.verify(classReader, false, pw);
             errors = new String(baos.toByteArray(), StandardCharsets.UTF_8);
         }
         assertTrue("Verification failed for " + c + "\n" + errors, errors.isEmpty());
