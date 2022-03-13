@@ -171,7 +171,7 @@ public class AgentMain {
         @SuppressWarnings("resource")
         final ServerSocket ss = new ServerSocket();
         ss.bind(new InetSocketAddress("localhost", port));
-        System.err.println("Serving file leak stats on http://localhost:"+ss.getLocalPort()+"/ for stats");
+        System.err.println("Serving file leak stats on http://localhost:" + ss.getLocalPort() + "/ for stats");
         final ExecutorService es = Executors.newCachedThreadPool(r -> {
             Thread t = new Thread(r);
             t.setDaemon(true);

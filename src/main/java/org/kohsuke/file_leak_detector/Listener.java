@@ -473,23 +473,23 @@ public class Listener {
     private static final Field SOCKETIMPL_SOCKET, SOCKETIMPL_SERVER_SOCKET;
 
     static {
-		SOCKETIMPL_SOCKET = getSocketField("socket");
-		SOCKETIMPL_SERVER_SOCKET = getSocketField("serverSocket");
+        SOCKETIMPL_SOCKET = getSocketField("socket");
+        SOCKETIMPL_SERVER_SOCKET = getSocketField("serverSocket");
     }
 
-	private static Field getSocketField(String socket) {
-		try {
-			Field socketimplSocket = SocketImpl.class.getDeclaredField(socket);
-			socketimplSocket.setAccessible(true);
+    private static Field getSocketField(String socket) {
+        try {
+            Field socketimplSocket = SocketImpl.class.getDeclaredField(socket);
+            socketimplSocket.setAccessible(true);
 
-			return socketimplSocket;
-		} catch (NoSuchFieldException e) {
-			// Java 17+ changed the implementation of Sockets and
-			// so the current approach does not work there any more
-			// for now we gracefully handle this and do keep file-leak-detector
-			// useful for other types of file-handle-leaks
-			System.err.println("Could not load field " + socket + " from SocketImpl: " + e);
-			return null;
-		}
-	}
+            return socketimplSocket;
+        } catch (NoSuchFieldException e) {
+            // Java 17+ changed the implementation of Sockets and
+            // so the current approach does not work there any more
+            // for now we gracefully handle this and do keep file-leak-detector
+            // useful for other types of file-handle-leaks
+            System.err.println("Could not load field " + socket + " from SocketImpl: " + e);
+            return null;
+        }
+    }
 }

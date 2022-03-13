@@ -1,6 +1,7 @@
 package org.kohsuke.file_leak_detector.instrumented;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -16,7 +17,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.junit.Assume;
 import org.junit.Test;
 import org.kohsuke.file_leak_detector.Listener;
 
@@ -28,23 +28,23 @@ public class SocketDemo {
         final ExecutorService es = Executors.newCachedThreadPool();
 
         final ServerSocket ss = new ServerSocket();
-        ss.bind(new InetSocketAddress("localhost",0));
+        ss.bind(new InetSocketAddress("localhost", 0));
 
         es.submit(() -> {
-			while (true) {
-				final Socket s = ss.accept();
-				es.submit(() -> {
-					s.close();
-//                            s.shutdownInput();
-//                            s.shutdownOutput();
-					return null;
-				});
-			}
-		});
+            while (true) {
+                final Socket s = ss.accept();
+                es.submit(() -> {
+                    s.close();
+//                    s.shutdownInput();
+//                    s.shutdownOutput();
+                    return null;
+                });
+            }
+        });
 
-        for (int i=0; i<10; i++) {
+        for (int i = 0; i < 10; i++) {
             int dst = ss.getLocalPort();
-            Socket s = new Socket("localhost",dst);
+            Socket s = new Socket("localhost", dst);
             s.close();
 //            s.shutdownInput();
 //            s.shutdownOutput();
@@ -68,13 +68,12 @@ public class SocketDemo {
 
         final Set<SocketChannel> sockets = Collections.synchronizedSet(new HashSet<>());
         es.execute(() -> {
-			try {
-				sockets.add(serverSocket.accept());
-			}
-			catch (IOException ioe) {
-				throw new UncheckedIOException(ioe);
-			}
-		});
+            try {
+                sockets.add(serverSocket.accept());
+            } catch (IOException ioe) {
+                throw new UncheckedIOException(ioe);
+            }
+        });
         SocketChannel socketChannel = SocketChannel.open(new InetSocketAddress("", serverSocket.socket().getLocalPort()));
 
         while (sockets.size() < 1) {
@@ -83,7 +82,7 @@ public class SocketDemo {
 
         assertEquals(1, sockets.size());
 
-		Assume.assumeTrue("Socket is not supported on newer Java version yet", hasSocketFields());
+        assumeTrue("Socket is not supported on newer Java version yet", hasSocketFields());
 
         assertEquals(2, getSocketChannels());
 
@@ -96,33 +95,32 @@ public class SocketDemo {
         es.shutdownNow();
     }
 
-	private boolean hasSocketFields() {
-		try {
-			SocketImpl.class.getDeclaredField("socket");
-			SocketImpl.class.getDeclaredField("serverSocket");
-			return true;
-		} catch (NoSuchFieldException e) {
-			System.out.println("Could not find field: " + e);
-			return false;
-		}
-	}
+    private boolean hasSocketFields() {
+        try {
+            SocketImpl.class.getDeclaredField("socket");
+            SocketImpl.class.getDeclaredField("serverSocket");
+            return true;
+        } catch (NoSuchFieldException e) {
+            System.out.println("Could not find field: " + e);
+            return false;
+        }
+    }
 
     @Test
     public void testSocketLeakDetection() throws IOException, InterruptedException {
         final ExecutorService es = Executors.newCachedThreadPool();
 
         final ServerSocket ss = new ServerSocket();
-        ss.bind(new InetSocketAddress("localhost",0));
+        ss.bind(new InetSocketAddress("localhost", 0));
 
         final Set<Socket> sockets = Collections.synchronizedSet(new HashSet<>());
         es.execute(() -> {
-			try {
-				sockets.add(ss.accept());
-			}
-			catch (IOException ioe) {
-				throw new UncheckedIOException(ioe);
-			}
-		});
+            try {
+                sockets.add(ss.accept());
+            } catch (IOException ioe) {
+                throw new UncheckedIOException(ioe);
+            }
+        });
 
         Socket s = new Socket("localhost", ss.getLocalPort());
 
@@ -132,7 +130,7 @@ public class SocketDemo {
 
         assertEquals(1, sockets.size());
 
-		Assume.assumeTrue("Socket is not supported on newer Java version yet", hasSocketFields());
+        assumeTrue("Socket is not supported on newer Java version yet", hasSocketFields());
 
         assertEquals(2, getSockets());
 
@@ -145,7 +143,7 @@ public class SocketDemo {
         assertEquals(0, getSockets());
     }
 
-     private int getSocketChannels() {
+    private int getSocketChannels() {
         int socketChannels = 0;
         for (Listener.Record record : Listener.getCurrentOpenFiles()) {
             if (record instanceof Listener.SocketChannelRecord) {
