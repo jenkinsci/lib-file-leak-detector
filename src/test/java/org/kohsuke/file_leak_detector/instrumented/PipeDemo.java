@@ -24,7 +24,7 @@ import org.kohsuke.file_leak_detector.Listener.SourceChannelRecord;
  * @author Denis Joubert
  */
 public class PipeDemo {
-    private static StringWriter output = new StringWriter();
+    private static final StringWriter output = new StringWriter();
 
     @BeforeClass
     public static void setup() {
