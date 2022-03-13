@@ -488,7 +488,7 @@ public class Listener {
 			// so the current approach does not work there any more
 			// for now we gracefully handle this and do keep file-leak-detector
 			// useful for other types of file-handle-leaks
-			System.out.println("Could not load field " + socket + " from SocketImpl: " + e);
+			System.err.println("Could not load field " + socket + " from SocketImpl: " + e);
 			return null;
 		}
 	}
