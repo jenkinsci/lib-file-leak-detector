@@ -7,6 +7,7 @@ import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketImpl;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Collections;
@@ -15,6 +16,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.junit.Assume;
 import org.junit.Test;
 import org.kohsuke.file_leak_detector.Listener;
 
@@ -81,6 +83,8 @@ public class SocketDemo {
 
         assertEquals(1, sockets.size());
 
+		Assume.assumeTrue("Socket is not supported on newer Java version yet", hasSocketFields());
+
         assertEquals(2, getSocketChannels());
 
         socketChannel.close();
@@ -91,6 +95,17 @@ public class SocketDemo {
         assertEquals(0, getSocketChannels());
         es.shutdownNow();
     }
+
+	private boolean hasSocketFields() {
+		try {
+			SocketImpl.class.getDeclaredField("socket");
+			SocketImpl.class.getDeclaredField("serverSocket");
+			return true;
+		} catch (NoSuchFieldException e) {
+			System.out.println("Could not find field: " + e);
+			return false;
+		}
+	}
 
     @Test
     public void testSocketLeakDetection() throws IOException, InterruptedException {
@@ -116,6 +131,8 @@ public class SocketDemo {
         }
 
         assertEquals(1, sockets.size());
+
+		Assume.assumeTrue("Socket is not supported on newer Java version yet", hasSocketFields());
 
         assertEquals(2, getSockets());
 
