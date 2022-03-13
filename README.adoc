@@ -60,6 +60,36 @@ Options can be specified in the second argument in the same format you do to the
 $ java -jar path/to/file-leak-detector.jar 1500 threshold=200,strong
 ----
 
+== Supported options
+
+```
+File leak detector arguments (to specify multiple values, separate them by ',':
+  help           - Show the help screen.
+  noexit         - Don't exit after showing the help screen.
+  trace          - Log every open/close operation to stderr.
+  trace=FILE     - Log every open/close operation to the given file.
+  error=FILE     - If 'too many open files' error is detected, send the dump here.
+                   By default it goes to stderr.
+  threshold=N    - Instead of waiting until 'too many open files', dump once
+                   we have N descriptors open.
+  http=PORT      - Run a mini HTTP server that you can access to get stats on demand.
+                   Specify 0 to choose random available port, -1 to disable, which is default.
+  strong         - Don't let GC auto-close leaking file descriptors.
+  listener=S     - Specify the fully qualified name of ActivityListener class to activate from beginning.
+  dumpatshutdown - Dump open file handles at shutdown.
+  excludes=FILE  - Ignore files opened directly/indirectly in specific methods.
+                   File lists 'some.pkg.ClassName.methodName' patterns.
+```
+
+== Analyzing reported stacktraces
+
+If run on a large application with option "dumpatshutdown", there sometimes are a huge number of reported
+stacktraces, many of them duplicates.
+
+In order to help with this, there is a tool https://github.com/centic9/file-leak-postprocess[file-leak-postprocess] 
+which can be used to post-process output from file-leak-detector. It will de-duplicate stacktraces and 
+removes uninteresting parts from the stacktraces. 
+
 == Implementation details
 
 This project uses the JVM's support for instrumenting Java classes during startup.
