@@ -32,7 +32,6 @@
   <properties>
     <revision>1.16</revision>
     <changelist>-SNAPSHOT</changelist>
-    <java.level>8</java.level>
     <gitHubRepo>jenkinsci/lib-${project.artifactId}</gitHubRepo>
     <asm.version>9.2</asm.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
