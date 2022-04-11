@@ -33,7 +33,7 @@
     <revision>1.16</revision>
     <changelist>-SNAPSHOT</changelist>
     <gitHubRepo>jenkinsci/lib-${project.artifactId}</gitHubRepo>
-    <asm.version>9.2</asm.version>
+    <asm.version>9.3</asm.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <spotbugs.excludeFilterFile>${project.basedir}/src/spotbugs/spotbugs-excludes.xml</spotbugs.excludeFilterFile>
   </properties>
