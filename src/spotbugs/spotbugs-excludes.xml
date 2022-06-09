@@ -51,6 +51,10 @@
         <Class name="org.kohsuke.file_leak_detector.AgentMain"/>
       </And>
       <And>
+        <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
+        <Class name="org.kohsuke.file_leak_detector.AgentMain"/>
+      </And>
+      <And>
         <Bug pattern="UNENCRYPTED_SERVER_SOCKET"/>
         <Class name="org.kohsuke.file_leak_detector.AgentMain"/>
       </And>

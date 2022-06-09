@@ -5,6 +5,7 @@ import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
@@ -59,7 +60,7 @@ public class Main {
         System.exit(1);
     }
 
-    public void run() throws Exception {
+    public void run() throws IOException, ReflectiveOperationException {
         Class<?> api = loadAttachApi();
 
         System.out.println("Connecting to " + pid);
