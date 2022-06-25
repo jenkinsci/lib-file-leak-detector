@@ -83,7 +83,7 @@ public class AgentMain {
                 } else if (t.startsWith("error=")) {
                     Listener.ERROR = new PrintWriter(new OutputStreamWriter(new FileOutputStream(t.substring(6)), StandardCharsets.UTF_8));
                 } else if (t.startsWith("listener=")) {
-                    ActivityListener.LIST.add((ActivityListener) AgentMain.class.getClassLoader().loadClass(t.substring(9)).newInstance());
+                    ActivityListener.LIST.add((ActivityListener) AgentMain.class.getClassLoader().loadClass(t.substring(9)).getDeclaredConstructor().newInstance());
                 } else if (t.equals("dumpatshutdown")) {
                     Runtime.getRuntime().addShutdownHook(new Thread("File handles dumping shutdown hook") {
                         @Override

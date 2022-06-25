@@ -55,7 +55,7 @@ public class TransformerTest {
                 OutputStreamWriter osw = new OutputStreamWriter(baos, StandardCharsets.UTF_8);
                 PrintWriter pw = new PrintWriter(osw)) {
             CheckClassAdapter.verify(classReader, false, pw);
-            errors = new String(baos.toByteArray(), StandardCharsets.UTF_8);
+            errors = baos.toString(StandardCharsets.UTF_8);
         }
         assertTrue("Verification failed for " + c + "\n" + errors, errors.isEmpty());
     }
