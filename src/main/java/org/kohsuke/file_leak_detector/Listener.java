@@ -344,6 +344,12 @@ public class Listener {
         }
     }
 
+	/**
+	 * Called when a pipe is opened, e.g. via SelectorProvider
+	 *
+	 * @param _this
+	 * 		{@link java.nio.channels.spi.SelectorProvider}
+	 */
     public static synchronized void openPipe(Object _this) {
         if (_this instanceof Pipe.SourceChannel) {
             put(_this, new SourceChannelRecord((Pipe.SourceChannel) _this));
