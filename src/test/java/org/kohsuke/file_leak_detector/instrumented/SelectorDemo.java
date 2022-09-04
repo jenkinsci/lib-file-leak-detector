@@ -15,12 +15,16 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+/**
+ * Make sure to run this test with injected file-leak-detector as otherwise
+ * tests will fail.
+ */
 public class SelectorDemo {
     private StringWriter output;
 
     @BeforeClass
     public static void setupClass() {
-        assertTrue(Listener.isAgentInstalled());
+        assertTrue("This test can only run with an injected Java agent for file-leak-detector", Listener.isAgentInstalled());
     }
 
     @Before

@@ -21,6 +21,9 @@ import org.kohsuke.file_leak_detector.Listener.SinkChannelRecord;
 import org.kohsuke.file_leak_detector.Listener.SourceChannelRecord;
 
 /**
+ * Make sure to run this test with injected file-leak-detector as otherwise
+ * tests will fail.
+ *
  * @author Denis Joubert
  */
 public class PipeDemo {
@@ -28,7 +31,7 @@ public class PipeDemo {
 
     @BeforeClass
     public static void setup() {
-        assertTrue(Listener.isAgentInstalled());
+        assertTrue("This test can only run with an injected Java agent for file-leak-detector", Listener.isAgentInstalled());
         Listener.TRACE = new PrintWriter(output);
     }
 

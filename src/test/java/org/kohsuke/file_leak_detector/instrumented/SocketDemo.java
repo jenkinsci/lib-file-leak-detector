@@ -21,6 +21,9 @@ import org.junit.Test;
 import org.kohsuke.file_leak_detector.Listener;
 
 /**
+ * Make sure to run this test with injected file-leak-detector as otherwise
+ * tests will fail.
+ *
  * @author Kohsuke Kawaguchi
  */
 public class SocketDemo {
