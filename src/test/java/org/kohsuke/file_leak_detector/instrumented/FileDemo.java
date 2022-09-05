@@ -58,11 +58,11 @@ public class FileDemo {
 
         @Override
         public void close(Object obj) {
-			// sometimes java.util.zip.ZipFile$CleanableResource$FinalizableResource.finalize()
-			// will kick in and will close a ZipFile, thus we ignore the corresponding objects here
-			if (obj.getClass().getSimpleName().contains("URLJarFile")) {
-				return;
-			}
+           // sometimes java.util.zip.ZipFile$CleanableResource$FinalizableResource.finalize()
+           // will kick in and will close a ZipFile, thus we ignore the corresponding objects here
+           if (obj.getClass().getSimpleName().contains("URLJarFile")) {
+               return;
+           }
 
             FileDemo.this.obj = obj;
         }
