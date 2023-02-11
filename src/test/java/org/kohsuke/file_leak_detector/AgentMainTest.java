@@ -56,7 +56,7 @@ public class AgentMainTest {
         AgentMain.premain(null, instrumentation);
 
         verify(instrumentation, times(1)).addTransformer(any(), anyBoolean());
-        verify(instrumentation, times(1)).retransformClasses((Class<?>) any());
+        verify(instrumentation, times(1)).retransformClasses(any(Class[].class));
 
         // the following are not available in all JVMs
         seenClasses.remove("sun/nio/ch/SocketChannelImpl");
