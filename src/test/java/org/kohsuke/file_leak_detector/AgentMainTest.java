@@ -51,7 +51,7 @@ public class AgentMainTest {
                         seenClasses.remove(name));
             }
             return null;
-        }).when(instrumentation).retransformClasses((Class<?>) any());
+        }).when(instrumentation).retransformClasses(any(Class[].class));
 
         AgentMain.premain(null, instrumentation);
 
