@@ -132,7 +132,6 @@ public class AgentMain {
                 FileInputStream.class,
                 FileOutputStream.class,
                 RandomAccessFile.class,
-                Class.forName("java.net.PlainSocketImpl"),
                 ZipFile.class,
                 AbstractSelectableChannel.class,
                 AbstractInterruptibleChannel.class,
@@ -142,6 +141,8 @@ public class AgentMain {
 
         addIfFound(classes, "sun.nio.ch.SocketChannelImpl");
         addIfFound(classes, "java.net.AbstractPlainSocketImpl");
+        // TODO handle sun.nio.ch.NioSocketImpl
+        addIfFound(classes, "java.net.PlainSocketImpl");
         addIfFound(classes, "sun.nio.fs.UnixDirectoryStream");
         addIfFound(classes, "sun.nio.fs.UnixSecureDirectoryStream");
         addIfFound(classes, "sun.nio.fs.WindowsDirectoryStream");
