@@ -1,85 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.kohsuke</groupId>
-    <artifactId>pom</artifactId>
-    <version>19</version>
+    <groupId>org.jenkins-ci</groupId>
+    <artifactId>jenkins</artifactId>
+    <version>1.95</version>
+    <relativePath />
   </parent>
   <groupId>org.kohsuke</groupId>
   <artifactId>file-leak-detector</artifactId>
-  <version>1.12-SNAPSHOT</version>
+  <version>${revision}${changelist}</version>
   <name>File Leak Detector</name>
 
-  <url>http://${project.artifactId}.kohsuke.org/</url>
+  <url>https://github.com/jenkinsci/lib-${project.artifactId}</url>
+
+  <licenses>
+    <license>
+      <name>The MIT License</name>
+      <url>https://opensource.org/licenses/MIT</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
 
   <scm>
-    <connection>scm:git:git@github.com/kohsuke/${project.artifactId}.git</connection>
-    <developerConnection>scm:git:ssh://git@github.com/kohsuke/${project.artifactId}.git</developerConnection>
-    <url>http://${project.artifactId}.kohsuke.org/</url>
-    <tag>HEAD</tag>
+    <connection>scm:git:https://github.com/${gitHubRepo}.git</connection>
+    <developerConnection>scm:git:git@github.com:${gitHubRepo}.git</developerConnection>
+    <tag>${scmTag}</tag>
+    <url>https://github.com/${gitHubRepo}</url>
   </scm>
 
-  <distributionManagement>
-    <site>
-      <id>github-pages</id>
-      <url>gitsite:git@github.com/kohsuke/${project.artifactId}.git</url>
-    </site>
-  </distributionManagement>
+  <properties>
+    <revision>1.16</revision>
+    <changelist>-SNAPSHOT</changelist>
+    <gitHubRepo>jenkinsci/lib-${project.artifactId}</gitHubRepo>
+    <asm.version>9.4</asm.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>args4j</groupId>
+      <artifactId>args4j</artifactId>
+      <version>2.33</version>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm</artifactId>
+      <version>${asm.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-analysis</artifactId>
+      <version>${asm.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-commons</artifactId>
+      <version>${asm.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-tree</artifactId>
+      <version>${asm.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-util</artifactId>
+      <version>${asm.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.11.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.13.2</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <repositories>
+    <repository>
+      <id>repo.jenkins-ci.org</id>
+      <url>https://repo.jenkins-ci.org/public/</url>
+    </repository>
+  </repositories>
+
+  <pluginRepositories>
+    <pluginRepository>
+      <id>repo.jenkins-ci.org</id>
+      <url>https://repo.jenkins-ci.org/public/</url>
+    </pluginRepository>
+  </pluginRepositories>
 
   <build>
     <plugins>
       <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>1.6</source>
-          <target>1.6</target>
-        </configuration>
-      </plugin>
-      <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <executions>
-        <execution>
-          <id>instrumented-tests</id>
-          <phase>integration-test</phase>
-          <goals>
-            <goal>test</goal>
-          </goals>
-          <configuration>
-            <reuseForks>false</reuseForks>
-            <includes>
-              <include>
-                **/instrumented/*.java
-              </include>
-            </includes>
-            <excludes>
-              <exclude>**/TransformerTest.java</exclude>
-            </excludes>
-            <argLine>
-              -javaagent:"${project.build.directory}/file-leak-detector-${project.version}-jar-with-dependencies.jar"
-            </argLine>
-          </configuration>
-        </execution>
-            <execution>
-              <id>default-test</id>
-              <phase>test</phase>
-              <goals>
-                <goal>test</goal>
-              </goals>
-              <configuration>
-                <includes>
-                  <include>
-                    **/TransformerTest.java
-                  </include>
-                </includes>
-                <excludes>
-                  <exclude>**/instrumented/*.java</exclude>
-                </excludes>
-              </configuration>
-            </execution>
+          <execution>
+            <id>instrumented-tests</id>
+            <goals>
+              <goal>test</goal>
+            </goals>
+            <phase>integration-test</phase>
+            <configuration>
+              <reuseForks>false</reuseForks>
+              <includes>
+                <include>**/instrumented/*.java</include>
+              </includes>
+              <excludes>
+                <exclude>**/TransformerTest.java</exclude>
+                <exclude>**/AgentMainTest.java</exclude>
+              </excludes>
+              <argLine>-javaagent:"${project.build.directory}/file-leak-detector-${project.version}-jar-with-dependencies.jar"</argLine>
+            </configuration>
+          </execution>
+          <execution>
+            <id>default-test</id>
+            <goals>
+              <goal>test</goal>
+            </goals>
+            <phase>test</phase>
+            <configuration>
+              <includes>
+                <include>**/TransformerTest.java</include>
+                <include>**/AgentMainTest.java</include>
+              </includes>
+              <excludes>
+                <exclude>**/instrumented/*.java</exclude>
+              </excludes>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
+        <version>3.4.1</version>
         <executions>
           <execution>
             <goals>
@@ -91,13 +160,13 @@
               <shadedClassifierName>jar-with-dependencies</shadedClassifierName>
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                <manifestEntries>
-                  <Agent-Class>org.kohsuke.file_leak_detector.AgentMain</Agent-Class>
-                  <Premain-Class>org.kohsuke.file_leak_detector.AgentMain</Premain-Class>
-                  <Main-Class>org.kohsuke.file_leak_detector.Main</Main-Class>
-                  <Can-Retransform-Classes>true</Can-Retransform-Classes>
-                  <Can-Redefine-Classes>true</Can-Redefine-Classes>
-                </manifestEntries>
+                  <manifestEntries>
+                    <Agent-Class>org.kohsuke.file_leak_detector.AgentMain</Agent-Class>
+                    <Premain-Class>org.kohsuke.file_leak_detector.AgentMain</Premain-Class>
+                    <Main-Class>org.kohsuke.file_leak_detector.Main</Main-Class>
+                    <Can-Retransform-Classes>true</Can-Retransform-Classes>
+                    <Can-Redefine-Classes>true</Can-Redefine-Classes>
+                  </manifestEntries>
                 </transformer>
               </transformers>
               <relocations>
@@ -106,83 +175,31 @@
                   <shadedPattern>org.kohsuke.file_leak_detector.args4j</shadedPattern>
                 </relocation>
                 <relocation>
-                  <pattern>org.kohsuke.asm6</pattern>
-                  <shadedPattern>org.kohsuke.file_leak_detector.asm6</shadedPattern>
+                  <pattern>org.objectweb.asm</pattern>
+                  <shadedPattern>org.kohsuke.file_leak_detector.asm</shadedPattern>
                 </relocation>
               </relocations>
+              <filters>
+                <filter>
+                  <artifact>args4j:args4j</artifact>
+                  <excludes>
+                    <exclude>LICENSE</exclude>
+                    <exclude>META-INF/MANIFEST.MF</exclude>
+                    <exclude>OSGI-OPT/**/*.html</exclude>
+                    <exclude>OSGI-OPT/**/*.java</exclude>
+                  </excludes>
+                </filter>
+                <filter>
+                  <artifact>org.ow2.asm:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/MANIFEST.MF</exclude>
+                  </excludes>
+                </filter>
+              </filters>
             </configuration>
           </execution>
         </executions>
-        <configuration>
-        </configuration>
       </plugin>
     </plugins>
   </build>
-
-  <dependencies>
-    <dependency>
-      <groupId>org.kohsuke</groupId>
-      <artifactId>asm6</artifactId>
-      <version>6.0_BETA</version>
-    </dependency>
-    <dependency>
-      <groupId>args4j</groupId>
-      <artifactId>args4j</artifactId>
-      <version>2.0.16</version>
-    </dependency>
-    <dependency>
-      <groupId>com.sun</groupId>
-      <artifactId>tools</artifactId>
-      <version>6.0</version>
-      <scope>system</scope>
-      <systemPath>${toolsjar}</systemPath>
-    </dependency>
-    <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-      <version>2.0.1</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.9</version>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
-
-  <profiles>
-    <profile>
-        <id>default-profile</id>
-        <activation>
-            <activeByDefault>true</activeByDefault>
-            <file>
-                <exists>${java.home}/../lib/tools.jar</exists>
-            </file>
-        </activation>
-        <properties>
-            <toolsjar>${java.home}/../lib/tools.jar</toolsjar>
-        </properties>
-    </profile>
-    <profile>
-        <id>mac-profile</id>
-        <activation>
-            <activeByDefault>false</activeByDefault>
-            <file>
-                <exists>${java.home}/../Classes/classes.jar</exists>
-            </file>
-        </activation>
-        <properties>
-            <toolsjar>${java.home}/../Classes/classes.jar</toolsjar>
-        </properties>
-    </profile>
-  </profiles>
-
-  <licenses>
-    <license>
-      <name>The MIT license</name>
-      <url>http://www.opensource.org/licenses/mit-license.php</url>
-      <distribution>repo</distribution>
-    </license>
-  </licenses>
 </project>

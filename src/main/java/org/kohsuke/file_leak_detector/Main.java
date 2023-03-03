@@ -5,6 +5,8 @@ import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 
 import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -28,7 +30,7 @@ public class Main {
     @Argument(index=1,metaVar="OPTSTR",usage="Packed option string of the form key1[=value1],key2[=value2],...")
     public String options;
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         Main main = new Main();
         CmdLineParser p = new CmdLineParser(main);
         try {
@@ -36,34 +38,49 @@ public class Main {
             main.run();
         } catch (CmdLineException e) {
             System.err.println(e.getMessage());
-            System.err.println("java -jar file-leak-detector.jar PID [OPTSTR]");
-            p.printUsage(System.err);
-            System.err.println("\nOptions:");
-            AgentMain.printOptions();
-            System.exit(1);
+            fail(p);
+        } catch (InvocationTargetException e) {
+            /* The main cause of the exception in the agent is lost outside of the loadAgent method.
+            The instrumentation framework remove it in the AgentInitializationException object. We only can print
+            an error to let the parent invoker know something went wrong
+             */
+            e.getCause().printStackTrace();
+            fail(p);
+        } catch (Exception e) {
+            e.printStackTrace();
+            fail(p);
         }
     }
 
-    public void run() throws Exception {
-        Class api = loadAttachApi();
+    private static void fail(CmdLineParser p) {
+        System.err.println("java -jar file-leak-detector.jar PID [OPTSTR]");
+        p.printUsage(System.err);
+        System.err.println("\nOptions:");
+        AgentMain.printOptions();
+        System.exit(1);
+    }
 
-        System.out.println("Connecting to "+pid);
-        Object vm = api.getMethod("attach",String.class).invoke(null,pid);
+    public void run() throws IOException, ReflectiveOperationException {
+        Class<?> api = loadAttachApi();
+
+        System.out.println("Connecting to " + pid);
+        Object vm = api.getMethod("attach", String.class).invoke(null, pid);
 
         try {
             File agentJar = whichJar(getClass());
-            System.out.println("Activating file leak detector at "+agentJar);
+            System.out.println("Activating file leak detector at " + agentJar);
             // load a specified agent onto the JVM
-            api.getMethod("loadAgent",String.class,String.class).invoke(vm, agentJar.getPath(), options);
+            // pass the hidden option to prevent this from killing the target JVM if the options were wrong
+            api.getMethod("loadAgent",String.class,String.class).invoke(vm, agentJar.getPath(), options == null ? "noexit" : "noexit,"+options);
         } finally {
             api.getMethod("detach").invoke(vm);
         }
     }
 
     /**
-     * Loads the {@link VirtualMachine} class as the entry point to the attach API.
+     * Loads the {@code VirtualMachine} class as the entry point to the attach API.
      */
-    private Class loadAttachApi() throws MalformedURLException, ClassNotFoundException {
+    private Class<?> loadAttachApi() throws MalformedURLException {
         File toolsJar = locateToolsJar();
 
         ClassLoader cl = wrapIntoClassLoader(toolsJar);
@@ -85,19 +102,22 @@ public class Main {
         URL jar = toolsJar.toURI().toURL();
 
         ClassLoader base = getClass().getClassLoader();
+        if (!toolsJar.exists()) {
+            return base;
+        }
         if (base instanceof URLClassLoader) {
             try {
                 Method addURL = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
                 addURL.setAccessible(true);
-                addURL.invoke(base,jar);
+                addURL.invoke(base, jar);
                 return base;
             } catch (Exception e) {
                 // if that fails, load into a separate classloader
-                LOGGER.log(Level.WARNING, "Failed to load tools.jar into appclassloader",e);
+                LOGGER.log(Level.WARNING, "Failed to load tools.jar into appclassloader", e);
             }
         }
 
-        return new URLClassLoader(new URL[]{jar}, base);
+        return new URLClassLoader(new URL[] {jar}, base);
     }
 
     /**
@@ -105,22 +125,20 @@ public class Main {
      */
     private File locateToolsJar() {
         File home = new File(System.getProperty("java.home"));
-        return new File(home,"../lib/tools.jar");
+        return new File(home, "../lib/tools.jar");
     }
 
     /**
      * Finds the jar file from a reference to class within.
      */
-    private File whichJar(Class c) {
+    private File whichJar(Class<?> c) {
         try {
             ProtectionDomain pd = c.getProtectionDomain();
             CodeSource cs = pd.getCodeSource();
             URL url = cs.getLocation();
             URI uri = url.toURI();
-            File f = new File(uri);
-            return f;
-        }
-        catch (URISyntaxException ex) {
+            return new File(uri);
+        } catch (URISyntaxException ex) {
             throw new IllegalStateException("Unable to figure out the file of the jar", ex);
         }
     }

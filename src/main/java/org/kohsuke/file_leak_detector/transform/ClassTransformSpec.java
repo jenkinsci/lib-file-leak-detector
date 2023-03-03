@@ -1,7 +1,7 @@
 package org.kohsuke.file_leak_detector.transform;
 
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Specifies how we transform a class.
@@ -10,15 +10,16 @@ import java.util.HashMap;
  */
 public final class ClassTransformSpec {
     public final String name;
-    /*package*/ Map<String,MethodTransformSpec> methodSpecs = new HashMap<String,MethodTransformSpec>();
+    /*package*/ Map<String, MethodTransformSpec> methodSpecs = new HashMap<>();
 
-    public ClassTransformSpec(Class clazz, MethodTransformSpec... methodSpecs) {
-        this(clazz.getName().replace('.', '/'),methodSpecs);
+    public ClassTransformSpec(Class<?> clazz, MethodTransformSpec... methodSpecs) {
+        this(clazz.getName().replace('.', '/'), methodSpecs);
     }
 
     public ClassTransformSpec(String name, MethodTransformSpec... methodSpecs) {
         this.name = name;
-        for (MethodTransformSpec s : methodSpecs)
-            this.methodSpecs.put(s.name+s.desc,s);
+        for (MethodTransformSpec s : methodSpecs) {
+            this.methodSpecs.put(s.name + s.desc, s);
+        }
     }
 }

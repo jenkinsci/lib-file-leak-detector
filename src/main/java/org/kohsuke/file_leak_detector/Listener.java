@@ -15,8 +15,11 @@ import java.net.SocketAddress;
 import java.net.SocketImpl;
 import java.nio.channels.FileChannel;
 import java.nio.channels.Pipe;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.Charset;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Date;
@@ -28,7 +31,7 @@ import java.util.zip.ZipFile;
 
 /**
  * Intercepted JDK calls land here.
- * 
+ *
  * @author Kohsuke Kawaguchi
  */
 public class Listener {
@@ -48,44 +51,46 @@ public class Listener {
 
         public void dump(String prefix, PrintWriter pw) {
             StackTraceElement[] trace = stackTrace.getStackTrace();
-            int i=0;
+            int i = 0;
             // skip until we find the Method.invoke() that called us
-            for (; i<trace.length; i++)
-                if(trace[i].getClassName().equals("java.lang.reflect.Method")) {
+            for (; i < trace.length; i++) {
+                if (trace[i].getClassName().equals("java.lang.reflect.Method")) {
                     i++;
                     break;
                 }
+            }
             // print the rest
-            for (; i < trace.length; i++)
+            for (; i < trace.length; i++) {
                 pw.println("\tat " + trace[i]);
+            }
             pw.flush();
         }
-        
+
         public boolean exclude() {
-        	if(EXCLUDES.isEmpty()) {
-        		return false;
-        	}
+            if (EXCLUDES.isEmpty()) {
+                return false;
+            }
 
             StackTraceElement[] trace = stackTrace.getStackTrace();
-            int i=0;
+            int i = 0;
             // skip until we find the Method.invoke() that called us
-            for (; i<trace.length; i++) {
-				if(trace[i].getClassName().equals("java.lang.reflect.Method")) {
+            for (; i < trace.length; i++) {
+                if (trace[i].getClassName().equals("java.lang.reflect.Method")) {
                     i++;
                     break;
                 }
-			}
-            
+            }
+
             // check the rest
             for (; i < trace.length; i++) {
-            	String t = trace[i].toString();
-            	for(String exclude : EXCLUDES) {
-            		// skip empty lines
-					if(t.contains(exclude)) {
-						return true;
-					}
-            	}
-			}
+                String t = trace[i].toString();
+                for (String exclude : EXCLUDES) {
+                    // skip empty lines
+                    if (t.contains(exclude)) {
+                        return true;
+                    }
+                }
+            }
 
             // no matchine exclude found
             return false;
@@ -102,9 +107,10 @@ public class Listener {
             this.file = file;
         }
 
+        @Override
         public void dump(String prefix, PrintWriter pw) {
             pw.println(prefix + file + " by thread:" + threadName + " on " + format(time));
-            super.dump(prefix,pw);
+            super.dump(prefix, pw);
         }
 
         @Override
@@ -120,9 +126,10 @@ public class Listener {
             this.source = source;
         }
 
+        @Override
         public void dump(String prefix, PrintWriter pw) {
             pw.println(prefix + "Pipe Source Channel by thread:" + threadName + " on " + format(time));
-            super.dump(prefix,pw);
+            super.dump(prefix, pw);
         }
     }
 
@@ -133,9 +140,10 @@ public class Listener {
             this.sink = sink;
         }
 
+        @Override
         public void dump(String prefix, PrintWriter pw) {
             pw.println(prefix + "Pipe Sink Channel by thread:" + threadName + " on " + format(time));
-            super.dump(prefix,pw);
+            super.dump(prefix, pw);
         }
     }
 
@@ -154,16 +162,19 @@ public class Listener {
 
         private String getRemoteAddress(Socket socket) {
             SocketAddress ra = socket.getRemoteSocketAddress();
-            return ra!=null ? ra.toString() : null;
+            return ra != null ? ra.toString() : null;
         }
 
+        @Override
         public void dump(String prefix, PrintWriter ps) {
             // best effort at showing where it is/was listening
             String peer = this.peer;
-            if (peer==null)  peer=getRemoteAddress(socket);
+            if (peer == null) {
+                peer = getRemoteAddress(socket);
+            }
 
-            ps.println(prefix+"socket to "+peer+" by thread:"+threadName+" on "+format(time));
-            super.dump(prefix,ps);
+            ps.println(prefix + "socket to " + peer + " by thread:" + threadName + " on " + format(time));
+            super.dump(prefix, ps);
         }
 
         @Override
@@ -186,16 +197,19 @@ public class Listener {
 
         private String getLocalAddress(ServerSocket socket) {
             SocketAddress la = socket.getLocalSocketAddress();
-            return la!=null ? la.toString() : null;
+            return la != null ? la.toString() : null;
         }
 
+        @Override
         public void dump(String prefix, PrintWriter ps) {
             // best effort at showing where it is/was listening
             String address = this.address;
-            if (address==null)  address=getLocalAddress(socket);
+            if (address == null) {
+                address = getLocalAddress(socket);
+            }
 
-            ps.println(prefix+"server socket at "+address+" by thread:"+threadName+" on "+format(time));
-            super.dump(prefix,ps);
+            ps.println(prefix + "server socket at " + address + " by thread:" + threadName + " on " + format(time));
+            super.dump(prefix, ps);
         }
     }
 
@@ -209,9 +223,10 @@ public class Listener {
             this.socket = socket;
         }
 
+        @Override
         public void dump(String prefix, PrintWriter ps) {
-            ps.println(prefix+"socket channel by thread:"+threadName+" on "+format(time));
-            super.dump(prefix,ps);
+            ps.println(prefix + "socket channel by thread:" + threadName + " on " + format(time));
+            super.dump(prefix, ps);
         }
     }
 
@@ -222,16 +237,17 @@ public class Listener {
             this.selector = selector;
         }
 
+        @Override
         public void dump(String prefix, PrintWriter ps) {
-            ps.println(prefix+"selector by thread:"+threadName+" on "+format(time));
-            super.dump(prefix,ps);
+            ps.println(prefix + "selector by thread:" + threadName + " on " + format(time));
+            super.dump(prefix, ps);
         }
     }
 
     /**
      * Files that are currently open, keyed by the owner object (like {@link FileInputStream}.
      */
-    private static Map<Object,Record> TABLE = new WeakHashMap<Object,Record>();
+    private static Map<Object, Record> TABLE = new WeakHashMap<>();
 
     /**
      * Trace the open/close op
@@ -241,12 +257,12 @@ public class Listener {
     /**
      * Trace the "too many open files" error here
      */
-    public static PrintWriter ERROR = new PrintWriter(System.err);
+    public static PrintWriter ERROR = new PrintWriter(new OutputStreamWriter(System.err, Charset.defaultCharset()));
 
     /**
-     * Allows to provide stacktrace-lines which cause the element to be excluded 
+     * Allows to provide stacktrace-lines which cause the element to be excluded
      */
-    public static final List<String> EXCLUDES = new ArrayList<String>();
+    public static final List<String> EXCLUDES = new ArrayList<>();
 
     /**
      * Tracing may cause additional files to be opened.
@@ -270,9 +286,9 @@ public class Listener {
     public static boolean isAgentInstalled() {
         return AGENT_INSTALLED;
     }
-    
+
     public static synchronized void makeStrong() {
-        TABLE = new LinkedHashMap<Object, Record>(TABLE);
+        TABLE = new LinkedHashMap<>(TABLE);
     }
 
     /**
@@ -287,31 +303,40 @@ public class Listener {
         put(_this, new FileRecord(f));
 
         for (ActivityListener al : ActivityListener.LIST) {
-            al.open(_this,f);
+            al.open(_this, f);
         }
     }
 
     public static synchronized void openPipe(Object _this) {
         if (_this instanceof Pipe.SourceChannel) {
-            put(_this, new SourceChannelRecord((Pipe.SourceChannel)_this));
+            put(_this, new SourceChannelRecord((Pipe.SourceChannel) _this));
             for (ActivityListener al : ActivityListener.LIST) {
                 al.fd_open(_this);
             }
-        } if (_this instanceof Pipe.SinkChannel) {
-            put(_this, new SinkChannelRecord((Pipe.SinkChannel)_this));
+        }
+        if (_this instanceof Pipe.SinkChannel) {
+            put(_this, new SinkChannelRecord((Pipe.SinkChannel) _this));
             for (ActivityListener al : ActivityListener.LIST) {
                 al.fd_open(_this);
             }
         }
     }
 
-    public static synchronized void open_filechannel(FileChannel fileChannel, Path path) {
+    public static synchronized void openFileChannel(FileChannel fileChannel, Path path) {
         open(fileChannel, path.toFile());
+    }
+
+    public static synchronized void openFileChannel(SeekableByteChannel byteChannel, Path path) {
+        open(byteChannel, path.toFile());
+    }
+
+    public static synchronized void openDirectoryStream(DirectoryStream<?> directoryStream, Path path) {
+        open(directoryStream, path.toFile());
     }
 
     public static synchronized void openSelector(Object _this) {
         if (_this instanceof Selector) {
-            put(_this, new SelectorRecord((Selector)_this));
+            put(_this, new SelectorRecord((Selector) _this));
             for (ActivityListener al : ActivityListener.LIST) {
                 al.fd_open(_this);
             }
@@ -327,15 +352,15 @@ public class Listener {
             try {
                 // one of the following must be true
                 SocketImpl si = (SocketImpl) _this;
-                Socket s = (Socket)SOCKETIMPL_SOCKET.get(si);
-                if (s!=null) {
+                Socket s = (Socket) SOCKETIMPL_SOCKET.get(si);
+                if (s != null) {
                     put(_this, new SocketRecord(s));
                     for (ActivityListener al : ActivityListener.LIST) {
                         al.openSocket(s);
                     }
                 }
-                ServerSocket ss = (ServerSocket)SOCKETIMPL_SERVER_SOCKET.get(si);
-                if (ss!=null) {
+                ServerSocket ss = (ServerSocket) SOCKETIMPL_SERVER_SOCKET.get(si);
+                if (ss != null) {
                     put(_this, new ServerSocketRecord(ss));
                     for (ActivityListener al : ActivityListener.LIST) {
                         al.openSocket(ss);
@@ -353,30 +378,30 @@ public class Listener {
             }
         }
     }
-    
+
     public static synchronized List<Record> getCurrentOpenFiles() {
-        return new ArrayList<Record>(TABLE.values());
+        return new ArrayList<>(TABLE.values());
     }
-    
+
     private static synchronized void put(Object _this, Record r) {
-    	// handle excludes
-    	if(r.exclude()) {
-            if(TRACE!=null && !tracing) {
+        // handle excludes
+        if (r.exclude()) {
+            if (TRACE != null && !tracing) {
                 tracing = true;
-                r.dump("Excluded ",TRACE);
+                r.dump("Excluded ", TRACE);
                 tracing = false;
             }
-			return;
-		}
+            return;
+        }
 
         TABLE.put(_this, r);
-        if(TABLE.size()>THRESHOLD) {
-            THRESHOLD=999999;
+        if (TABLE.size() > THRESHOLD) {
+            THRESHOLD = 999999;
             dump(ERROR);
         }
-        if(TRACE!=null && !tracing) {
+        if (TRACE != null && !tracing) {
             tracing = true;
-            r.dump("Opened ",TRACE);
+            r.dump("Opened ", TRACE);
             tracing = false;
         }
     }
@@ -391,12 +416,12 @@ public class Listener {
      */
     public static synchronized void close(Object _this) {
         Record r = TABLE.remove(_this);
-        if(r!=null && TRACE!=null && !tracing) {
+        if (r != null && TRACE != null && !tracing) {
             if (r instanceof FileRecord) {
                 r = new FileRecord(((FileRecord) r).file);
             }
             tracing = true;
-            r.dump("Closed ",TRACE);
+            r.dump("Closed ", TRACE);
             tracing = false;
         }
 
@@ -412,16 +437,17 @@ public class Listener {
      * Dumps all files that are currently open.
      */
     public static synchronized void dump(OutputStream out) {
-        dump(new OutputStreamWriter(out));
+        dump(new OutputStreamWriter(out, Charset.defaultCharset()));
     }
+
     public static synchronized void dump(Writer w) {
         PrintWriter pw = new PrintWriter(w);
         Record[] records = TABLE.values().toArray(new Record[0]);
 
-        pw.println(records.length+" descriptors are open");
-        int i=0;
+        pw.println(records.length + " descriptors are open");
+        int i = 0;
         for (Record r : records) {
-            r.dump("#"+(++i)+" ",pw);
+            r.dump("#" + (++i) + " ", pw);
         }
         pw.println("----");
         pw.flush();
@@ -431,14 +457,14 @@ public class Listener {
      * Called when the system has too many open files.
      */
     public static synchronized void outOfDescriptors() {
-        if(ERROR!=null && !tracing) {
+        if (ERROR != null && !tracing) {
             tracing = true;
             ERROR.println("Too many open files");
             dump(ERROR);
             tracing = false;
         }
     }
-    
+
     private static String format(long time) {
         try {
             return new Date(time).toString();
@@ -447,16 +473,26 @@ public class Listener {
         }
     }
 
-    private static Field SOCKETIMPL_SOCKET,SOCKETIMPL_SERVER_SOCKET;
-    
+    private static final Field SOCKETIMPL_SOCKET, SOCKETIMPL_SERVER_SOCKET;
+
     static {
+        SOCKETIMPL_SOCKET = getSocketField("socket");
+        SOCKETIMPL_SERVER_SOCKET = getSocketField("serverSocket");
+    }
+
+    private static Field getSocketField(String socket) {
         try {
-            SOCKETIMPL_SOCKET = SocketImpl.class.getDeclaredField("socket");
-            SOCKETIMPL_SERVER_SOCKET = SocketImpl.class.getDeclaredField("serverSocket");
-            SOCKETIMPL_SOCKET.setAccessible(true);
-            SOCKETIMPL_SERVER_SOCKET.setAccessible(true);
+            Field socketimplSocket = SocketImpl.class.getDeclaredField(socket);
+            socketimplSocket.setAccessible(true);
+
+            return socketimplSocket;
         } catch (NoSuchFieldException e) {
-            throw new Error(e);
+            // Java 17+ changed the implementation of Sockets and
+            // so the current approach does not work there any more
+            // for now we gracefully handle this and do keep file-leak-detector
+            // useful for other types of file-handle-leaks
+            System.err.println("Could not load field " + socket + " from SocketImpl: " + e);
+            return null;
         }
     }
 }
