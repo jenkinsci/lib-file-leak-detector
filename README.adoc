@@ -97,9 +97,9 @@ This project uses the JVM's support for instrumenting Java classes during startu
 It adds code to various places where files or sockets are opened and closed
 to print out which file descriptors have not been closed correctly.
 
-== OpenJ9 Caveats
+== `stack shape inconsistent` error
 
-Since this project modifies core java bytecode it requires the `-Xverify:none` argument when running the agent when using OpenJ9.  See https://github.com/jenkinsci/lib-file-leak-detector/issues/37[#37] and https://github.com/jenkinsci/lib-file-leak-detector/pull/50#issue-602359846[#50] for details.
+Since this project modifies core java bytecode it requires the `-Xverify:none` argument when running the agent for some versions of the JVM (OpenJ9 version 1.8.x for example).  See https://github.com/jenkinsci/lib-file-leak-detector/issues/37[#37] and https://github.com/jenkinsci/lib-file-leak-detector/pull/50#issue-602359846[#50] for details.
 
 == Documentation
 
