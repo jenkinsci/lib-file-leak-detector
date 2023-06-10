@@ -10,7 +10,6 @@ import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.commons.io.IOUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -38,9 +37,11 @@ public class TransformerTest {
         TransformerImpl t = new TransformerImpl(specs);
 
         String name = c.getName().replace('.', '/');
-        InputStream resource = getClass().getClassLoader().getResourceAsStream(name + ".class");
-        assertNotNull("Could not load " + name + ".class", resource);
-        byte[] data = IOUtils.toByteArray(resource);
+        byte[] data;
+        try (InputStream resource = getClass().getClassLoader().getResourceAsStream(name + ".class")) {
+            assertNotNull("Could not load " + name + ".class", resource);
+            data = resource.readAllBytes();
+        }
         byte[] data2 = t.transform(name, data);
 
 //        File classFile = new File("/tmp/" + name + ".class");
