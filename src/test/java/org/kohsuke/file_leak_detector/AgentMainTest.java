@@ -60,9 +60,12 @@ public class AgentMainTest {
 
         // the following are not available in all JVMs
         seenClasses.remove("sun/nio/ch/SocketChannelImpl");
-        seenClasses.remove("java/net/AbstractPlainSocketImpl");
         seenClasses.remove("sun/nio/fs/UnixDirectoryStream");
         seenClasses.remove("sun/nio/fs/UnixSecureDirectoryStream");
+        if (Runtime.version().feature() >= 19) {
+            seenClasses.remove("java/net/AbstractPlainSocketImpl");
+            seenClasses.remove("java/net/PlainSocketImpl");
+        }
 
         assertTrue(
                 "Had classes in the spec which were not instrumented: " + seenClasses,
