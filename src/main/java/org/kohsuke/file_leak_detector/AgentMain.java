@@ -132,7 +132,6 @@ public class AgentMain {
                 FileInputStream.class,
                 FileOutputStream.class,
                 RandomAccessFile.class,
-                Class.forName("java.net.PlainSocketImpl"),
                 ZipFile.class,
                 AbstractSelectableChannel.class,
                 AbstractInterruptibleChannel.class,
@@ -142,6 +141,7 @@ public class AgentMain {
 
         addIfFound(classes, "sun.nio.ch.SocketChannelImpl");
         addIfFound(classes, "java.net.AbstractPlainSocketImpl");
+        addIfFound(classes, "java.net.PlainSocketImpl");
         addIfFound(classes, "sun.nio.fs.UnixDirectoryStream");
         addIfFound(classes, "sun.nio.fs.UnixSecureDirectoryStream");
         addIfFound(classes, "sun.nio.fs.WindowsDirectoryStream");
@@ -301,59 +301,59 @@ public class AgentMain {
                     new ClassTransformSpec(
                             "sun/nio/fs/WindowsDirectoryStream", new CloseInterceptor("close")));
         }
-        Collections.addAll(
-            spec,
-            /*
-             * Detect selectors, which may open native pipes and anonymous inodes for event polling.
-             */
-            new ClassTransformSpec(AbstractSelector.class,
-                    new ConstructorInterceptor("(Ljava/nio/channels/spi/SelectorProvider;)V", "openSelector"),
-                    new CloseInterceptor("close")),
-
-            /*
-                java.net.Socket/ServerSocket uses SocketImpl, and this is where FileDescriptors
-                are actually managed.
-
-                SocketInputStream/SocketOutputStream does not maintain a separate FileDescriptor.
-                They just all piggy back on the same SocketImpl instance.
-             */
-            new ClassTransformSpec("java/net/PlainSocketImpl",
+        /*
+         * Detect selectors, which may open native pipes and anonymous inodes for event polling.
+         */
+        spec.add(new ClassTransformSpec(
+                AbstractSelector.class,
+                new ConstructorInterceptor("(Ljava/nio/channels/spi/SelectorProvider;)V", "openSelector"),
+                new CloseInterceptor("close")));
+        /*
+         * java.net.Socket/ServerSocket uses SocketImpl, and this is where FileDescriptors are actually managed.
+         *
+         * SocketInputStream/SocketOutputStream does not maintain a separate FileDescriptor. They just all piggy back on
+         * the same SocketImpl instance.
+         */
+        if (Runtime.version().feature() < 19) {
+            spec.add(new ClassTransformSpec(
+                    "java/net/PlainSocketImpl",
                     // this is where a new file descriptor is allocated.
                     // it'll occupy a socket even before it gets connected
                     new OpenSocketInterceptor("create", "(Z)V"),
 
                     // When a socket is accepted, it goes to "accept(SocketImpl s)"
                     // where 's' is the new socket and 'this' is the server socket
-                    new AcceptInterceptor("accept","(Ljava/net/SocketImpl;)V"),
+                    new AcceptInterceptor("accept", "(Ljava/net/SocketImpl;)V"),
 
                     // file descriptor actually get closed in socketClose()
                     // socketPreClose() appears to do something similar, but if you read the source code
                     // of the native socketClose0() method, then you see that it actually doesn't close
                     // a file descriptor.
-                    new CloseInterceptor("socketClose")
-            ),
+                    new CloseInterceptor("socketClose")));
             // Later versions of the JDK abstracted out the parts of PlainSocketImpl above into a super class
-            new ClassTransformSpec("java/net/AbstractPlainSocketImpl",
-                // this is where a new file descriptor is allocated.
-                // it'll occupy a socket even before it gets connected
-                new OpenSocketInterceptor("create", "(Z)V"),
+            spec.add(new ClassTransformSpec(
+                    "java/net/AbstractPlainSocketImpl",
+                    // this is where a new file descriptor is allocated.
+                    // it'll occupy a socket even before it gets connected
+                    new OpenSocketInterceptor("create", "(Z)V"),
 
-                // When a socket is accepted, it goes to "accept(SocketImpl s)"
-                // where 's' is the new socket and 'this' is the server socket
-                new AcceptInterceptor("accept","(Ljava/net/SocketImpl;)V"),
+                    // When a socket is accepted, it goes to "accept(SocketImpl s)"
+                    // where 's' is the new socket and 'this' is the server socket
+                    new AcceptInterceptor("accept", "(Ljava/net/SocketImpl;)V"),
 
-                // file descriptor actually get closed in socketClose()
-                // socketPreClose() appears to do something similar, but if you read the source code
-                // of the native socketClose0() method, then you see that it actually doesn't close
-                // a file descriptor.
-                new CloseInterceptor("socketClose")
-            ),
-            new ClassTransformSpec("sun/nio/ch/SocketChannelImpl",
-                    new OpenSocketInterceptor("<init>", "(Ljava/nio/channels/spi/SelectorProvider;Ljava/io/FileDescriptor;Ljava/net/InetSocketAddress;)V"),
-                    new OpenSocketInterceptor("<init>", "(Ljava/nio/channels/spi/SelectorProvider;)V"),
-                    new CloseInterceptor("kill")
-            )
-        );
+                    // file descriptor actually get closed in socketClose()
+                    // socketPreClose() appears to do something similar, but if you read the source code
+                    // of the native socketClose0() method, then you see that it actually doesn't close
+                    // a file descriptor.
+                    new CloseInterceptor("socketClose")));
+        }
+        spec.add(new ClassTransformSpec(
+                "sun/nio/ch/SocketChannelImpl",
+                new OpenSocketInterceptor(
+                        "<init>",
+                        "(Ljava/nio/channels/spi/SelectorProvider;Ljava/io/FileDescriptor;Ljava/net/InetSocketAddress;)V"),
+                new OpenSocketInterceptor("<init>", "(Ljava/nio/channels/spi/SelectorProvider;)V"),
+                new CloseInterceptor("kill")));
         return spec;
     }
 

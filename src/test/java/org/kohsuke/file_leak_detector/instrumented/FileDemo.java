@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -96,8 +95,9 @@ public class FileDemo {
     @Before
     public void prepareOutput() throws Exception {
         output.getBuffer().setLength(0);
-        tempFile = File.createTempFile("file-leak-detector-FileDemo", ".tmp");
-        FileUtils.writeStringToFile(tempFile, "teststring123", StandardCharsets.UTF_8);
+        Path tempPath = Files.createTempFile("file-leak-detector-FileDemo", ".tmp");
+        Files.writeString(tempPath, "teststring123", StandardCharsets.UTF_8);
+        tempFile = tempPath.toFile();
     }
 
     @After
