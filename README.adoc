@@ -23,7 +23,7 @@ Without any options, this tool silently records file open/close operations and u
 
 [source,sh]
 ----
-$ java -javaagent:path/to/file-leak-detector.jar ...your usual Java arguments follow...
+$ java -javaagent:path/to/file-leak-detector-jar-with-dependencies.jar ...your usual Java arguments follow...
 ----
 
 There are several options you can pass to the agent.
@@ -31,21 +31,28 @@ For example, to dump the open file descriptors when the total number reaches 200
 
 [source,sh]
 ----
-$ java -javaagent:path/to/file-leak-detector.jar=threshold=200 ...your usual Java arguments follow...
+$ java -javaagent:path/to/file-leak-detector-jar-with-dependencies.jar=threshold=200 ...your usual Java arguments follow...
+----
+
+Continuous logging of every opened/closed file:
+
+[source,sh]
+----
+$ java -javaagent:path/to/file-leak-detector-jar-with-dependencies.jar=trace=/path/to/logfile.txt ...your usual Java arguments follow...
 ----
 
 Or to have it run a mini HTTP server so that you can access the information from your browser, do the following and open http://localhost:19999/:
 
 [source,sh]
 ----
-$ java -javaagent:path/to/file-leak-detector.jar=http=19999 ...your usual Java arguments follow...
+$ java -javaagent:path/to/file-leak-detector-jar-with-dependencies.jar=http=19999 ...your usual Java arguments follow...
 ----
 
 Use the help option to see the help screen for the complete list of options:
 
 [source,sh]
 ----
-$ java -javaagent:path/to/file-leak-detector.jar=help
+$ java -javaagent:path/to/file-leak-detector-jar-with-dependencies.jar=help
 ----
 
 == Attaching after JVM startup
@@ -57,7 +64,7 @@ Options can be specified in the second argument in the same format you do to the
 
 [source,sh]
 ----
-$ java -jar path/to/file-leak-detector.jar 1500 threshold=200,strong
+$ java -jar path/to/file-leak-detector-jar-with-dependencies.jar 1500 threshold=200,strong
 ----
 
 == Supported options
