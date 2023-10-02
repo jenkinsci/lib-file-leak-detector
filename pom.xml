@@ -33,7 +33,7 @@
     <revision>1.17</revision>
     <changelist>-SNAPSHOT</changelist>
     <gitHubRepo>jenkinsci/lib-${project.artifactId}</gitHubRepo>
-    <asm.version>9.5</asm.version>
+    <asm.version>9.6</asm.version>
   </properties>
 
   <dependencies>
