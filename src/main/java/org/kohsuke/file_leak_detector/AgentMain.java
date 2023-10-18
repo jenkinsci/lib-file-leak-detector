@@ -370,8 +370,16 @@ public class AgentMain {
                         "openFileString",
                         Object.class,
                         FileDescriptor.class,
-                        String.class
-                )
+                        String.class),
+                // this is for java 11/17 - which use Object instead of Closeable as the last parameter
+                new ReturnFromStaticMethodInterceptor(
+                        "open",
+                        "(Ljava/io/FileDescriptor;Ljava/lang/String;ZZZLjava/lang/Object;)Ljava/nio/channels/FileChannel;",
+                        4,
+                        "openFileString",
+                        Object.class,
+                        FileDescriptor.class,
+                        String.class)
         ));
         return spec;
     }
