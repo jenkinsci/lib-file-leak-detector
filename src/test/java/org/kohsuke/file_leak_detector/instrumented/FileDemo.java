@@ -8,6 +8,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -92,10 +94,10 @@ public class FileDemo {
 
     @Before
     public void prepareOutput() throws Exception {
-        output.getBuffer().setLength(0);
         Path tempPath = Files.createTempFile("file-leak-detector-FileDemo", ".tmp");
         Files.writeString(tempPath, "teststring123", StandardCharsets.UTF_8);
         tempFile = tempPath.toFile();
+        output.getBuffer().setLength(0);
     }
 
     @After
@@ -114,6 +116,36 @@ public class FileDemo {
             assertNotNull("No file record for file=" + tempFile + " found", findFileRecord(tempFile));
             assertThat("Did not have the expected type of 'marker' object: " + obj,
                     obj, instanceOf(FileInputStream.class));
+        }
+        assertNull("File record for file=" + tempFile + " not removed", findFileRecord(tempFile));
+
+        String traceOutput = output.toString();
+        assertThat(traceOutput, containsString("Opened " + tempFile));
+        assertThat(traceOutput, containsString("Closed " + tempFile));
+    }
+
+    @Test
+    public void openCloseFilesBufferedWriter() throws Exception {
+        try (BufferedWriter writer = Files.newBufferedWriter(tempFile.toPath())) {
+            assertNotNull(writer);
+            assertNotNull("No file record for file=" + tempFile + " found", findFileRecord(tempFile));
+            assertThat("Did not have the expected type of 'marker' object: " + obj,
+                    obj, instanceOf(FileChannel.class));
+        }
+        assertNull("File record for file=" + tempFile + " not removed", findFileRecord(tempFile));
+
+        String traceOutput = output.toString();
+        assertThat(traceOutput, containsString("Opened " + tempFile));
+        assertThat(traceOutput, containsString("Closed " + tempFile));
+    }
+
+    @Test
+    public void openCloseFilesBufferedReader() throws Exception {
+        try (BufferedReader reader = Files.newBufferedReader(tempFile.toPath())) {
+            assertNotNull(reader);
+            assertNotNull("No file record for file=" + tempFile + " found", findFileRecord(tempFile));
+            assertThat("Did not have the expected type of 'marker' object: " + obj,
+                    obj, instanceOf(FileChannel.class));
         }
         assertNull("File record for file=" + tempFile + " not removed", findFileRecord(tempFile));
 

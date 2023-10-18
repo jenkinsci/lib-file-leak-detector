@@ -2,6 +2,7 @@ package org.kohsuke.file_leak_detector;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -140,6 +141,7 @@ public class AgentMain {
                 Files.class);
 
         addIfFound(classes, "sun.nio.ch.SocketChannelImpl");
+        addIfFound(classes, "sun.nio.ch.FileChannelImpl");
         addIfFound(classes, "java.net.AbstractPlainSocketImpl");
         addIfFound(classes, "java.net.PlainSocketImpl");
         addIfFound(classes, "sun.nio.fs.UnixDirectoryStream");
@@ -235,7 +237,11 @@ public class AgentMain {
              */
             new ClassTransformSpec(FileChannel.class,
                     new ReturnFromStaticMethodInterceptor("open",
-                            "(Ljava/nio/file/Path;Ljava/util/Set;[Ljava/nio/file/attribute/FileAttribute;)Ljava/nio/channels/FileChannel;", 4, "openFileChannel", FileChannel.class, Path.class)),
+                            "(Ljava/nio/file/Path;Ljava/util/Set;[Ljava/nio/file/attribute/FileAttribute;)Ljava/nio/channels/FileChannel;",
+                            4,
+                            "openPath",
+                            Object.class,
+                            Path.class)),
             /*
              * Detect instances opened via static methods in class java.nio.file.Files
              */
@@ -246,33 +252,34 @@ public class AgentMain {
                             "newByteChannel",
                             "(Ljava/nio/file/Path;Ljava/util/Set;[Ljava/nio/file/attribute/FileAttribute;)Ljava/nio/channels/SeekableByteChannel;",
                             4,
-                            "openFileChannel",
-                            SeekableByteChannel.class,
+                            "openPath",
+                            Object.class,
                             Path.class),
                     // DirectoryStream<Path> newDirectoryStream(Path dir)
                     new ReturnFromStaticMethodInterceptor(
                             "newDirectoryStream",
                             "(Ljava/nio/file/Path;)Ljava/nio/file/DirectoryStream;",
                             2,
-                            "openDirectoryStream",
-                            DirectoryStream.class,
+                            "openPath",
+                            Object.class,
                             Path.class),
                     // DirectoryStream<Path> newDirectoryStream(Path dir, String glob)
                     new ReturnFromStaticMethodInterceptor(
                             "newDirectoryStream",
                             "(Ljava/nio/file/Path;Ljava/lang/String;)Ljava/nio/file/DirectoryStream;",
                             6,
-                            "openDirectoryStream",
-                            DirectoryStream.class,
+                            "openPath",
+                            Object.class,
                             Path.class),
                     // DirectoryStream<Path> newDirectoryStream(Path dir, DirectoryStream.Filter<? super Path> filter)
                     new ReturnFromStaticMethodInterceptor(
                             "newDirectoryStream",
                             "(Ljava/nio/file/Path;Ljava/nio/file/DirectoryStream$Filter;)Ljava/nio/file/DirectoryStream;",
                             3,
-                            "openDirectoryStream",
-                            DirectoryStream.class,
-                            Path.class)),
+                            "openPath",
+                            Object.class,
+                            Path.class)
+                    ),
             /*
              * Detect new Pipes
              */
@@ -354,6 +361,18 @@ public class AgentMain {
                         "(Ljava/nio/channels/spi/SelectorProvider;Ljava/io/FileDescriptor;Ljava/net/InetSocketAddress;)V"),
                 new OpenSocketInterceptor("<init>", "(Ljava/nio/channels/spi/SelectorProvider;)V"),
                 new CloseInterceptor("kill")));
+        spec.add(new ClassTransformSpec(
+                "sun/nio/ch/FileChannelImpl",
+                new ReturnFromStaticMethodInterceptor(
+                        "open",
+                        "(Ljava/io/FileDescriptor;Ljava/lang/String;ZZZLjava/io/Closeable;)Ljava/nio/channels/FileChannel;",
+                        4,
+                        "openFileString",
+                        Object.class,
+                        FileDescriptor.class,
+                        String.class
+                )
+        ));
         return spec;
     }
 
