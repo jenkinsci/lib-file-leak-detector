@@ -43,6 +43,10 @@
       <version>2.33</version>
     </dependency>
     <dependency>
+      <groupId>com.github.spotbugs</groupId>
+      <artifactId>spotbugs-annotations</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm</artifactId>
       <version>${asm.version}</version>
