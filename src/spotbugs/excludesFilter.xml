@@ -4,10 +4,14 @@
     Exclusions in this section have been triaged and determined to be false positives.
   -->
   <Match>
-    <Or>
-      <!-- Pending https://github.com/spotbugs/spotbugs/issues/1515 -->
-      <Bug pattern="DP_CREATE_CLASSLOADER_INSIDE_DO_PRIVILEGED"/>
-    </Or>
+    <!-- Pending https://github.com/spotbugs/spotbugs/issues/1515 -->
+    <Bug pattern="DP_CREATE_CLASSLOADER_INSIDE_DO_PRIVILEGED"/>
+  </Match>
+  <Match>
+    <!-- Preserve API compatibility -->
+    <Bug pattern="PA_PUBLIC_PRIMITIVE_ATTRIBUTE"/>
+    <Class name="org.kohsuke.file_leak_detector.Listener"/>
+    <Field name="THRESHOLD"/>
   </Match>
   <!--
     Here lies technical debt. Exclusions in this section have not yet been triaged. When working on
