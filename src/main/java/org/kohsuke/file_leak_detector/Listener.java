@@ -417,6 +417,9 @@ public class Listener {
     public static synchronized void close(Object _this) {
         Record r = TABLE.remove(_this);
         if (r != null && TRACE != null && !tracing) {
+            if (r instanceof FileRecord) {
+                r = new FileRecord(((FileRecord) r).file);
+            }
             tracing = true;
             r.dump("Closed ", TRACE);
             tracing = false;
