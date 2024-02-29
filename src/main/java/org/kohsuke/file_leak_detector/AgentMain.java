@@ -2,6 +2,7 @@ package org.kohsuke.file_leak_detector;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -146,6 +147,7 @@ public class AgentMain {
                 Files.class);
 
         addIfFound(classes, "sun.nio.ch.SocketChannelImpl");
+        addIfFound(classes, "sun.nio.ch.FileChannelImpl");
         addIfFound(classes, "java.net.AbstractPlainSocketImpl");
         addIfFound(classes, "java.net.PlainSocketImpl");
         addIfFound(classes, "sun.nio.fs.UnixDirectoryStream");
@@ -370,6 +372,25 @@ public class AgentMain {
                         "(Ljava/nio/channels/spi/SelectorProvider;Ljava/io/FileDescriptor;Ljava/net/InetSocketAddress;)V"),
                 new OpenSocketInterceptor("<init>", "(Ljava/nio/channels/spi/SelectorProvider;)V"),
                 new CloseInterceptor("kill")));
+        spec.add(new ClassTransformSpec(
+                "sun/nio/ch/FileChannelImpl",
+                new ReturnFromStaticMethodInterceptor(
+                        "open",
+                        "(Ljava/io/FileDescriptor;Ljava/lang/String;ZZZLjava/io/Closeable;)Ljava/nio/channels/FileChannel;",
+                        4,
+                        "openFileString",
+                        Object.class,
+                        FileDescriptor.class,
+                        String.class),
+                // this is for java 11/17 - which use Object instead of Closeable as the last parameter
+                new ReturnFromStaticMethodInterceptor(
+                        "open",
+                        "(Ljava/io/FileDescriptor;Ljava/lang/String;ZZZLjava/lang/Object;)Ljava/nio/channels/FileChannel;",
+                        4,
+                        "openFileString",
+                        Object.class,
+                        FileDescriptor.class,
+                        String.class)));
         return spec;
     }
 
