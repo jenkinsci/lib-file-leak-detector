@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.jenkins-ci</groupId>
     <artifactId>jenkins</artifactId>
-    <version>1.110</version>
+    <version>1.111</version>
     <relativePath />
   </parent>
   <groupId>org.kohsuke</groupId>
@@ -147,7 +147,7 @@
       </plugin>
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>3.5.1</version>
+        <version>3.5.2</version>
         <executions>
           <execution>
             <goals>
