@@ -1,5 +1,9 @@
 package org.kohsuke.file_leak_detector.instrumented;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -11,10 +15,6 @@ import org.kohsuke.file_leak_detector.Listener;
 import org.kohsuke.file_leak_detector.Listener.Record;
 import org.kohsuke.file_leak_detector.Listener.SelectorRecord;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
 /**
  * Make sure to run this test with injected file-leak-detector as otherwise
  * tests will fail.
@@ -24,7 +24,9 @@ public class SelectorDemo {
 
     @BeforeClass
     public static void setupClass() {
-        assertTrue("This test can only run with an injected Java agent for file-leak-detector", Listener.isAgentInstalled());
+        assertTrue(
+                "This test can only run with an injected Java agent for file-leak-detector",
+                Listener.isAgentInstalled());
     }
 
     @Before
