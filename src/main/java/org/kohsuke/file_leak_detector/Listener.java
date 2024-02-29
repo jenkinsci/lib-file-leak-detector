@@ -1,6 +1,6 @@
 package org.kohsuke.file_leak_detector;
 
-import java.io.BufferedWriter;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.File;
 import java.io.FileDescriptor;
 import java.io.FileInputStream;
@@ -23,6 +23,7 @@ import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -31,14 +32,14 @@ import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.zip.ZipFile;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-
 /**
  * Intercepted JDK calls land here.
  *
  * @author Kohsuke Kawaguchi
  */
+@SuppressWarnings("unused")
 public class Listener {
+
     /**
      * Remembers who/where/when opened a file.
      */
@@ -123,6 +124,25 @@ public class Listener {
         }
     }
 
+    public static final class PathRecord extends Record {
+        public final Path path;
+
+        private PathRecord(Path path) {
+            this.path = path;
+        }
+
+        @Override
+        public void dump(String prefix, PrintWriter pw) {
+            pw.println(prefix + path + " by thread:" + threadName + " on " + format(time));
+            super.dump(prefix, pw);
+        }
+
+        @Override
+        public String toString() {
+            return "PathRecord[file=" + path + "]";
+        }
+    }
+
     public static final class SourceChannelRecord extends Record {
         public final Pipe.SourceChannel source;
 
@@ -150,7 +170,6 @@ public class Listener {
             super.dump(prefix, pw);
         }
     }
-
 
     /**
      * Record of opened socket.
@@ -249,7 +268,7 @@ public class Listener {
     }
 
     /**
-     * Files that are currently open, keyed by the owner object (like {@link FileInputStream}.
+     * Files that are currently open, keyed by the owner object like {@link FileInputStream}.
      */
     private static Map<Object, Record> TABLE = new WeakHashMap<>();
 
@@ -299,31 +318,49 @@ public class Listener {
      * Called when a new file is opened.
      *
      * @param _this
-     *      {@link FileInputStream}, {@link FileOutputStream}, {@link RandomAccessFile},
-     *      {@link BufferedWriter}, {@link ZipFile}, {@link FileChannel}, {@link DirectoryStream},
-     *      {@link SeekableByteChannel}.
+     *      {@link FileInputStream}, {@link FileOutputStream}, {@link RandomAccessFile}, or {@link ZipFile}.
      * @param f
      *      File being opened.
      */
     public static synchronized void open(Object _this, File f) {
-        put(_this, new FileRecord(f));
+        put(_this, new PathRecord(f.toPath()));
 
         for (ActivityListener al : ActivityListener.LIST) {
             al.open(_this, f);
         }
     }
 
-    public static synchronized void openPath(Object _this, Path path) {
-        open(_this, path.toFile());
+    /**
+     * Called when a new path is opened.
+     *
+     * @param _this
+     *      {@link FileInputStream}, {@link FileOutputStream}, {@link RandomAccessFile}, or {@link ZipFile}.
+     * @param p
+     *      Path being opened.
+     */
+    public static synchronized void open(Object _this, Path p) {
+        put(_this, new PathRecord(p));
+
+        for (ActivityListener al : ActivityListener.LIST) {
+            al.open(_this, p);
+        }
     }
 
-    @SuppressFBWarnings(value = "PATH_TRAVERSAL_IN", justification = "path comes from " +
-            "sun.nio.fs.UnixChannelFactory.newFileChannel(int, sun.nio.fs.UnixPath, java.lang.String, java.util.Set<? extends java.nio.file.OpenOption>, int). " +
-            "At this point, the path is not controlled by the user.")
+    @SuppressFBWarnings(
+            value = "PATH_TRAVERSAL_IN",
+            justification = "path comes from "
+                    + "sun.nio.fs.UnixChannelFactory.newFileChannel(int, sun.nio.fs.UnixPath, java.lang.String, java.util.Set<? extends java.nio.file.OpenOption>, int). "
+                    + "At this point, the path is not controlled by the user.")
     public static synchronized void openFileString(Object _this, FileDescriptor fileDescriptor, String path) {
-        open(_this, new File(path));
+        open(_this, Paths.get(path));
     }
 
+    /**
+     * Called when a pipe is opened, e.g. via SelectorProvider
+     *
+     * @param _this
+     * 		{@link java.nio.channels.spi.SelectorProvider}
+     */
     public static synchronized void openPipe(Object _this) {
         if (_this instanceof Pipe.SourceChannel) {
             put(_this, new SourceChannelRecord((Pipe.SourceChannel) _this));
@@ -337,6 +374,18 @@ public class Listener {
                 al.fd_open(_this);
             }
         }
+    }
+
+    public static synchronized void openFileChannel(FileChannel fileChannel, Path path) {
+        open(fileChannel, path);
+    }
+
+    public static synchronized void openFileChannel(SeekableByteChannel byteChannel, Path path) {
+        open(byteChannel, path);
+    }
+
+    public static synchronized void openDirectoryStream(DirectoryStream<?> directoryStream, Path path) {
+        open(directoryStream, path);
     }
 
     public static synchronized void openSelector(Object _this) {
@@ -432,9 +481,6 @@ public class Listener {
         }
     }
 
-
-
-
     /**
      * Dumps all files that are currently open.
      */
@@ -490,7 +536,7 @@ public class Listener {
             return socketimplSocket;
         } catch (NoSuchFieldException e) {
             // Java 17+ changed the implementation of Sockets and
-            // so the current approach does not work there any more
+            // so the current approach does not work there anymore
             // for now we gracefully handle this and do keep file-leak-detector
             // useful for other types of file-handle-leaks
             System.err.println("Could not load field " + socket + " from SocketImpl: " + e);

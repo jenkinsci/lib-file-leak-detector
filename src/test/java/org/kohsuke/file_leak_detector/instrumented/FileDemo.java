@@ -16,23 +16,27 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
+import java.net.URI;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Collections;
 import java.util.stream.Stream;
-
+import org.apache.commons.io.file.NoopPathVisitor;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.kohsuke.file_leak_detector.ActivityListener;
 import org.kohsuke.file_leak_detector.Listener;
-import org.kohsuke.file_leak_detector.Listener.FileRecord;
 import org.kohsuke.file_leak_detector.Listener.Record;
 
 /**
@@ -53,17 +57,22 @@ public class FileDemo {
         }
 
         @Override
+        public void open(Object obj, Path file) {
+            FileDemo.this.obj = obj;
+        }
+
+        @Override
         public void openSocket(Object obj) {
             FileDemo.this.obj = obj;
         }
 
         @Override
         public void close(Object obj) {
-           // sometimes java.util.zip.ZipFile$CleanableResource$FinalizableResource.finalize()
-           // will kick in and will close a ZipFile, thus we ignore the corresponding objects here
-           if (obj.getClass().getSimpleName().contains("URLJarFile")) {
-               return;
-           }
+            // sometimes java.util.zip.ZipFile$CleanableResource$FinalizableResource.finalize()
+            // will kick in and will close a ZipFile, thus we ignore the corresponding objects here
+            if (obj.getClass().getSimpleName().contains("URLJarFile")) {
+                return;
+            }
 
             FileDemo.this.obj = obj;
         }
@@ -94,10 +103,10 @@ public class FileDemo {
 
     @Before
     public void prepareOutput() throws Exception {
+        output.getBuffer().setLength(0);
         Path tempPath = Files.createTempFile("file-leak-detector-FileDemo", ".tmp");
         Files.writeString(tempPath, "teststring123", StandardCharsets.UTF_8);
         tempFile = tempPath.toFile();
-        output.getBuffer().setLength(0);
     }
 
     @After
@@ -113,11 +122,15 @@ public class FileDemo {
     public void openCloseFile() throws Exception {
         try (FileInputStream in = new FileInputStream(tempFile)) {
             assertNotNull(in);
-            assertNotNull("No file record for file=" + tempFile + " found", findFileRecord(tempFile));
-            assertThat("Did not have the expected type of 'marker' object: " + obj,
-                    obj, instanceOf(FileInputStream.class));
+            assertNotNull(
+                    "No file record for file=" + tempFile + " found, having: " + Listener.getCurrentOpenFiles(),
+                    findPathRecord(tempFile.toPath()));
+            assertThat(
+                    "Did not have the expected type of 'marker' object: " + obj,
+                    obj,
+                    instanceOf(FileInputStream.class));
         }
-        assertNull("File record for file=" + tempFile + " not removed", findFileRecord(tempFile));
+        assertNull("File record for file=" + tempFile + " not removed", findPathRecord(tempFile.toPath()));
 
         String traceOutput = output.toString();
         assertThat(traceOutput, containsString("Opened " + tempFile));
@@ -128,11 +141,10 @@ public class FileDemo {
     public void openCloseFilesBufferedWriter() throws Exception {
         try (BufferedWriter writer = Files.newBufferedWriter(tempFile.toPath())) {
             assertNotNull(writer);
-            assertNotNull("No file record for file=" + tempFile + " found", findFileRecord(tempFile));
-            assertThat("Did not have the expected type of 'marker' object: " + obj,
-                    obj, instanceOf(FileChannel.class));
+            assertNotNull("No file record for file=" + tempFile + " found", findPathRecord(tempFile.toPath()));
+            assertThat("Did not have the expected type of 'marker' object: " + obj, obj, instanceOf(FileChannel.class));
         }
-        assertNull("File record for file=" + tempFile + " not removed", findFileRecord(tempFile));
+        assertNull("File record for file=" + tempFile + " not removed", findPathRecord(tempFile.toPath()));
 
         String traceOutput = output.toString();
         assertThat(traceOutput, containsString("Opened " + tempFile));
@@ -143,11 +155,10 @@ public class FileDemo {
     public void openCloseFilesBufferedReader() throws Exception {
         try (BufferedReader reader = Files.newBufferedReader(tempFile.toPath())) {
             assertNotNull(reader);
-            assertNotNull("No file record for file=" + tempFile + " found", findFileRecord(tempFile));
-            assertThat("Did not have the expected type of 'marker' object: " + obj,
-                    obj, instanceOf(FileChannel.class));
+            assertNotNull("No file record for file=" + tempFile + " found", findPathRecord(tempFile.toPath()));
+            assertThat("Did not have the expected type of 'marker' object: " + obj, obj, instanceOf(FileChannel.class));
         }
-        assertNull("File record for file=" + tempFile + " not removed", findFileRecord(tempFile));
+        assertNull("File record for file=" + tempFile + " not removed", findPathRecord(tempFile.toPath()));
 
         String traceOutput = output.toString();
         assertThat(traceOutput, containsString("Opened " + tempFile));
@@ -158,11 +169,10 @@ public class FileDemo {
     public void openCloseFileChannel() throws Exception {
         try (FileChannel fileChannel = FileChannel.open(tempFile.toPath(), StandardOpenOption.APPEND)) {
             assertNotNull(fileChannel);
-            assertNotNull("No file record for file=" + tempFile + " found", findFileRecord(tempFile));
-            assertThat("Did not have the expected type of 'marker' object: " + obj,
-                    obj, instanceOf(FileChannel.class));
+            assertNotNull("No file record for file=" + tempFile + " found", findPathRecord(tempFile.toPath()));
+            assertThat("Did not have the expected type of 'marker' object: " + obj, obj, instanceOf(FileChannel.class));
         }
-        assertNull("File record for file=" + tempFile + " not removed", findFileRecord(tempFile));
+        assertNull("File record for file=" + tempFile + " not removed", findPathRecord(tempFile.toPath()));
 
         String traceOutput = output.toString();
         assertThat(traceOutput, containsString("Opened " + tempFile));
@@ -173,14 +183,15 @@ public class FileDemo {
     public void openCloseFilesNewByteChannel() throws Exception {
         // this triggers the following method
         // FileDescriptor sun.nio.fs.UnixChannelFactory.open(...)
-        try (SeekableByteChannel fileChannel =
-                Files.newByteChannel(tempFile.toPath(), StandardOpenOption.APPEND)) {
+        try (SeekableByteChannel fileChannel = Files.newByteChannel(tempFile.toPath(), StandardOpenOption.APPEND)) {
             assertNotNull(fileChannel);
-            assertNotNull("No file record for file=" + tempFile + " found", findFileRecord(tempFile));
-            assertThat("Did not have the expected type of 'marker' object: " + obj,
-                    obj, instanceOf(SeekableByteChannel.class));
+            assertNotNull("No file record for file=" + tempFile + " found", findPathRecord(tempFile.toPath()));
+            assertThat(
+                    "Did not have the expected type of 'marker' object: " + obj,
+                    obj,
+                    instanceOf(SeekableByteChannel.class));
         }
-        assertNull("File record for file=" + tempFile + " not removed", findFileRecord(tempFile));
+        assertNull("File record for file=" + tempFile + " not removed", findPathRecord(tempFile.toPath()));
 
         String traceOutput = output.toString();
         assertThat(traceOutput, containsString("Opened " + tempFile));
@@ -194,11 +205,13 @@ public class FileDemo {
 
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(tempFile.toPath())) {
             assertNotNull(stream);
-            assertNotNull("No file record for file=" + tempFile + " found", findFileRecord(tempFile));
-            assertThat("Did not have the expected type of 'marker' object: " + obj,
-                    obj, instanceOf(DirectoryStream.class));
+            assertNotNull("No file record for file=" + tempFile + " found", findPathRecord(tempFile.toPath()));
+            assertThat(
+                    "Did not have the expected type of 'marker' object: " + obj,
+                    obj,
+                    instanceOf(DirectoryStream.class));
         }
-        assertNull("File record for file=" + tempFile + " not removed", findFileRecord(tempFile));
+        assertNull("File record for file=" + tempFile + " not removed", findPathRecord(tempFile.toPath()));
 
         String traceOutput = output.toString();
         assertThat(traceOutput, containsString("Opened " + tempFile));
@@ -212,11 +225,13 @@ public class FileDemo {
 
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(tempFile.toPath(), "*")) {
             assertNotNull(stream);
-            assertNotNull("No file record for file=" + tempFile + " found", findFileRecord(tempFile));
-            assertThat("Did not have the expected type of 'marker' object: " + obj,
-                    obj, instanceOf(DirectoryStream.class));
+            assertNotNull("No file record for file=" + tempFile + " found", findPathRecord(tempFile.toPath()));
+            assertThat(
+                    "Did not have the expected type of 'marker' object: " + obj,
+                    obj,
+                    instanceOf(DirectoryStream.class));
         }
-        assertNull("File record for file=" + tempFile + " not removed", findFileRecord(tempFile));
+        assertNull("File record for file=" + tempFile + " not removed", findPathRecord(tempFile.toPath()));
 
         String traceOutput = output.toString();
         assertThat(traceOutput, containsString("Opened " + tempFile));
@@ -230,11 +245,13 @@ public class FileDemo {
 
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(tempFile.toPath(), "my*test*glob")) {
             assertNotNull(stream);
-            assertNotNull("No file record for file=" + tempFile + " found", findFileRecord(tempFile));
-            assertThat("Did not have the expected type of 'marker' object: " + obj,
-                    obj, instanceOf(DirectoryStream.class));
+            assertNotNull("No file record for file=" + tempFile + " found", findPathRecord(tempFile.toPath()));
+            assertThat(
+                    "Did not have the expected type of 'marker' object: " + obj,
+                    obj,
+                    instanceOf(DirectoryStream.class));
         }
-        assertNull("File record for file=" + tempFile + " not removed", findFileRecord(tempFile));
+        assertNull("File record for file=" + tempFile + " not removed", findPathRecord(tempFile.toPath()));
 
         String traceOutput = output.toString();
         assertThat(traceOutput, containsString("Opened " + tempFile));
@@ -248,11 +265,13 @@ public class FileDemo {
 
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(tempFile.toPath(), entry -> true)) {
             assertNotNull(stream);
-            assertNotNull("No file record for file=" + tempFile + " found", findFileRecord(tempFile));
-            assertThat("Did not have the expected type of 'marker' object: " + obj,
-                    obj, instanceOf(DirectoryStream.class));
+            assertNotNull("No file record for file=" + tempFile + " found", findPathRecord(tempFile.toPath()));
+            assertThat(
+                    "Did not have the expected type of 'marker' object: " + obj,
+                    obj,
+                    instanceOf(DirectoryStream.class));
         }
-        assertNull("File record for file=" + tempFile + " not removed", findFileRecord(tempFile));
+        assertNull("File record for file=" + tempFile + " not removed", findPathRecord(tempFile.toPath()));
 
         String traceOutput = output.toString();
         assertThat(traceOutput, containsString("Opened " + tempFile));
@@ -264,21 +283,24 @@ public class FileDemo {
         // this triggers the following method
         // FileDescriptor sun.nio.fs.UnixChannelFactory.open(...)
         try (SeekableByteChannel fileChannel = Files.newByteChannel(tempFile.toPath(), StandardOpenOption.READ)) {
-            assertNotNull("No file record for file=" + tempFile + " found", findFileRecord(tempFile));
+            assertNotNull(fileChannel);
+            assertNotNull("No file record for file=" + tempFile + " found", findPathRecord(tempFile.toPath()));
 
             final ByteBuffer buffer = ByteBuffer.allocate(5);
             fileChannel.read(buffer);
             assertEquals("tests", new String(buffer.array()));
 
-            assertThat("Did not have the expected type of 'marker' object: " + obj,
-                    obj, instanceOf(SeekableByteChannel.class));
+            assertThat(
+                    "Did not have the expected type of 'marker' object: " + obj,
+                    obj,
+                    instanceOf(SeekableByteChannel.class));
         }
 
-        assertNull("File record for file=" + tempFile + " not removed", findFileRecord(tempFile));
+        assertNull("File record for file=" + tempFile + " not removed", findPathRecord(tempFile.toPath()));
 
         String traceOutput = output.toString();
-        assertTrue(traceOutput.contains("Opened " + tempFile));
-        assertTrue(traceOutput.contains("Closed " + tempFile));
+        assertThat(traceOutput, containsString("Opened " + tempFile));
+        assertThat(traceOutput, containsString("Closed " + tempFile));
     }
 
     @Test
@@ -295,27 +317,59 @@ public class FileDemo {
     public void openCloseFileLines() throws Exception {
         try (Stream<String> stream = Files.lines(tempFile.toPath())) {
             assertNotNull(stream);
-            assertNotNull("No file record for file=" + tempFile + " found", findFileRecord(tempFile));
+            assertNotNull("No file record for file=" + tempFile + " found", findPathRecord(tempFile.toPath()));
 
-            assertThat("Did not have the expected type of 'marker' object: " + obj,
-                    obj, instanceOf(SeekableByteChannel.class));
+            assertThat(
+                    "Did not have the expected type of 'marker' object: " + obj,
+                    obj,
+                    instanceOf(SeekableByteChannel.class));
         }
-        assertNull("File record for file=" + tempFile + " not removed", findFileRecord(tempFile));
+        assertNull("File record for file=" + tempFile + " not removed", findPathRecord(tempFile.toPath()));
+        assertThat(
+                "Did not have the expected type of 'marker' object: " + obj,
+                obj,
+                instanceOf(SeekableByteChannel.class));
 
         String traceOutput = output.toString();
         assertThat(traceOutput, containsString("Opened " + tempFile));
         assertThat(traceOutput, containsString("Closed " + tempFile));
     }
 
-    private static FileRecord findFileRecord(File file) {
+    private static Listener.PathRecord findPathRecord(Path path) {
         for (Record record : Listener.getCurrentOpenFiles()) {
-            if (record instanceof FileRecord) {
-                FileRecord fileRecord = (FileRecord) record;
-                if (fileRecord.file == file || fileRecord.file.getName().equals(file.getName())) {
-                    return fileRecord;
+            if (record instanceof Listener.PathRecord) {
+                Listener.PathRecord pathRecord = (Listener.PathRecord) record;
+                if (pathRecord.path == path || pathRecord.path.getFileName().equals(path.getFileName())) {
+                    return pathRecord;
                 }
             }
         }
         return null;
+    }
+
+    @Test
+    public void testZipFile() throws IOException {
+        URL url = getClass().getResource("/test.zip");
+        URI uri = URI.create("jar:" + url.getProtocol() + "://" + url.getFile());
+        try (FileSystem fs = FileSystems.newFileSystem(uri, Collections.emptyMap())) {
+            assertNotNull(fs);
+            assertNotNull(
+                    "No file record for file=test.zip found: " + Listener.getCurrentOpenFiles(),
+                    findPathRecord(new File("test.zip").toPath()));
+            assertThat(
+                    "Did not have the expected type of 'marker' object: " + obj,
+                    obj,
+                    instanceOf(SeekableByteChannel.class));
+
+            Files.walkFileTree(fs.getPath("."), new NoopPathVisitor());
+        }
+
+        assertNull(
+                "File record for file=test.zip not removed: " + Listener.getCurrentOpenFiles(),
+                findPathRecord(new File("test.zip").toPath()));
+
+        String traceOutput = output.toString();
+        assertThat(traceOutput, containsString("Opened " + new File(url.getFile()).getAbsolutePath()));
+        assertThat(traceOutput, containsString("Closed " + new File(url.getFile()).getAbsolutePath()));
     }
 }

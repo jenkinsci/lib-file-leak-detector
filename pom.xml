@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.jenkins-ci</groupId>
     <artifactId>jenkins</artifactId>
-    <version>1.106</version>
+    <version>1.111</version>
     <relativePath />
   </parent>
   <groupId>org.kohsuke</groupId>
@@ -34,6 +34,7 @@
     <changelist>-SNAPSHOT</changelist>
     <gitHubRepo>jenkinsci/lib-${project.artifactId}</gitHubRepo>
     <asm.version>9.6</asm.version>
+    <spotless.check.skip>false</spotless.check.skip>
   </properties>
 
   <dependencies>
@@ -70,6 +71,12 @@
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-util</artifactId>
       <version>${asm.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.13.0</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -116,7 +123,7 @@
             <configuration>
               <reuseForks>false</reuseForks>
               <includes>
-                <include>**/instrumented/*.java</include>
+                <include>**/instrumented/**/*.java</include>
               </includes>
               <excludes>
                 <exclude>**/TransformerTest.java</exclude>
@@ -145,7 +152,7 @@
       </plugin>
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>3.5.1</version>
+        <version>3.5.2</version>
         <executions>
           <execution>
             <goals>

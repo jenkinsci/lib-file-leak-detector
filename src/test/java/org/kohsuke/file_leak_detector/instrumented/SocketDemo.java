@@ -16,7 +16,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
 import org.junit.Test;
 import org.kohsuke.file_leak_detector.Listener;
 
@@ -38,8 +37,8 @@ public class SocketDemo {
                 final Socket s = ss.accept();
                 es.submit(() -> {
                     s.close();
-//                    s.shutdownInput();
-//                    s.shutdownOutput();
+                    //                    s.shutdownInput();
+                    //                    s.shutdownOutput();
                     return null;
                 });
             }
@@ -49,8 +48,8 @@ public class SocketDemo {
             int dst = ss.getLocalPort();
             Socket s = new Socket("localhost", dst);
             s.close();
-//            s.shutdownInput();
-//            s.shutdownOutput();
+            //            s.shutdownInput();
+            //            s.shutdownOutput();
         }
 
         System.out.println("Dumping the table");
@@ -77,7 +76,8 @@ public class SocketDemo {
                 throw new UncheckedIOException(ioe);
             }
         });
-        SocketChannel socketChannel = SocketChannel.open(new InetSocketAddress("", serverSocket.socket().getLocalPort()));
+        SocketChannel socketChannel = SocketChannel.open(
+                new InetSocketAddress("", serverSocket.socket().getLocalPort()));
 
         while (sockets.size() < 1) {
             Thread.sleep(500);
