@@ -15,6 +15,8 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
@@ -317,9 +319,9 @@ public class FileDemo {
     }
 
     @Test
-    public void testZipFile() {
-        final String fileName = new File(".").getAbsolutePath().replace('\\', '/') + "/src/test/resources/test.zip";
-        URI uri = URI.create("jar:file://" + fileName);
+    public void testZipFile() throws IOException, URISyntaxException {
+        URL url = getClass().getResource(FileSystems.getDefault().getSeparator() + "test.zip");
+        URI uri = URI.create("jar:" + url.getProtocol() + "://" + url.getFile());
         try (FileSystem fs = FileSystems.newFileSystem(uri, Collections.emptyMap())) {
             assertNotNull(fs);
             assertNotNull(
@@ -331,8 +333,6 @@ public class FileDemo {
                     instanceOf(SeekableByteChannel.class));
 
             Files.walkFileTree(fs.getPath("."), new NoopPathVisitor());
-        } catch (Exception e) {
-            throw new IllegalStateException("Failed for URI: " + uri, e);
         }
 
         assertNull(
@@ -340,11 +340,7 @@ public class FileDemo {
                 findPathRecord(new File("test.zip").toPath()));
 
         String traceOutput = output.toString();
-        assertThat(
-                traceOutput,
-                containsString("Opened " + new File(".", "src/test/resources/test.zip").getAbsolutePath()));
-        assertThat(
-                traceOutput,
-                containsString("Closed " + new File(".", "src/test/resources/test.zip").getAbsolutePath()));
+        assertThat(traceOutput, containsString("Opened " + new File(url.getFile()).getAbsolutePath()));
+        assertThat(traceOutput, containsString("Closed " + new File(url.getFile()).getAbsolutePath()));
     }
 }
