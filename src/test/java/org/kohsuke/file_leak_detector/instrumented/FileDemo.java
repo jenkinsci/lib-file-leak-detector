@@ -15,7 +15,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -319,7 +318,7 @@ public class FileDemo {
     }
 
     @Test
-    public void testZipFile() throws IOException, URISyntaxException {
+    public void testZipFile() throws IOException {
         URL url = getClass().getResource(FileSystems.getDefault().getSeparator() + "test.zip");
         URI uri = URI.create("jar:" + url.getProtocol() + "://" + url.getFile());
         try (FileSystem fs = FileSystems.newFileSystem(uri, Collections.emptyMap())) {
