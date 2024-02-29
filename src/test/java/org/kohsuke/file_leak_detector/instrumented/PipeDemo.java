@@ -11,7 +11,6 @@ import java.io.StringWriter;
 import java.nio.channels.Pipe;
 import java.nio.channels.Pipe.SinkChannel;
 import java.nio.channels.Pipe.SourceChannel;
-
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -31,7 +30,9 @@ public class PipeDemo {
 
     @BeforeClass
     public static void setup() {
-        assertTrue("This test can only run with an injected Java agent for file-leak-detector", Listener.isAgentInstalled());
+        assertTrue(
+                "This test can only run with an injected Java agent for file-leak-detector",
+                Listener.isAgentInstalled());
         Listener.TRACE = new PrintWriter(output);
     }
 
@@ -39,7 +40,6 @@ public class PipeDemo {
     public void prepareOutput() {
         output.getBuffer().setLength(0);
     }
-
 
     @Test
     public void testPipe() throws IOException {
@@ -83,5 +83,4 @@ public class PipeDemo {
         }
         return null;
     }
-
 }

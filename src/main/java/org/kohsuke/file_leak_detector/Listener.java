@@ -37,7 +37,7 @@ import java.util.zip.ZipFile;
 @SuppressWarnings("unused")
 public class Listener {
 
-	/**
+    /**
      * Remembers who/where/when opened a file.
      */
     public static class Record {
@@ -167,7 +167,6 @@ public class Listener {
             super.dump(prefix, pw);
         }
     }
-
 
     /**
      * Record of opened socket.
@@ -344,12 +343,12 @@ public class Listener {
         }
     }
 
-	/**
-	 * Called when a pipe is opened, e.g. via SelectorProvider
-	 *
-	 * @param _this
-	 * 		{@link java.nio.channels.spi.SelectorProvider}
-	 */
+    /**
+     * Called when a pipe is opened, e.g. via SelectorProvider
+     *
+     * @param _this
+     * 		{@link java.nio.channels.spi.SelectorProvider}
+     */
     public static synchronized void openPipe(Object _this) {
         if (_this instanceof Pipe.SourceChannel) {
             put(_this, new SourceChannelRecord((Pipe.SourceChannel) _this));
@@ -469,9 +468,6 @@ public class Listener {
             al.close(_this);
         }
     }
-
-
-
 
     /**
      * Dumps all files that are currently open.

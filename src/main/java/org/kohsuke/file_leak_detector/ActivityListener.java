@@ -31,11 +31,9 @@ public abstract class ActivityListener {
      * @param file
      *      File being opened.
      */
-    public void open(Object obj, File file) {
-    }
+    public void open(Object obj, File file) {}
 
-    public void open(Object obj, Path file) {
-    }
+    public void open(Object obj, Path file) {}
 
     /**
      * Called when a new socket is opened.
@@ -43,8 +41,7 @@ public abstract class ActivityListener {
      * @param obj
      *      {@link Socket}, {@link ServerSocket} or {@link SocketChannel}
      */
-    public void openSocket(Object obj) {
-    }
+    public void openSocket(Object obj) {}
 
     /**
      * Called when a file is closed.
@@ -54,17 +51,12 @@ public abstract class ActivityListener {
      * @param obj
      *      {@link FileInputStream}, {@link FileOutputStream}, {@link RandomAccessFile}, {@link Socket}, {@link ServerSocket}, or {@link ZipFile}.
      */
-    public void close(Object obj) {
-    }
+    public void close(Object obj) {}
 
-    public void fd_open(Object obj) {
-
-    }
+    public void fd_open(Object obj) {}
 
     /**
      * These listeners get called.
      */
     public static final List<ActivityListener> LIST = new CopyOnWriteArrayList<>();
-
-
 }

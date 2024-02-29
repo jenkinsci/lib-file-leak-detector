@@ -19,18 +19,19 @@ public abstract class MethodAppender extends MethodTransformSpec {
     protected abstract void append(CodeGenerator g);
 
     @Override
-    public MethodVisitor newAdapter(MethodVisitor base, int access, String name, String desc, String signature, String[] exceptions) {
+    public MethodVisitor newAdapter(
+            MethodVisitor base, int access, String name, String desc, String signature, String[] exceptions) {
         final CodeGenerator cg = new CodeGenerator(base);
         return new MethodVisitor(Opcodes.ASM9, base) {
             @Override
             public void visitInsn(int opcode) {
                 switch (opcode) {
-                case Opcodes.RETURN:
-                case Opcodes.ARETURN:
-                    append(cg);
-                    break;
-                default:
-                    // ignored
+                    case Opcodes.RETURN:
+                    case Opcodes.ARETURN:
+                        append(cg);
+                        break;
+                    default:
+                        // ignored
                 }
                 super.visitInsn(opcode);
             }

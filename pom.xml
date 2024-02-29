@@ -34,6 +34,7 @@
     <changelist>-SNAPSHOT</changelist>
     <gitHubRepo>jenkinsci/lib-${project.artifactId}</gitHubRepo>
     <asm.version>9.6</asm.version>
+    <spotless.check.skip>false</spotless.check.skip>
   </properties>
 
   <dependencies>

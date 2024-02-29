@@ -34,93 +34,92 @@ public class AgentMainTest {
 
     @Test
     public void testPreMain() throws Exception {
-		final Set<String> seenClasses = new HashSet<>();
-		final Instrumentation instrumentation = prepare(seenClasses);
+        final Set<String> seenClasses = new HashSet<>();
+        final Instrumentation instrumentation = prepare(seenClasses);
 
         AgentMain.premain(null, instrumentation);
 
-		verifyInstrumentation(instrumentation, seenClasses);
-	}
+        verifyInstrumentation(instrumentation, seenClasses);
+    }
 
     @Test
     public void testPreMainHttpServer() throws Exception {
-		final Set<String> seenClasses = new HashSet<>();
-		final Instrumentation instrumentation = prepare(seenClasses);
+        final Set<String> seenClasses = new HashSet<>();
+        final Instrumentation instrumentation = prepare(seenClasses);
 
-		AgentMain.premain("http=0", instrumentation);
+        AgentMain.premain("http=0", instrumentation);
 
-		verifyInstrumentation(instrumentation, seenClasses);
-	}
+        verifyInstrumentation(instrumentation, seenClasses);
+    }
 
     @Test
     public void testPreMainHttpServerInvalidPort() throws Exception {
-		final Set<String> seenClasses = new HashSet<>();
-		final Instrumentation instrumentation = prepare(seenClasses);
+        final Set<String> seenClasses = new HashSet<>();
+        final Instrumentation instrumentation = prepare(seenClasses);
 
-		assertThrows(IllegalArgumentException.class, () ->
-			AgentMain.premain("http=999999999", instrumentation));
+        assertThrows(IllegalArgumentException.class, () -> AgentMain.premain("http=999999999", instrumentation));
 
-		verifyInstrumentation(instrumentation, seenClasses);
-	}
+        verifyInstrumentation(instrumentation, seenClasses);
+    }
 
     @Test
     public void testPreMainHttpServerIOException() throws Exception {
-		try (final ServerSocket ss = new ServerSocket()) {
-			ss.bind(new InetSocketAddress("localhost", 0));
+        try (final ServerSocket ss = new ServerSocket()) {
+            ss.bind(new InetSocketAddress("localhost", 0));
 
-			final Set<String> seenClasses = new HashSet<>();
-			final Instrumentation instrumentation = prepare(seenClasses);
+            final Set<String> seenClasses = new HashSet<>();
+            final Instrumentation instrumentation = prepare(seenClasses);
 
-			assertThrows(IOException.class, () ->
-					AgentMain.premain("http=" + ss.getLocalPort(), instrumentation));
+            assertThrows(IOException.class, () -> AgentMain.premain("http=" + ss.getLocalPort(), instrumentation));
 
-			verifyInstrumentation(instrumentation, seenClasses);
-		}
-	}
+            verifyInstrumentation(instrumentation, seenClasses);
+        }
+    }
 
-	private static Instrumentation prepare(Set<String> seenClasses) throws UnmodifiableClassException {
-		final List<ClassTransformSpec> specs = AgentMain.createSpec();
+    private static Instrumentation prepare(Set<String> seenClasses) throws UnmodifiableClassException {
+        final List<ClassTransformSpec> specs = AgentMain.createSpec();
 
-		for (ClassTransformSpec spec : specs) {
-			seenClasses.add(spec.name);
-		}
+        for (ClassTransformSpec spec : specs) {
+            seenClasses.add(spec.name);
+        }
 
-		Instrumentation instrumentation = mock(Instrumentation.class);
-		doAnswer((Answer<Object>) invocationOnMock -> {
-			for (Object obj : invocationOnMock.getArguments()) {
-				Class<?> clazz = (Class<?>) obj;
-				String name = clazz.getName().replace(".", "/");
-				assertTrue(
-						"Tried to transform a class which is not contained in the specs: "
-								+ name
-								+ " ("
-								+ clazz
-								+ "), having remaining classes: "
-								+ seenClasses,
-						seenClasses.remove(name));
-			}
-			return null;
-		}).when(instrumentation).retransformClasses(any(Class[].class));
-		return instrumentation;
-	}
+        Instrumentation instrumentation = mock(Instrumentation.class);
+        doAnswer((Answer<Object>) invocationOnMock -> {
+                    for (Object obj : invocationOnMock.getArguments()) {
+                        Class<?> clazz = (Class<?>) obj;
+                        String name = clazz.getName().replace(".", "/");
+                        assertTrue(
+                                "Tried to transform a class which is not contained in the specs: "
+                                        + name
+                                        + " ("
+                                        + clazz
+                                        + "), having remaining classes: "
+                                        + seenClasses,
+                                seenClasses.remove(name));
+                    }
+                    return null;
+                })
+                .when(instrumentation)
+                .retransformClasses(any(Class[].class));
+        return instrumentation;
+    }
 
-	private static void verifyInstrumentation(Instrumentation instrumentation, Set<String> seenClasses) throws UnmodifiableClassException {
-		verify(instrumentation, times(1)).addTransformer(any(), anyBoolean());
-		verify(instrumentation, times(1)).retransformClasses(any(Class[].class));
+    private static void verifyInstrumentation(Instrumentation instrumentation, Set<String> seenClasses)
+            throws UnmodifiableClassException {
+        verify(instrumentation, times(1)).addTransformer(any(), anyBoolean());
+        verify(instrumentation, times(1)).retransformClasses(any(Class[].class));
 
-		// the following are not available in all JVMs
-		seenClasses.remove("sun/nio/ch/SocketChannelImpl");
-		seenClasses.remove("sun/nio/fs/UnixDirectoryStream");
-		seenClasses.remove("sun/nio/fs/UnixSecureDirectoryStream");
-		if (Runtime.version().feature() >= 19) {
-			seenClasses.remove("java/net/AbstractPlainSocketImpl");
-			seenClasses.remove("java/net/PlainSocketImpl");
-		}
-		seenClasses.remove("sun/nio/fs/UnixDirectoryStream");
-		seenClasses.remove("sun/nio/fs/UnixSecureDirectoryStream");
+        // the following are not available in all JVMs
+        seenClasses.remove("sun/nio/ch/SocketChannelImpl");
+        seenClasses.remove("sun/nio/fs/UnixDirectoryStream");
+        seenClasses.remove("sun/nio/fs/UnixSecureDirectoryStream");
+        if (Runtime.version().feature() >= 19) {
+            seenClasses.remove("java/net/AbstractPlainSocketImpl");
+            seenClasses.remove("java/net/PlainSocketImpl");
+        }
+        seenClasses.remove("sun/nio/fs/UnixDirectoryStream");
+        seenClasses.remove("sun/nio/fs/UnixSecureDirectoryStream");
 
-		assertTrue(
-				"Had classes in the spec which were not instrumented: " + seenClasses,
-				seenClasses.isEmpty());
-	}
+        assertTrue("Had classes in the spec which were not instrumented: " + seenClasses, seenClasses.isEmpty());
+    }
 }
