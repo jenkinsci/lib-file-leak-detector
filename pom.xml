@@ -9,7 +9,7 @@
   </parent>
   <groupId>org.kohsuke</groupId>
   <artifactId>file-leak-detector</artifactId>
-  <version>${revision}${changelist}</version>
+  <version>1.18</version>
   <name>File Leak Detector</name>
 
   <url>https://github.com/jenkinsci/lib-${project.artifactId}</url>
@@ -25,7 +25,7 @@
   <scm>
     <connection>scm:git:https://github.com/${gitHubRepo}.git</connection>
     <developerConnection>scm:git:git@github.com:${gitHubRepo}.git</developerConnection>
-    <tag>${scmTag}</tag>
+    <tag>file-leak-detector-1.18</tag>
     <url>https://github.com/${gitHubRepo}</url>
   </scm>
 
