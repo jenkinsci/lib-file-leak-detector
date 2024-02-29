@@ -319,7 +319,7 @@ public class FileDemo {
 
     @Test
     public void testZipFile() throws IOException {
-        URL url = getClass().getResource(FileSystems.getDefault().getSeparator() + "test.zip");
+        URL url = getClass().getResource("/test.zip");
         URI uri = URI.create("jar:" + url.getProtocol() + "://" + url.getFile());
         try (FileSystem fs = FileSystems.newFileSystem(uri, Collections.emptyMap())) {
             assertNotNull(fs);
