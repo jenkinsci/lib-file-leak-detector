@@ -175,7 +175,11 @@ public class AgentMain {
     private static void runHttpServer(int port) throws IOException {
         @SuppressWarnings("resource")
         final ServerSocket ss = new ServerSocket();
-        ss.bind(new InetSocketAddress("localhost", port));
+        try {
+            ss.bind(new InetSocketAddress("localhost", port));
+        } catch (IOException e) {
+            throw new IOException("While binding to localhost:" + port, e);
+        }
         System.err.println("Serving file leak stats on http://localhost:" + ss.getLocalPort() + "/ for stats");
         final ExecutorService es = Executors.newCachedThreadPool(r -> {
             Thread t = new Thread(r);

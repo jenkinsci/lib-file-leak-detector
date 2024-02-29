@@ -34,7 +34,9 @@ import java.util.zip.ZipFile;
  *
  * @author Kohsuke Kawaguchi
  */
+@SuppressWarnings("unused")
 public class Listener {
+
     /**
      * Remembers who/where/when opened a file.
      */
@@ -116,6 +118,25 @@ public class Listener {
         @Override
         public String toString() {
             return "FileRecord[file=" + file + "]";
+        }
+    }
+
+    public static final class PathRecord extends Record {
+        public final Path path;
+
+        private PathRecord(Path path) {
+            this.path = path;
+        }
+
+        @Override
+        public void dump(String prefix, PrintWriter pw) {
+            pw.println(prefix + path + " by thread:" + threadName + " on " + format(time));
+            super.dump(prefix, pw);
+        }
+
+        @Override
+        public String toString() {
+            return "PathRecord[file=" + path + "]";
         }
     }
 
@@ -244,7 +265,7 @@ public class Listener {
     }
 
     /**
-     * Files that are currently open, keyed by the owner object (like {@link FileInputStream}.
+     * Files that are currently open, keyed by the owner object like {@link FileInputStream}.
      */
     private static Map<Object, Record> TABLE = new WeakHashMap<>();
 
@@ -299,13 +320,35 @@ public class Listener {
      *      File being opened.
      */
     public static synchronized void open(Object _this, File f) {
-        put(_this, new FileRecord(f));
+        put(_this, new PathRecord(f.toPath()));
 
         for (ActivityListener al : ActivityListener.LIST) {
             al.open(_this, f);
         }
     }
 
+    /**
+     * Called when a new path is opened.
+     *
+     * @param _this
+     *      {@link FileInputStream}, {@link FileOutputStream}, {@link RandomAccessFile}, or {@link ZipFile}.
+     * @param p
+     *      Path being opened.
+     */
+    public static synchronized void open(Object _this, Path p) {
+        put(_this, new PathRecord(p));
+
+        for (ActivityListener al : ActivityListener.LIST) {
+            al.open(_this, p);
+        }
+    }
+
+    /**
+     * Called when a pipe is opened, e.g. via SelectorProvider
+     *
+     * @param _this
+     * 		{@link java.nio.channels.spi.SelectorProvider}
+     */
     public static synchronized void openPipe(Object _this) {
         if (_this instanceof Pipe.SourceChannel) {
             put(_this, new SourceChannelRecord((Pipe.SourceChannel) _this));
@@ -322,15 +365,15 @@ public class Listener {
     }
 
     public static synchronized void openFileChannel(FileChannel fileChannel, Path path) {
-        open(fileChannel, path.toFile());
+        open(fileChannel, path);
     }
 
     public static synchronized void openFileChannel(SeekableByteChannel byteChannel, Path path) {
-        open(byteChannel, path.toFile());
+        open(byteChannel, path);
     }
 
     public static synchronized void openDirectoryStream(DirectoryStream<?> directoryStream, Path path) {
-        open(directoryStream, path.toFile());
+        open(directoryStream, path);
     }
 
     public static synchronized void openSelector(Object _this) {
@@ -481,7 +524,7 @@ public class Listener {
             return socketimplSocket;
         } catch (NoSuchFieldException e) {
             // Java 17+ changed the implementation of Sockets and
-            // so the current approach does not work there any more
+            // so the current approach does not work there anymore
             // for now we gracefully handle this and do keep file-leak-detector
             // useful for other types of file-handle-leaks
             System.err.println("Could not load field " + socket + " from SocketImpl: " + e);

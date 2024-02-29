@@ -69,6 +69,12 @@
       <version>${asm.version}</version>
     </dependency>
     <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.13.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
@@ -113,7 +119,7 @@
             <configuration>
               <reuseForks>false</reuseForks>
               <includes>
-                <include>**/instrumented/*.java</include>
+                <include>**/instrumented/**/*.java</include>
               </includes>
               <excludes>
                 <exclude>**/TransformerTest.java</exclude>
