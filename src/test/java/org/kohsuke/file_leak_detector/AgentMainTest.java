@@ -38,20 +38,22 @@ public class AgentMainTest {
 
         Instrumentation instrumentation = mock(Instrumentation.class);
         doAnswer((Answer<Object>) invocationOnMock -> {
-            for (Object obj : invocationOnMock.getArguments()) {
-                Class<?> clazz = (Class<?>) obj;
-                String name = clazz.getName().replace(".", "/");
-                assertTrue(
-                        "Tried to transform a class which is not contained in the specs: "
-                                + name
-                                + " ("
-                                + clazz
-                                + "), having remaining classes: "
-                                + seenClasses,
-                        seenClasses.remove(name));
-            }
-            return null;
-        }).when(instrumentation).retransformClasses(any(Class[].class));
+                    for (Object obj : invocationOnMock.getArguments()) {
+                        Class<?> clazz = (Class<?>) obj;
+                        String name = clazz.getName().replace(".", "/");
+                        assertTrue(
+                                "Tried to transform a class which is not contained in the specs: "
+                                        + name
+                                        + " ("
+                                        + clazz
+                                        + "), having remaining classes: "
+                                        + seenClasses,
+                                seenClasses.remove(name));
+                    }
+                    return null;
+                })
+                .when(instrumentation)
+                .retransformClasses(any(Class[].class));
 
         AgentMain.premain(null, instrumentation);
 
@@ -67,8 +69,6 @@ public class AgentMainTest {
             seenClasses.remove("java/net/PlainSocketImpl");
         }
 
-        assertTrue(
-                "Had classes in the spec which were not instrumented: " + seenClasses,
-                seenClasses.isEmpty());
+        assertTrue("Had classes in the spec which were not instrumented: " + seenClasses, seenClasses.isEmpty());
     }
 }

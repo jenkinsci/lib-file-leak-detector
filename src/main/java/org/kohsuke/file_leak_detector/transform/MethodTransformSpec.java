@@ -27,5 +27,6 @@ public abstract class MethodTransformSpec {
      * Creates a visitor that receives the original method definition and writes
      * the transformed method to the given base.
      */
-    public abstract MethodVisitor newAdapter(MethodVisitor base, int access, String name, String desc, String signature, String[] exceptions);
+    public abstract MethodVisitor newAdapter(
+            MethodVisitor base, int access, String name, String desc, String signature, String[] exceptions);
 }

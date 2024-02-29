@@ -44,11 +44,11 @@ public class TransformerTest {
         }
         byte[] data2 = t.transform(name, data);
 
-//        File classFile = new File("/tmp/" + name + ".class");
-//        classFile.getParentFile().mkdirs();
-//        FileOutputStream o = new FileOutputStream(classFile);
-//        o.write(data2);
-//        o.close();
+        //        File classFile = new File("/tmp/" + name + ".class");
+        //        classFile.getParentFile().mkdirs();
+        //        FileOutputStream o = new FileOutputStream(classFile);
+        //        o.write(data2);
+        //        o.close();
 
         final String errors;
         ClassReader classReader = new ClassReader(data2);

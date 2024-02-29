@@ -147,7 +147,6 @@ public class Listener {
         }
     }
 
-
     /**
      * Record of opened socket.
      */
@@ -426,9 +425,6 @@ public class Listener {
             al.close(_this);
         }
     }
-
-
-
 
     /**
      * Dumps all files that are currently open.
