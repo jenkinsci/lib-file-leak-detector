@@ -1,16 +1,16 @@
 package org.kohsuke.file_leak_detector.instrumented;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.channels.Selector;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.kohsuke.file_leak_detector.Listener;
 import org.kohsuke.file_leak_detector.Listener.Record;
 import org.kohsuke.file_leak_detector.Listener.SelectorRecord;
@@ -22,14 +22,14 @@ import org.kohsuke.file_leak_detector.Listener.SelectorRecord;
 public class SelectorDemo {
     private StringWriter output;
 
-    @BeforeClass
+    @BeforeAll
     public static void setupClass() {
         assertTrue(
-                "This test can only run with an injected Java agent for file-leak-detector",
-                Listener.isAgentInstalled());
+                Listener.isAgentInstalled(),
+                "This test can only run with an injected Java agent for file-leak-detector");
     }
 
-    @Before
+    @BeforeEach
     public void setup() {
         output = new StringWriter();
         Listener.TRACE = new PrintWriter(output);
@@ -38,10 +38,10 @@ public class SelectorDemo {
     @Test
     public void openCloseSelector() throws IOException {
         Selector selector = Selector.open();
-        assertNotNull("No selector record found", findSelectorRecord(selector));
+        assertNotNull(findSelectorRecord(selector), "No selector record found");
 
         selector.close();
-        assertNull("No selector record found", findSelectorRecord(selector));
+        assertNull(findSelectorRecord(selector), "No selector record found");
 
         String traceOutput = output.toString();
         assertTrue(traceOutput.contains("Opened selector"));

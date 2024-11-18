@@ -1,7 +1,7 @@
 package org.kohsuke.file_leak_detector;
 
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.doAnswer;
@@ -17,7 +17,7 @@ import java.net.ServerSocket;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.kohsuke.file_leak_detector.transform.ClassTransformSpec;
 import org.mockito.stubbing.Answer;
 
@@ -28,7 +28,7 @@ public class AgentMainTest {
 
         Set<String> seenClasses = new HashSet<>();
         for (ClassTransformSpec spec : specs) {
-            assertTrue("Did have duplicate spec for class " + spec.name, seenClasses.add(spec.name));
+            assertTrue(seenClasses.add(spec.name), "Did have duplicate spec for class " + spec.name);
         }
     }
 
@@ -89,13 +89,13 @@ public class AgentMainTest {
                         Class<?> clazz = (Class<?>) obj;
                         String name = clazz.getName().replace(".", "/");
                         assertTrue(
+                                seenClasses.remove(name),
                                 "Tried to transform a class which is not contained in the specs: "
                                         + name
                                         + " ("
                                         + clazz
                                         + "), having remaining classes: "
-                                        + seenClasses,
-                                seenClasses.remove(name));
+                                        + seenClasses);
                     }
                     return null;
                 })
@@ -120,6 +120,6 @@ public class AgentMainTest {
         seenClasses.remove("sun/nio/fs/UnixDirectoryStream");
         seenClasses.remove("sun/nio/fs/UnixSecureDirectoryStream");
 
-        assertTrue("Had classes in the spec which were not instrumented: " + seenClasses, seenClasses.isEmpty());
+        assertTrue(seenClasses.isEmpty(), "Had classes in the spec which were not instrumented: " + seenClasses);
     }
 }
