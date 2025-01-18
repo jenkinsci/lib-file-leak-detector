@@ -34,6 +34,7 @@ import org.apache.commons.io.file.NoopPathVisitor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.kohsuke.file_leak_detector.ActivityListener;
 import org.kohsuke.file_leak_detector.Listener;
@@ -329,8 +330,10 @@ public class FileDemo {
                 "Did not have the expected type of 'marker' object: " + obj,
                 obj,
                 instanceOf(SeekableByteChannel.class));
-        assertThat("Did not have the expected type of 'marker' object: " + obj,
-				obj, instanceOf(SeekableByteChannel.class));
+        assertThat(
+                "Did not have the expected type of 'marker' object: " + obj,
+                obj,
+                instanceOf(SeekableByteChannel.class));
 
         String traceOutput = output.toString();
         assertThat(traceOutput, containsString("Opened " + tempFile));
@@ -349,8 +352,20 @@ public class FileDemo {
         return null;
     }
 
+    private static Listener.PathRecord findPathRecordByName(Path path) {
+        for (Record record : Listener.getCurrentOpenFiles()) {
+            if (record instanceof Listener.PathRecord) {
+                Listener.PathRecord pathRecord = (Listener.PathRecord) record;
+                if (pathRecord.path.toString().equals(path.toString())) {
+                    return pathRecord;
+                }
+            }
+        }
+        return null;
+    }
+
     @Test
-    public void testZipFile() throws IOException {
+    public void testZipFile() {
         URL url = getClass().getResource("/test.zip");
         URI uri = URI.create("jar:" + url.getProtocol() + "://" + url.getFile());
         try (FileSystem fs = FileSystems.newFileSystem(uri, Collections.emptyMap())) {
@@ -364,7 +379,7 @@ public class FileDemo {
                     instanceOf(SeekableByteChannel.class));
 
             Files.walkFileTree(fs.getPath("."), new NoopPathVisitor());
-		} catch (Exception e) {
+        } catch (Exception e) {
             throw new IllegalStateException("Failed for URI: " + uri, e);
         }
 
@@ -375,5 +390,51 @@ public class FileDemo {
         String traceOutput = output.toString();
         assertThat(traceOutput, containsString("Opened " + new File(url.getFile()).getAbsolutePath()));
         assertThat(traceOutput, containsString("Closed " + new File(url.getFile()).getAbsolutePath()));
+    }
+
+    @Disabled("Reported as https://bugs.openjdk.org/browse/JDK-8348037")
+    @Test
+    public void testZipFileLeakWalkFileTree() {
+        URL url = getClass().getResource("/test.zip");
+        URI uri = URI.create("jar:" + url.getProtocol() + "://" + url.getFile());
+        try (FileSystem fs = FileSystems.newFileSystem(uri, Collections.emptyMap())) {
+            assertNotNull(fs);
+            assertNotNull(
+                    findPathRecord(new File("test.zip").toPath()),
+                    "No file record for file=test.zip found: " + Listener.getCurrentOpenFiles());
+            assertThat(
+                    "Did not have the expected type of 'marker' object: " + obj,
+                    obj,
+                    instanceOf(SeekableByteChannel.class));
+
+            Files.walkFileTree(fs.getPath("."), new NoopPathVisitor());
+
+            assertNull(
+                    findPathRecordByName(new File(".").toPath()),
+                    "Should not have a leftover entry for '.', but found: " + Listener.getCurrentOpenFiles());
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed for URI: " + uri, e);
+        }
+
+        assertNull(
+                findPathRecord(new File("test.zip").toPath()),
+                "File record for file=test.zip not removed: " + Listener.getCurrentOpenFiles());
+        assertNull(
+                findPathRecordByName(new File(".").toPath()),
+                "Should not have a leftover entry for '.', but found: " + Listener.getCurrentOpenFiles());
+
+        String traceOutput = output.toString();
+        assertThat(traceOutput, containsString("Opened " + new File(url.getFile()).getAbsolutePath()));
+        assertThat(traceOutput, containsString("Closed " + new File(url.getFile()).getAbsolutePath()));
+    }
+
+    @Disabled("Reported as https://bugs.openjdk.org/browse/JDK-8348037")
+    @Test
+    public void testWalkFileTree() throws IOException {
+        Files.walkFileTree(Path.of("."), new NoopPathVisitor());
+
+        assertNull(
+                findPathRecordByName(new File(".").toPath()),
+                "Should not have a leftover entry for '.', but found: " + Listener.getCurrentOpenFiles());
     }
 }
