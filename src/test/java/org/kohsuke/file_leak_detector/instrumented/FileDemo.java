@@ -437,4 +437,27 @@ public class FileDemo {
                 findPathRecordByName(new File(".").toPath()),
                 "Should not have a leftover entry for '.', but found: " + Listener.getCurrentOpenFiles());
     }
+
+    @Test
+    public void testJRTFileSystem() throws IOException {
+        FileSystem fileSystem = FileSystems.getFileSystem(URI.create("jrt:/"));
+        Path path = fileSystem.getPath("/modules");
+        try (DirectoryStream<Path> ds = Files.newDirectoryStream(path)) {
+            assertNotNull(ds);
+
+            assertNotNull(findPathRecord(path), "No file record for file=" + path + " found");
+
+            assertThat(
+                    "Did not have the expected type of 'marker' object: " + obj,
+                    obj,
+                    instanceOf(DirectoryStream.class));
+        }
+        assertNull(findPathRecord(path), "File record for file=" + path + " not removed");
+        assertThat("Did not have the expected type of 'marker' object: " + obj, obj, instanceOf(DirectoryStream.class));
+        assertThat("Did not have the expected type of 'marker' object: " + obj, obj, instanceOf(DirectoryStream.class));
+
+        String traceOutput = output.toString();
+        assertThat(traceOutput, containsString("Opened " + tempFile));
+        assertThat(traceOutput, containsString("Closed " + tempFile));
+    }
 }
