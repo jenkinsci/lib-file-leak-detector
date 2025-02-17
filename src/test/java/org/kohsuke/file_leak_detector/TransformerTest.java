@@ -1,7 +1,7 @@
 package org.kohsuke.file_leak_detector;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -10,10 +10,8 @@ import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.kohsuke.file_leak_detector.transform.ClassTransformSpec;
 import org.kohsuke.file_leak_detector.transform.TransformerImpl;
 import org.objectweb.asm.ClassReader;
@@ -22,24 +20,18 @@ import org.objectweb.asm.util.CheckClassAdapter;
 /**
  * @author Kohsuke Kawaguchi
  */
-@RunWith(Parameterized.class)
 public class TransformerTest {
     private static final List<ClassTransformSpec> specs = AgentMain.createSpec();
 
-    private final Class<?> c;
-
-    public TransformerTest(Class<?> c) {
-        this.c = c;
-    }
-
-    @Test
-    public void testInstrumentations() throws Exception {
+    @MethodSource("specs")
+    @ParameterizedTest(name = "{index} - {0}")
+    public void testInstrumentations(Class<?> c) throws Exception {
         TransformerImpl t = new TransformerImpl(specs);
 
         String name = c.getName().replace('.', '/');
         byte[] data;
         try (InputStream resource = getClass().getClassLoader().getResourceAsStream(name + ".class")) {
-            assertNotNull("Could not load " + name + ".class", resource);
+            assertNotNull(resource, "Could not load " + name + ".class");
             data = resource.readAllBytes();
         }
         byte[] data2 = t.transform(name, data);
@@ -58,10 +50,9 @@ public class TransformerTest {
             CheckClassAdapter.verify(classReader, false, pw);
             errors = baos.toString(StandardCharsets.UTF_8);
         }
-        assertTrue("Verification failed for " + c + "\n" + errors, errors.isEmpty());
+        assertTrue(errors.isEmpty(), "Verification failed for " + c + "\n" + errors);
     }
 
-    @Parameters(name = "{index} - {0}")
     public static List<Object[]> specs() throws Exception {
         List<Object[]> r = new ArrayList<>();
         for (ClassTransformSpec s : specs) {

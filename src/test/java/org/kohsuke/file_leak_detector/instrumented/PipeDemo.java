@@ -1,9 +1,9 @@
 package org.kohsuke.file_leak_detector.instrumented;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -11,9 +11,9 @@ import java.io.StringWriter;
 import java.nio.channels.Pipe;
 import java.nio.channels.Pipe.SinkChannel;
 import java.nio.channels.Pipe.SourceChannel;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.kohsuke.file_leak_detector.Listener;
 import org.kohsuke.file_leak_detector.Listener.Record;
 import org.kohsuke.file_leak_detector.Listener.SinkChannelRecord;
@@ -28,30 +28,30 @@ import org.kohsuke.file_leak_detector.Listener.SourceChannelRecord;
 public class PipeDemo {
     private static final StringWriter output = new StringWriter();
 
-    @BeforeClass
+    @BeforeAll
     public static void setup() {
         assertTrue(
-                "This test can only run with an injected Java agent for file-leak-detector",
-                Listener.isAgentInstalled());
+                Listener.isAgentInstalled(),
+                "This test can only run with an injected Java agent for file-leak-detector");
         Listener.TRACE = new PrintWriter(output);
     }
 
-    @Before
+    @BeforeEach
     public void prepareOutput() {
         output.getBuffer().setLength(0);
     }
 
     @Test
     public void testPipe() throws IOException {
-        assumeFalse("TODO fails on Windows", System.getProperty("os.name").startsWith("Windows"));
+        assumeFalse(System.getProperty("os.name").startsWith("Windows"), "TODO fails on Windows");
         final Pipe s = Pipe.open();
-        assertNotNull("No source channel record found", findSourceChannelRecord(s.source()));
-        assertNotNull("No sink channel record found", findSinkChannelRecord(s.sink()));
+        assertNotNull(findSourceChannelRecord(s.source()), "No source channel record found");
+        assertNotNull(findSinkChannelRecord(s.sink()), "No sink channel record found");
 
         s.sink().close();
-        assertNull("Sink channel record not removed", findSinkChannelRecord(s.sink()));
+        assertNull(findSinkChannelRecord(s.sink()), "Sink channel record not removed");
         s.source().close();
-        assertNull("Source channel record not removed", findSourceChannelRecord(s.source()));
+        assertNull(findSourceChannelRecord(s.source()), "Source channel record not removed");
 
         String traceOutput = output.toString();
         assertTrue(traceOutput.contains("Opened Pipe Source Channel"));

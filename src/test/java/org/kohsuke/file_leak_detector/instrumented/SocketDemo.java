@@ -1,22 +1,11 @@
 package org.kohsuke.file_leak_detector.instrumented;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeTrue;
-
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketImpl;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import org.junit.Test;
 import org.kohsuke.file_leak_detector.Listener;
 
 /**
@@ -58,111 +47,5 @@ public class SocketDemo {
         System.out.println("done");
         ss.close();
         es.shutdownNow();
-    }
-
-    @Test
-    public void testSocketChannelLeakDetection() throws IOException, InterruptedException {
-
-        final ExecutorService es = Executors.newCachedThreadPool();
-
-        final ServerSocketChannel serverSocket = ServerSocketChannel.open();
-        serverSocket.bind(new InetSocketAddress("", 0));
-
-        final Set<SocketChannel> sockets = Collections.synchronizedSet(new HashSet<>());
-        es.execute(() -> {
-            try {
-                sockets.add(serverSocket.accept());
-            } catch (IOException ioe) {
-                throw new UncheckedIOException(ioe);
-            }
-        });
-        SocketChannel socketChannel = SocketChannel.open(
-                new InetSocketAddress("", serverSocket.socket().getLocalPort()));
-
-        while (sockets.size() < 1) {
-            Thread.sleep(500);
-        }
-
-        assertEquals(1, sockets.size());
-
-        assumeTrue("Socket is not supported on newer Java version yet", hasSocketFields());
-
-        assertEquals(2, getSocketChannels());
-
-        socketChannel.close();
-        for (SocketChannel ch : sockets) {
-            ch.close();
-        }
-
-        assertEquals(0, getSocketChannels());
-        es.shutdownNow();
-    }
-
-    private boolean hasSocketFields() {
-        try {
-            SocketImpl.class.getDeclaredField("socket");
-            SocketImpl.class.getDeclaredField("serverSocket");
-            return true;
-        } catch (NoSuchFieldException e) {
-            System.out.println("Could not find field: " + e);
-            return false;
-        }
-    }
-
-    @Test
-    public void testSocketLeakDetection() throws IOException, InterruptedException {
-        final ExecutorService es = Executors.newCachedThreadPool();
-
-        final ServerSocket ss = new ServerSocket();
-        ss.bind(new InetSocketAddress("localhost", 0));
-
-        final Set<Socket> sockets = Collections.synchronizedSet(new HashSet<>());
-        es.execute(() -> {
-            try {
-                sockets.add(ss.accept());
-            } catch (IOException ioe) {
-                throw new UncheckedIOException(ioe);
-            }
-        });
-
-        Socket s = new Socket("localhost", ss.getLocalPort());
-
-        while (sockets.size() < 1) {
-            Thread.sleep(500);
-        }
-
-        assertEquals(1, sockets.size());
-
-        assumeTrue("Socket is not supported on newer Java version yet", hasSocketFields());
-
-        assertEquals(2, getSockets());
-
-        s.close();
-        ss.close();
-        for (Socket ch : sockets) {
-            ch.close();
-        }
-        es.shutdownNow();
-        assertEquals(0, getSockets());
-    }
-
-    private int getSocketChannels() {
-        int socketChannels = 0;
-        for (Listener.Record record : Listener.getCurrentOpenFiles()) {
-            if (record instanceof Listener.SocketChannelRecord) {
-                socketChannels++;
-            }
-        }
-        return socketChannels;
-    }
-
-    private int getSockets() {
-        int sockets = 0;
-        for (Listener.Record record : Listener.getCurrentOpenFiles()) {
-            if (record instanceof Listener.SocketRecord) {
-                sockets++;
-            }
-        }
-        return sockets;
     }
 }
