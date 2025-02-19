@@ -153,6 +153,8 @@ public class AgentMain {
         addIfFound(classes, "sun.nio.fs.UnixDirectoryStream");
         addIfFound(classes, "sun.nio.fs.UnixSecureDirectoryStream");
         addIfFound(classes, "sun.nio.fs.WindowsDirectoryStream");
+        addIfFound(classes, "jdk.internal.jrtfs.JrtDirectoryStream");
+        addIfFound(classes, "jdk.nio.zipfs.ZipDirectoryStream");
 
         instrumentation.retransformClasses(classes.toArray(new Class[0]));
 
@@ -319,6 +321,10 @@ public class AgentMain {
             Collections.addAll(
                     spec, new ClassTransformSpec("sun/nio/fs/WindowsDirectoryStream", new CloseInterceptor("close")));
         }
+
+        spec.add(new ClassTransformSpec("jdk/internal/jrtfs/JrtDirectoryStream", new CloseInterceptor("close")));
+        spec.add(new ClassTransformSpec("jdk/nio/zipfs/ZipDirectoryStream", new CloseInterceptor("close")));
+
         /*
          * Detect selectors, which may open native pipes and anonymous inodes for event polling.
          */
