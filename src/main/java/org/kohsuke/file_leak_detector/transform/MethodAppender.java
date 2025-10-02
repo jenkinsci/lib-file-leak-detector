@@ -30,8 +30,7 @@ public abstract class MethodAppender extends MethodTransformSpec {
                     case Opcodes.ARETURN:
                         append(cg);
                         break;
-                    default:
-                        // ignored
+                    default: // ignored
                 }
                 super.visitInsn(opcode);
             }
