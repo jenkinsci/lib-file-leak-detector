@@ -35,6 +35,7 @@
     <gitHubRepo>jenkinsci/lib-${project.artifactId}</gitHubRepo>
     <asm.version>9.9</asm.version>
     <spotless.check.skip>false</spotless.check.skip>
+    <ban-junit4-imports.skip>false</ban-junit4-imports.skip>
   </properties>
 
   <dependencies>
