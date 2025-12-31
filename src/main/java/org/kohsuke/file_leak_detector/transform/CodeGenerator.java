@@ -96,8 +96,8 @@ public class CodeGenerator extends MethodVisitor {
     //        invokeVirtual("java/lang/ClassLoader","loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
     //        ldc(userMethodName);
     //        newArray("java/lang/Class",0);
-    ////        for (int i = 0; i < argTypes.length; i++)
-    ////            storeConst(i, argTypes[i]);
+    //        for (int i = 0; i < argTypes.length; i++)
+    //            storeConst(i, argTypes[i]);
     //
     //
     // invokeVirtual("java/lang/Class","getDeclaredMethod","(Ljava/lang/String;[Ljava/lang/Class;)Ljava/lang/reflect/Method;");
