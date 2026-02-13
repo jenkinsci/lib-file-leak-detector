@@ -13,3 +13,6 @@ work
 .settings
 .classpath
 .project
+
+# Compiled examples
+*.class

@@ -83,7 +83,9 @@ File leak detector arguments (to specify multiple values, separate them by ',':
                    Specify 0 to choose random available port, -1 to disable, which is default.
   strong         - Don't let GC auto-close leaking file descriptors.
   listener=S     - Specify the fully qualified name of ActivityListener class to activate from beginning.
+  json           - Output dumps in single-line JSON format.
   dumpatshutdown - Dump open file handles at shutdown.
+  dumpinterval=N - Dump open file handles every N seconds.
   excludes=FILE  - Ignore files opened directly/indirectly in specific methods.
                    File lists 'some.pkg.ClassName.methodName' patterns.
 ```

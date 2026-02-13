@@ -24,11 +24,13 @@ import java.nio.charset.Charset;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.WeakHashMap;
 import java.util.zip.ZipFile;
 
@@ -69,6 +71,30 @@ public class Listener {
                 pw.println("\tat " + trace[i]);
             }
             pw.flush();
+        }
+
+        public String getType() {
+            return "unknown";
+        }
+
+        public String getResource() {
+            return "";
+        }
+
+        public List<String> getFilteredStackTrace() {
+            StackTraceElement[] trace = stackTrace.getStackTrace();
+            List<String> result = new ArrayList<>();
+            int i = 0;
+            for (; i < trace.length; i++) {
+                if (trace[i].getClassName().equals("java.lang.reflect.Method")) {
+                    i++;
+                    break;
+                }
+            }
+            for (; i < trace.length; i++) {
+                result.add(trace[i].toString());
+            }
+            return result;
         }
 
         public boolean exclude() {
@@ -113,6 +139,16 @@ public class Listener {
         }
 
         @Override
+        public String getType() {
+            return "file";
+        }
+
+        @Override
+        public String getResource() {
+            return file.toString();
+        }
+
+        @Override
         public void dump(String prefix, PrintWriter pw) {
             pw.println(prefix + file + " by thread:" + threadName + " on " + format(time));
             super.dump(prefix, pw);
@@ -129,6 +165,16 @@ public class Listener {
 
         private PathRecord(Path path) {
             this.path = path;
+        }
+
+        @Override
+        public String getType() {
+            return "path";
+        }
+
+        @Override
+        public String getResource() {
+            return path.toString();
         }
 
         @Override
@@ -151,6 +197,16 @@ public class Listener {
         }
 
         @Override
+        public String getType() {
+            return "pipe_source";
+        }
+
+        @Override
+        public String getResource() {
+            return "Pipe Source Channel";
+        }
+
+        @Override
         public void dump(String prefix, PrintWriter pw) {
             pw.println(prefix + "Pipe Source Channel by thread:" + threadName + " on " + format(time));
             super.dump(prefix, pw);
@@ -162,6 +218,16 @@ public class Listener {
 
         private SinkChannelRecord(Pipe.SinkChannel sink) {
             this.sink = sink;
+        }
+
+        @Override
+        public String getType() {
+            return "pipe_sink";
+        }
+
+        @Override
+        public String getResource() {
+            return "Pipe Sink Channel";
         }
 
         @Override
@@ -186,6 +252,20 @@ public class Listener {
         private String getRemoteAddress(Socket socket) {
             SocketAddress ra = socket.getRemoteSocketAddress();
             return ra != null ? ra.toString() : null;
+        }
+
+        @Override
+        public String getType() {
+            return "socket";
+        }
+
+        @Override
+        public String getResource() {
+            String p = this.peer;
+            if (p == null) {
+                p = getRemoteAddress(socket);
+            }
+            return p != null ? p : "unknown";
         }
 
         @Override
@@ -224,6 +304,20 @@ public class Listener {
         }
 
         @Override
+        public String getType() {
+            return "server_socket";
+        }
+
+        @Override
+        public String getResource() {
+            String a = this.address;
+            if (a == null) {
+                a = getLocalAddress(socket);
+            }
+            return a != null ? a : "unknown";
+        }
+
+        @Override
         public void dump(String prefix, PrintWriter ps) {
             // best effort at showing where it is/was listening
             String address = this.address;
@@ -247,6 +341,16 @@ public class Listener {
         }
 
         @Override
+        public String getType() {
+            return "socket_channel";
+        }
+
+        @Override
+        public String getResource() {
+            return "socket channel";
+        }
+
+        @Override
         public void dump(String prefix, PrintWriter ps) {
             ps.println(prefix + "socket channel by thread:" + threadName + " on " + format(time));
             super.dump(prefix, ps);
@@ -258,6 +362,16 @@ public class Listener {
 
         private SelectorRecord(Selector selector) {
             this.selector = selector;
+        }
+
+        @Override
+        public String getType() {
+            return "selector";
+        }
+
+        @Override
+        public String getResource() {
+            return "selector";
         }
 
         @Override
@@ -297,6 +411,11 @@ public class Listener {
      * If the table size grows beyond this, report the table
      */
     public static int THRESHOLD = 999999;
+
+    /**
+     * When true, dump output uses single-line JSON format instead of plain text.
+     */
+    public static boolean JSON = false;
 
     /**
      * Is the agent actually transforming the class files?
@@ -489,6 +608,10 @@ public class Listener {
     }
 
     public static synchronized void dump(Writer w) {
+        if (JSON) {
+            dumpJson(w);
+            return;
+        }
         PrintWriter pw = new PrintWriter(w);
         Record[] records = TABLE.values().toArray(new Record[0]);
 
@@ -499,6 +622,79 @@ public class Listener {
         }
         pw.println("----");
         pw.flush();
+    }
+
+    public static synchronized void dumpJson(Writer w) {
+        PrintWriter pw = new PrintWriter(w);
+        Record[] records = TABLE.values().toArray(new Record[0]);
+
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+        sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("{\"timestamp\":\"").append(sdf.format(new Date())).append("\"");
+        sb.append(",\"openDescriptors\":").append(records.length);
+        sb.append(",\"descriptors\":[");
+
+        for (int i = 0; i < records.length; i++) {
+            Record r = records[i];
+            if (i > 0) {
+                sb.append(",");
+            }
+            sb.append("{\"index\":").append(i + 1);
+            sb.append(",\"type\":\"").append(jsonEscape(r.getType())).append("\"");
+            sb.append(",\"resource\":\"").append(jsonEscape(r.getResource())).append("\"");
+            sb.append(",\"thread\":\"").append(jsonEscape(r.threadName)).append("\"");
+            sb.append(",\"openedAt\":\"").append(jsonEscape(format(r.time))).append("\"");
+            sb.append(",\"stackTrace\":[");
+            List<String> frames = r.getFilteredStackTrace();
+            for (int j = 0; j < frames.size(); j++) {
+                if (j > 0) {
+                    sb.append(",");
+                }
+                sb.append("\"").append(jsonEscape(frames.get(j))).append("\"");
+            }
+            sb.append("]}");
+        }
+
+        sb.append("]}");
+        pw.println(sb.toString());
+        pw.flush();
+    }
+
+    private static String jsonEscape(String s) {
+        if (s == null) {
+            return "null";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            switch (c) {
+                case '"':
+                    sb.append("\\\"");
+                    break;
+                case '\\':
+                    sb.append("\\\\");
+                    break;
+                case '\n':
+                    sb.append("\\n");
+                    break;
+                case '\r':
+                    sb.append("\\r");
+                    break;
+                case '\t':
+                    sb.append("\\t");
+                    break;
+                default:
+                    if (c < 0x20) {
+                        sb.append(String.format("\\u%04x", (int) c));
+                    } else {
+                        sb.append(c);
+                    }
+            }
+        }
+        String retval = sb.toString();
+        return retval;
     }
 
     /**
