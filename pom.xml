@@ -117,6 +117,16 @@
   <build>
     <plugins>
       <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>properties</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <executions>
           <execution>
@@ -151,6 +161,7 @@
               <excludes>
                 <exclude>**/instrumented/*.java</exclude>
               </excludes>
+              <argLine>-javaagent:${org.mockito:mockito-core:jar}</argLine>
             </configuration>
           </execution>
         </executions>
@@ -203,6 +214,7 @@
                   <artifact>org.ow2.asm:*</artifact>
                   <excludes>
                     <exclude>META-INF/MANIFEST.MF</exclude>
+                    <exclude>module-info.class</exclude>
                   </excludes>
                 </filter>
               </filters>
