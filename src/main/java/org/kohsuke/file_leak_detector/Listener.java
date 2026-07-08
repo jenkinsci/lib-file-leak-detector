@@ -1,6 +1,5 @@
 package org.kohsuke.file_leak_detector;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.File;
 import java.io.FileDescriptor;
 import java.io.FileInputStream;
@@ -346,11 +345,6 @@ public class Listener {
         }
     }
 
-    @SuppressFBWarnings(
-            value = "PATH_TRAVERSAL_IN",
-            justification = "path comes from sun.nio.fs.UnixChannelFactory.newFileChannel(int, sun.nio.fs.UnixPath, "
-                    + "java.lang.String, java.util.Set<? extends java.nio.file.OpenOption>, int). At this point, the path "
-                    + "is not controlled by the user.")
     public static synchronized void openFileString(Object _this, FileDescriptor fileDescriptor, String path) {
         open(_this, Paths.get(path));
     }
