@@ -62,11 +62,11 @@ public class CodeGenerator extends MethodVisitor {
     }
 
     public void aload(int i) {
-        super.visitIntInsn(ALOAD, i);
+        super.visitVarInsn(ALOAD, i);
     }
 
     public void astore(int i) {
-        super.visitIntInsn(ASTORE, i);
+        super.visitVarInsn(ASTORE, i);
     }
 
     public void pop() {
