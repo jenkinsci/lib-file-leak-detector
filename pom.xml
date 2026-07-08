@@ -214,6 +214,7 @@
                   <artifact>org.ow2.asm:*</artifact>
                   <excludes>
                     <exclude>META-INF/MANIFEST.MF</exclude>
+                    <exclude>module-info.class</exclude>
                   </excludes>
                 </filter>
               </filters>
