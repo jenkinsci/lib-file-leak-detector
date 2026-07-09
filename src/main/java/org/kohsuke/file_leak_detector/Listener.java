@@ -55,6 +55,9 @@ public class Listener {
          * Creates a copy of this record with a fresh stack trace, thread name and
          * timestamp, so that "Closed" dumps show where the resource was closed
          * rather than where it was opened.
+         *
+         * <p>The base implementation is a no-op (returns {@code this}). Subclasses should override
+         * this to return a new instance when they want a fresh stack trace for close dumps.
          */
         Record recreate() {
             return this;
