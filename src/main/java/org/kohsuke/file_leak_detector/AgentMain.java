@@ -15,7 +15,6 @@ import java.lang.instrument.Instrumentation;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketImpl;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.channels.spi.AbstractInterruptibleChannel;
@@ -144,12 +143,12 @@ public class AgentMain {
                 AbstractInterruptibleChannel.class,
                 FileChannel.class,
                 AbstractSelector.class,
-                Files.class);
+                Files.class,
+                Socket.class,
+                ServerSocket.class);
 
         addIfFound(classes, "sun.nio.ch.SocketChannelImpl");
         addIfFound(classes, "sun.nio.ch.FileChannelImpl");
-        addIfFound(classes, "java.net.AbstractPlainSocketImpl");
-        addIfFound(classes, "java.net.PlainSocketImpl");
         addIfFound(classes, "sun.nio.fs.UnixDirectoryStream");
         addIfFound(classes, "sun.nio.fs.UnixSecureDirectoryStream");
         addIfFound(classes, "sun.nio.fs.WindowsDirectoryStream");
@@ -157,11 +156,6 @@ public class AgentMain {
         addIfFound(classes, "jdk.nio.zipfs.ZipDirectoryStream");
 
         instrumentation.retransformClasses(classes.toArray(new Class[0]));
-
-        //                Socket.class,
-        //                SocketChannel.class,
-        //                AbstractInterruptibleChannel.class,
-        //                ServerSocket.class);
 
         if (serverPort >= 0) {
             runHttpServer(serverPort);
@@ -333,50 +327,38 @@ public class AgentMain {
                 new ConstructorInterceptor("(Ljava/nio/channels/spi/SelectorProvider;)V", "openSelector"),
                 new CloseInterceptor("close")));
         /*
-         * java.net.Socket/ServerSocket uses SocketImpl, and this is where FileDescriptors are actually managed.
-         *
-         * SocketInputStream/SocketOutputStream does not maintain a separate FileDescriptor. They just all piggy back on
-         * the same SocketImpl instance.
+         * java.net.Socket/ServerSocket delegate to an internal SocketImpl (NioSocketImpl since Java 13),
+         * which no longer has a back-reference to its owning Socket/ServerSocket. So we track at the
+         * public API level instead: a Socket from successful connect() (or being handed out by
+         * ServerSocket.implAccept) until close(), a ServerSocket from successful bind() until close().
          */
-        if (Runtime.version().feature() < 19) {
-            spec.add(new ClassTransformSpec(
-                    "java/net/PlainSocketImpl",
-                    // this is where a new file descriptor is allocated.
-                    // it'll occupy a socket even before it gets connected
-                    new OpenSocketInterceptor("create", "(Z)V"),
+        spec.add(new ClassTransformSpec(
+                "java/net/Socket",
+                // all connecting constructors funnel into connect(SocketAddress, int);
+                // the file descriptor is allocated inside the wrapped SocketImpl.connect call
+                new OpenSocketInterceptor("connect", "(Ljava/net/SocketAddress;I)V", "connect"),
+                new CloseInterceptor("close")));
+        spec.add(new ClassTransformSpec(
+                "java/net/ServerSocket",
+                // all binding constructors funnel into bind(SocketAddress, int);
+                // the file descriptor is allocated inside the wrapped SocketImpl.bind call
+                new OpenSocketInterceptor("bind", "(Ljava/net/SocketAddress;I)V", "bind"),
 
-                    // When a socket is accepted, it goes to "accept(SocketImpl s)"
-                    // where 's' is the new socket and 'this' is the server socket
-                    new AcceptInterceptor("accept", "(Ljava/net/SocketImpl;)V"),
-
-                    // file descriptor actually get closed in socketClose()
-                    // socketPreClose() appears to do something similar, but if you read the source code
-                    // of the native socketClose0() method, then you see that it actually doesn't close
-                    // a file descriptor.
-                    new CloseInterceptor("socketClose")));
-            // Later versions of the JDK abstracted out the parts of PlainSocketImpl above into a super class
-            spec.add(new ClassTransformSpec(
-                    "java/net/AbstractPlainSocketImpl",
-                    // this is where a new file descriptor is allocated.
-                    // it'll occupy a socket even before it gets connected
-                    new OpenSocketInterceptor("create", "(Z)V"),
-
-                    // When a socket is accepted, it goes to "accept(SocketImpl s)"
-                    // where 's' is the new socket and 'this' is the server socket
-                    new AcceptInterceptor("accept", "(Ljava/net/SocketImpl;)V"),
-
-                    // file descriptor actually get closed in socketClose()
-                    // socketPreClose() appears to do something similar, but if you read the source code
-                    // of the native socketClose0() method, then you see that it actually doesn't close
-                    // a file descriptor.
-                    new CloseInterceptor("socketClose")));
-        }
+                // when a socket is accepted, it goes through "implAccept(Socket s)"
+                // where 's' is the new socket and 'this' is the server socket;
+                // implAccept is final, so subclass accept() overrides also pass through it
+                new AcceptInterceptor("implAccept", "(Ljava/net/Socket;)V"),
+                new CloseInterceptor("close")));
         spec.add(new ClassTransformSpec(
                 "sun/nio/ch/SocketChannelImpl",
+                // accepted channels are created with the file descriptor and remote address
                 new OpenSocketInterceptor(
                         "<init>",
-                        "(Ljava/nio/channels/spi/SelectorProvider;Ljava/io/FileDescriptor;Ljava/net/InetSocketAddress;)V"),
-                new OpenSocketInterceptor("<init>", "(Ljava/nio/channels/spi/SelectorProvider;)V"),
+                        "(Ljava/nio/channels/spi/SelectorProvider;Ljava/net/ProtocolFamily;Ljava/io/FileDescriptor;Ljava/net/SocketAddress;)V",
+                        "socketCreate"),
+                new OpenSocketInterceptor("<init>", "(Ljava/nio/channels/spi/SelectorProvider;)V", "socketCreate"),
+                new OpenSocketInterceptor(
+                        "<init>", "(Ljava/nio/channels/spi/SelectorProvider;Ljava/net/ProtocolFamily;)V", "socketCreate"),
                 new CloseInterceptor("kill")));
         spec.add(new ClassTransformSpec(
                 "sun/nio/ch/FileChannelImpl",
@@ -451,8 +433,15 @@ public class AgentMain {
     }
 
     private static class OpenSocketInterceptor extends MethodAppender {
-        public OpenSocketInterceptor(String name, String desc) {
+        /**
+         * Name of the callee within the intercepted method that actually allocates the
+         * file descriptor, wrapped to detect "too many open files" failures.
+         */
+        private final String calleeToWrap;
+
+        public OpenSocketInterceptor(String name, String desc, String calleeToWrap) {
             super(name, desc);
+            this.calleeToWrap = calleeToWrap;
         }
 
         @Override
@@ -462,7 +451,7 @@ public class AgentMain {
             return new OpenInterceptionAdapter(b, access, desc) {
                 @Override
                 protected boolean toIntercept(String owner, String name) {
-                    return name.equals("socketCreate");
+                    return name.equals(calleeToWrap);
                 }
             };
         }
@@ -474,24 +463,11 @@ public class AgentMain {
     }
 
     /**
-     * Used to intercept {@link java.net.PlainSocketImpl#accept(SocketImpl)}
+     * Used to intercept {@link ServerSocket#implAccept(Socket)}
      */
-    @SuppressWarnings("JavadocReference")
     private static class AcceptInterceptor extends MethodAppender {
         public AcceptInterceptor(String name, String desc) {
             super(name, desc);
-        }
-
-        @Override
-        public MethodVisitor newAdapter(
-                MethodVisitor base, int access, String name, String desc, String signature, String[] exceptions) {
-            final MethodVisitor b = super.newAdapter(base, access, name, desc, signature, exceptions);
-            return new OpenInterceptionAdapter(b, access, desc) {
-                @Override
-                protected boolean toIntercept(String owner, String name) {
-                    return name.equals("socketAccept");
-                }
-            };
         }
 
         @Override

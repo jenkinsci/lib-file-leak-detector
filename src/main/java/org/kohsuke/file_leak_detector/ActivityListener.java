@@ -38,6 +38,9 @@ public abstract class ActivityListener {
     /**
      * Called when a new socket is opened.
      *
+     * A {@link Socket} is reported on successful connect or when accepted by a {@link ServerSocket},
+     * a {@link ServerSocket} on successful bind.
+     *
      * @param obj
      *      {@link Socket}, {@link ServerSocket} or {@link SocketChannel}
      */
