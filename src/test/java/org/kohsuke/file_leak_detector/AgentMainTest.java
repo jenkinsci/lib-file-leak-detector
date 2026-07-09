@@ -113,12 +113,6 @@ public class AgentMainTest {
         seenClasses.remove("sun/nio/ch/SocketChannelImpl");
         seenClasses.remove("sun/nio/fs/UnixDirectoryStream");
         seenClasses.remove("sun/nio/fs/UnixSecureDirectoryStream");
-        if (Runtime.version().feature() >= 19) {
-            seenClasses.remove("java/net/AbstractPlainSocketImpl");
-            seenClasses.remove("java/net/PlainSocketImpl");
-        }
-        seenClasses.remove("sun/nio/fs/UnixDirectoryStream");
-        seenClasses.remove("sun/nio/fs/UnixSecureDirectoryStream");
 
         assertTrue(seenClasses.isEmpty(), "Had classes in the spec which were not instrumented: " + seenClasses);
     }

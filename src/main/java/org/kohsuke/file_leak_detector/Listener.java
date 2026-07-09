@@ -9,11 +9,9 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
 import java.io.Writer;
-import java.lang.reflect.Field;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketAddress;
-import java.net.SocketImpl;
 import java.nio.channels.FileChannel;
 import java.nio.channels.Pipe;
 import java.nio.channels.SeekableByteChannel;
@@ -395,30 +393,19 @@ public class Listener {
      * Called when a socket is opened.
      */
     public static synchronized void openSocket(Object _this) {
-        // intercept when
-        if (_this instanceof SocketImpl) {
-            try {
-                // one of the following must be true
-                SocketImpl si = (SocketImpl) _this;
-                Socket s = (Socket) SOCKETIMPL_SOCKET.get(si);
-                if (s != null) {
-                    put(_this, new SocketRecord(s));
-                    for (ActivityListener al : ActivityListener.LIST) {
-                        al.openSocket(s);
-                    }
-                }
-                ServerSocket ss = (ServerSocket) SOCKETIMPL_SERVER_SOCKET.get(si);
-                if (ss != null) {
-                    put(_this, new ServerSocketRecord(ss));
-                    for (ActivityListener al : ActivityListener.LIST) {
-                        al.openSocket(ss);
-                    }
-                }
-            } catch (IllegalAccessException e) {
-                throw new AssertionError(e);
+        if (_this instanceof Socket) {
+            put(_this, new SocketRecord((Socket) _this));
+
+            for (ActivityListener al : ActivityListener.LIST) {
+                al.openSocket(_this);
             }
-        }
-        if (_this instanceof SocketChannel) {
+        } else if (_this instanceof ServerSocket) {
+            put(_this, new ServerSocketRecord((ServerSocket) _this));
+
+            for (ActivityListener al : ActivityListener.LIST) {
+                al.openSocket(_this);
+            }
+        } else if (_this instanceof SocketChannel) {
             put(_this, new SocketChannelRecord((SocketChannel) _this));
 
             for (ActivityListener al : ActivityListener.LIST) {
@@ -512,29 +499,6 @@ public class Listener {
             return new Date(time).toString();
         } catch (Exception e) {
             return Long.toString(time);
-        }
-    }
-
-    private static final Field SOCKETIMPL_SOCKET, SOCKETIMPL_SERVER_SOCKET;
-
-    static {
-        SOCKETIMPL_SOCKET = getSocketField("socket");
-        SOCKETIMPL_SERVER_SOCKET = getSocketField("serverSocket");
-    }
-
-    private static Field getSocketField(String socket) {
-        try {
-            Field socketimplSocket = SocketImpl.class.getDeclaredField(socket);
-            socketimplSocket.setAccessible(true);
-
-            return socketimplSocket;
-        } catch (NoSuchFieldException e) {
-            // Java 17+ changed the implementation of Sockets and
-            // so the current approach does not work there anymore
-            // for now we gracefully handle this and do keep file-leak-detector
-            // useful for other types of file-handle-leaks
-            System.err.println("Could not load field " + socket + " from SocketImpl: " + e);
-            return null;
         }
     }
 }

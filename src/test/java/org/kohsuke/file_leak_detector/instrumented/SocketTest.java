@@ -1,7 +1,6 @@
 package org.kohsuke.file_leak_detector.instrumented;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -11,22 +10,20 @@ import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketImpl;
 import java.net.URL;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.platform.commons.util.ExceptionUtils;
 import org.kohsuke.file_leak_detector.Listener;
 
 /**
@@ -43,26 +40,24 @@ public class SocketTest {
         System.setProperty("http.keepAlive", "false");
     }
 
-    @BeforeAll
-    public static void beforeAll() {
-        try {
-            SocketImpl.class.getDeclaredField("socket");
-        } catch (NoSuchFieldException e) {
-            // Java 17+ changed the implementation of Sockets and
-            // so the current approach does not work there anymore
-            // for now we gracefully handle this and do keep file-leak-detector
-            // useful for other types of file-handle-leaks
-            Assumptions.abort("Cannot run SocketTest with Java 17 or newer, had: " + ExceptionUtils.readStackTrace(e));
-        }
+    private final Set<Listener.Record> preExisting = Collections.newSetFromMap(new IdentityHashMap<>());
+
+    @BeforeEach
+    public void setUp() {
+        // the test tooling (JUnit platform, Mockito, class loading) holds classpath jars and
+        // other descriptors open for the lifetime of the JVM - only assert on what a test adds
+        preExisting.addAll(Listener.getCurrentOpenFiles());
     }
 
     @AfterEach
     public void tearDown() {
         List<Listener.Record> files = new ArrayList<>(Listener.getCurrentOpenFiles());
+        files.removeIf(preExisting::contains);
 
         // exclude some false-positives when running tests via Maven
-        files.removeIf(record ->
-                record.toString().contains("/dev/random") || record.toString().contains("/dev/urandom"));
+        files.removeIf(record -> record.toString().contains("/dev/random")
+                || record.toString().contains("/dev/urandom")
+                || record.toString().contains(".jar"));
 
         assertEquals(0, files.size(), "Should not have any open files now, but had: " + files);
     }
@@ -93,8 +88,6 @@ public class SocketTest {
 
         assertEquals(1, sockets.size());
 
-        assumeTrue(hasSocketFields(), "Socket is not supported on newer Java version yet");
-
         assertEquals(2, getSocketChannels());
 
         socketChannel.close();
@@ -104,17 +97,6 @@ public class SocketTest {
 
         assertEquals(0, getSocketChannels());
         es.shutdownNow();
-    }
-
-    private boolean hasSocketFields() {
-        try {
-            SocketImpl.class.getDeclaredField("socket");
-            SocketImpl.class.getDeclaredField("serverSocket");
-            return true;
-        } catch (NoSuchFieldException e) {
-            System.out.println("Could not find field: " + e);
-            return false;
-        }
     }
 
     @Test
@@ -143,8 +125,6 @@ public class SocketTest {
         }
 
         assertEquals(1, sockets.size());
-
-        assumeTrue(hasSocketFields(), "Socket is not supported on newer Java version yet");
 
         assertEquals(2, getSockets());
 
