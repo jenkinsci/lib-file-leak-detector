@@ -31,8 +31,8 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.file.NoopPathVisitor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -356,8 +356,8 @@ public class FileDemo {
         return null;
     }
 
-    private static void assertContainsAdjacentLines(String output, String thisLineContent, String nextLineContent) throws IOException {
-        List<String> lines = IOUtils.readLines(IOUtils.toInputStream(output));
+    private static void assertContainsAdjacentLines(String output, String thisLineContent, String nextLineContent) {
+        List<String> lines = output.lines().collect(Collectors.toList());
         for (int i = 0; i < lines.size() - 1; ++i) {
             if (lines.get(i).contains(thisLineContent) && lines.get(i + 1).contains(nextLineContent)) {
                 return;
