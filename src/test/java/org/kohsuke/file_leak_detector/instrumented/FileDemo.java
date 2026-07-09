@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -29,6 +30,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.io.file.NoopPathVisitor;
 import org.junit.jupiter.api.AfterEach;
@@ -299,8 +302,9 @@ public class FileDemo {
         assertNull(findPathRecord(tempFile.toPath()), "File record for file=" + tempFile + " not removed");
 
         String traceOutput = output.toString();
-        assertThat(traceOutput, containsString("Opened " + tempFile));
-        assertThat(traceOutput, containsString("Closed " + tempFile));
+        assertContainsAdjacentLines(traceOutput, "Opened " + tempFile, "java.base/sun.nio.ch.FileChannelImpl.open(");
+        assertThat(traceOutput, containsString("java.base/java.nio.file.Files.newByteChannel("));
+        assertContainsAdjacentLines(traceOutput, "Closed " + tempFile, "java.base/java.nio.channels.spi.AbstractInterruptibleChannel.close(");
     }
 
     @Test
@@ -335,8 +339,9 @@ public class FileDemo {
                 instanceOf(SeekableByteChannel.class));
 
         String traceOutput = output.toString();
-        assertThat(traceOutput, containsString("Opened " + tempFile));
-        assertThat(traceOutput, containsString("Closed " + tempFile));
+        assertContainsAdjacentLines(traceOutput, "Opened " + tempFile, "java.base/sun.nio.ch.FileChannelImpl.open(");
+        assertThat(traceOutput, containsString("java.base/java.nio.channels.FileChannel.open("));
+        assertContainsAdjacentLines(traceOutput, "Closed " + tempFile, "java.base/java.nio.channels.spi.AbstractInterruptibleChannel.close(");
     }
 
     private static Listener.PathRecord findPathRecord(Path path) {
@@ -349,6 +354,16 @@ public class FileDemo {
             }
         }
         return null;
+    }
+
+    private static void assertContainsAdjacentLines(String output, String thisLineContent, String nextLineContent) {
+        List<String> lines = output.lines().collect(Collectors.toList());
+        for (int i = 0; i < lines.size() - 1; ++i) {
+            if (lines.get(i).contains(thisLineContent) && lines.get(i + 1).contains(nextLineContent)) {
+                return;
+            }
+        }
+        fail("Did not find '" + thisLineContent + "' followed by '" + nextLineContent + "' in:\n" + output);
     }
 
     private static Listener.PathRecord findPathRecordByName(Path path) {

@@ -51,6 +51,18 @@ public class Listener {
             this.time = System.currentTimeMillis();
         }
 
+        /**
+         * Creates a copy of this record with a fresh stack trace, thread name and
+         * timestamp, so that "Closed" dumps show where the resource was closed
+         * rather than where it was opened.
+         *
+         * <p>The base implementation is a no-op (returns {@code this}). Subclasses should override
+         * this to return a new instance when they want a fresh stack trace for close dumps.
+         */
+        Record recreate() {
+            return this;
+        }
+
         public void dump(String prefix, PrintWriter pw) {
             StackTraceElement[] trace = stackTrace.getStackTrace();
             int i = 0;
@@ -110,6 +122,11 @@ public class Listener {
         }
 
         @Override
+        Record recreate() {
+            return new FileRecord(file);
+        }
+
+        @Override
         public void dump(String prefix, PrintWriter pw) {
             pw.println(prefix + file + " by thread:" + threadName + " on " + format(time));
             super.dump(prefix, pw);
@@ -126,6 +143,11 @@ public class Listener {
 
         private PathRecord(Path path) {
             this.path = path;
+        }
+
+        @Override
+        Record recreate() {
+            return new PathRecord(path);
         }
 
         @Override
@@ -148,6 +170,11 @@ public class Listener {
         }
 
         @Override
+        Record recreate() {
+            return new SourceChannelRecord(source);
+        }
+
+        @Override
         public void dump(String prefix, PrintWriter pw) {
             pw.println(prefix + "Pipe Source Channel by thread:" + threadName + " on " + format(time));
             super.dump(prefix, pw);
@@ -159,6 +186,11 @@ public class Listener {
 
         private SinkChannelRecord(Pipe.SinkChannel sink) {
             this.sink = sink;
+        }
+
+        @Override
+        Record recreate() {
+            return new SinkChannelRecord(sink);
         }
 
         @Override
@@ -176,11 +208,20 @@ public class Listener {
         public final String peer;
 
         private SocketRecord(Socket socket) {
-            this.socket = socket;
-            peer = getRemoteAddress(socket);
+            this(socket, getRemoteAddress(socket));
         }
 
-        private String getRemoteAddress(Socket socket) {
+        private SocketRecord(Socket socket, String peer) {
+            this.socket = socket;
+            this.peer = peer;
+        }
+
+        @Override
+        Record recreate() {
+            return new SocketRecord(socket, peer);
+        }
+
+        private static String getRemoteAddress(Socket socket) {
             SocketAddress ra = socket.getRemoteSocketAddress();
             return ra != null ? ra.toString() : null;
         }
@@ -211,11 +252,20 @@ public class Listener {
         public final String address;
 
         private ServerSocketRecord(ServerSocket socket) {
-            this.socket = socket;
-            address = getLocalAddress(socket);
+            this(socket, getLocalAddress(socket));
         }
 
-        private String getLocalAddress(ServerSocket socket) {
+        private ServerSocketRecord(ServerSocket socket, String address) {
+            this.socket = socket;
+            this.address = address;
+        }
+
+        @Override
+        Record recreate() {
+            return new ServerSocketRecord(socket, address);
+        }
+
+        private static String getLocalAddress(ServerSocket socket) {
             SocketAddress la = socket.getLocalSocketAddress();
             return la != null ? la.toString() : null;
         }
@@ -244,6 +294,11 @@ public class Listener {
         }
 
         @Override
+        Record recreate() {
+            return new SocketChannelRecord(socket);
+        }
+
+        @Override
         public void dump(String prefix, PrintWriter ps) {
             ps.println(prefix + "socket channel by thread:" + threadName + " on " + format(time));
             super.dump(prefix, ps);
@@ -255,6 +310,11 @@ public class Listener {
 
         private SelectorRecord(Selector selector) {
             this.selector = selector;
+        }
+
+        @Override
+        Record recreate() {
+            return new SelectorRecord(selector);
         }
 
         @Override
@@ -320,10 +380,10 @@ public class Listener {
      *      File being opened.
      */
     public static synchronized void open(Object _this, File f) {
-        put(_this, new PathRecord(f.toPath()));
-
-        for (ActivityListener al : ActivityListener.LIST) {
-            al.open(_this, f);
+        if (put(_this, new PathRecord(f.toPath()))) {
+            for (ActivityListener al : ActivityListener.LIST) {
+                al.open(_this, f);
+            }
         }
     }
 
@@ -336,10 +396,10 @@ public class Listener {
      *      Path being opened.
      */
     public static synchronized void open(Object _this, Path p) {
-        put(_this, new PathRecord(p));
-
-        for (ActivityListener al : ActivityListener.LIST) {
-            al.open(_this, p);
+        if (put(_this, new PathRecord(p))) {
+            for (ActivityListener al : ActivityListener.LIST) {
+                al.open(_this, p);
+            }
         }
     }
 
@@ -418,7 +478,13 @@ public class Listener {
         return new ArrayList<>(TABLE.values());
     }
 
-    private static synchronized void put(Object _this, Record r) {
+    /**
+     * @return false if the object is already tracked, i.e. this open was already
+     *      reported by another instrumentation point (e.g. {@code Files.newByteChannel}
+     *      delegates to {@code sun.nio.ch.FileChannelImpl.open}, both of which are
+     *      instrumented). The first record is kept, as its stack trace is the most complete.
+     */
+    private static synchronized boolean put(Object _this, Record r) {
         // handle excludes
         if (r.exclude()) {
             if (TRACE != null && !tracing) {
@@ -426,7 +492,11 @@ public class Listener {
                 r.dump("Excluded ", TRACE);
                 tracing = false;
             }
-            return;
+            return true;
+        }
+
+        if (TABLE.containsKey(_this)) {
+            return false;
         }
 
         TABLE.put(_this, r);
@@ -439,6 +509,7 @@ public class Listener {
             r.dump("Opened ", TRACE);
             tracing = false;
         }
+        return true;
     }
 
     /**
@@ -452,6 +523,8 @@ public class Listener {
     public static synchronized void close(Object _this) {
         Record r = TABLE.remove(_this);
         if (r != null && TRACE != null && !tracing) {
+            // recreate the record so that the dump shows the closing stack trace
+            r = r.recreate();
             tracing = true;
             r.dump("Closed ", TRACE);
             tracing = false;
