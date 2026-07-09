@@ -302,7 +302,8 @@ public class FileDemo {
         assertNull(findPathRecord(tempFile.toPath()), "File record for file=" + tempFile + " not removed");
 
         String traceOutput = output.toString();
-        assertContainsAdjacentLines(traceOutput, "Opened " + tempFile, "java.base/java.nio.file.Files.newByteChannel(");
+        assertContainsAdjacentLines(traceOutput, "Opened " + tempFile, "java.base/sun.nio.ch.FileChannelImpl.open(");
+        assertThat(traceOutput, containsString("java.base/java.nio.file.Files.newByteChannel("));
         assertContainsAdjacentLines(traceOutput, "Closed " + tempFile, "java.base/java.nio.channels.spi.AbstractInterruptibleChannel.close(");
     }
 
@@ -338,7 +339,8 @@ public class FileDemo {
                 instanceOf(SeekableByteChannel.class));
 
         String traceOutput = output.toString();
-        assertContainsAdjacentLines(traceOutput, "Opened " + tempFile, "java.base/java.nio.channels.FileChannel.open(");
+        assertContainsAdjacentLines(traceOutput, "Opened " + tempFile, "java.base/sun.nio.ch.FileChannelImpl.open(");
+        assertThat(traceOutput, containsString("java.base/java.nio.channels.FileChannel.open("));
         assertContainsAdjacentLines(traceOutput, "Closed " + tempFile, "java.base/java.nio.channels.spi.AbstractInterruptibleChannel.close(");
     }
 

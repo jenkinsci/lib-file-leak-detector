@@ -320,10 +320,10 @@ public class Listener {
      *      File being opened.
      */
     public static synchronized void open(Object _this, File f) {
-        put(_this, new PathRecord(f.toPath()));
-
-        for (ActivityListener al : ActivityListener.LIST) {
-            al.open(_this, f);
+        if (put(_this, new PathRecord(f.toPath()))) {
+            for (ActivityListener al : ActivityListener.LIST) {
+                al.open(_this, f);
+            }
         }
     }
 
@@ -336,10 +336,10 @@ public class Listener {
      *      Path being opened.
      */
     public static synchronized void open(Object _this, Path p) {
-        put(_this, new PathRecord(p));
-
-        for (ActivityListener al : ActivityListener.LIST) {
-            al.open(_this, p);
+        if (put(_this, new PathRecord(p))) {
+            for (ActivityListener al : ActivityListener.LIST) {
+                al.open(_this, p);
+            }
         }
     }
 
@@ -418,7 +418,13 @@ public class Listener {
         return new ArrayList<>(TABLE.values());
     }
 
-    private static synchronized void put(Object _this, Record r) {
+    /**
+     * @return false if the object is already tracked, i.e. this open was already
+     *      reported by another instrumentation point (e.g. {@code Files.newByteChannel}
+     *      delegates to {@code sun.nio.ch.FileChannelImpl.open}, both of which are
+     *      instrumented). The first record is kept, as its stack trace is the most complete.
+     */
+    private static synchronized boolean put(Object _this, Record r) {
         // handle excludes
         if (r.exclude()) {
             if (TRACE != null && !tracing) {
@@ -426,7 +432,11 @@ public class Listener {
                 r.dump("Excluded ", TRACE);
                 tracing = false;
             }
-            return;
+            return true;
+        }
+
+        if (TABLE.containsKey(_this)) {
+            return false;
         }
 
         TABLE.put(_this, r);
@@ -439,6 +449,7 @@ public class Listener {
             r.dump("Opened ", TRACE);
             tracing = false;
         }
+        return true;
     }
 
     /**
