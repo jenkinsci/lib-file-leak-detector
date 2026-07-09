@@ -396,6 +396,15 @@ public class AgentMain {
                         "openFileString",
                         Object.class,
                         FileDescriptor.class,
+                        String.class),
+                // this is for java 25+ - which added a boolean parameter
+                new ReturnFromStaticMethodInterceptor(
+                        "open",
+                        "(Ljava/io/FileDescriptor;Ljava/lang/String;ZZZZLjava/io/Closeable;)Ljava/nio/channels/FileChannel;",
+                        7,
+                        "openFileString",
+                        Object.class,
+                        FileDescriptor.class,
                         String.class)));
         return spec;
     }
@@ -637,18 +646,11 @@ public class AgentMain {
                 index[i] = i - 1;
             }
 
-            Label start = new Label();
-            Label end = new Label();
-            g.visitLocalVariable("result", "java/lang/Object", null, start, end, returnLocalVarIndex);
-            g.visitLabel(start);
-
             // return value is currently on top of the stack
             // result = {return value}
             g.astore(returnLocalVarIndex);
 
             g.invokeAppStatic(Listener.class, listenerMethod, listenerMethodArgs, index);
-
-            g.visitLabel(end);
 
             // restore the stack so that the ARETURN has something to return
             g.aload(returnLocalVarIndex);
