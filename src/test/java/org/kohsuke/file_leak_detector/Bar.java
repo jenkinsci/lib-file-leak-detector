@@ -5,11 +5,11 @@ class Bar {
         bar();
         try {
             bar();
-        } catch(IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             bar();
         }
         bar();
-    } 
-    
+    }
+
     void bar() {}
 }

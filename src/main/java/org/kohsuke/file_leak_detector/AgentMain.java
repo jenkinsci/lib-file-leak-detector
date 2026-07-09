@@ -2,6 +2,7 @@ package org.kohsuke.file_leak_detector;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -14,7 +15,6 @@ import java.lang.instrument.Instrumentation;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketImpl;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.channels.spi.AbstractInterruptibleChannel;
@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.zip.ZipFile;
-
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.file_leak_detector.transform.ClassTransformSpec;
 import org.kohsuke.file_leak_detector.transform.CodeGenerator;
@@ -50,7 +49,7 @@ import org.objectweb.asm.commons.LocalVariablesSorter;
  */
 public class AgentMain {
     public static void agentmain(String agentArguments, Instrumentation instrumentation) throws Exception {
-        premain(agentArguments,instrumentation);
+        premain(agentArguments, instrumentation);
     }
 
     public static void premain(String agentArguments, Instrumentation instrumentation) throws Exception {
@@ -79,11 +78,17 @@ public class AgentMain {
                 } else if (t.startsWith("http=")) {
                     serverPort = Integer.parseInt(t.substring(t.indexOf('=') + 1));
                 } else if (t.startsWith("trace=")) {
-                    Listener.TRACE = new PrintWriter(new OutputStreamWriter(new FileOutputStream(t.substring(6)), StandardCharsets.UTF_8));
+                    Listener.TRACE = new PrintWriter(
+                            new OutputStreamWriter(new FileOutputStream(t.substring(6)), StandardCharsets.UTF_8));
                 } else if (t.startsWith("error=")) {
-                    Listener.ERROR = new PrintWriter(new OutputStreamWriter(new FileOutputStream(t.substring(6)), StandardCharsets.UTF_8));
+                    Listener.ERROR = new PrintWriter(
+                            new OutputStreamWriter(new FileOutputStream(t.substring(6)), StandardCharsets.UTF_8));
                 } else if (t.startsWith("listener=")) {
-                    ActivityListener.LIST.add((ActivityListener) AgentMain.class.getClassLoader().loadClass(t.substring(9)).getDeclaredConstructor().newInstance());
+                    ActivityListener.LIST.add((ActivityListener) AgentMain.class
+                            .getClassLoader()
+                            .loadClass(t.substring(9))
+                            .getDeclaredConstructor()
+                            .newInstance());
                 } else if (t.equals("dumpatshutdown")) {
                     Runtime.getRuntime().addShutdownHook(new Thread("File handles dumping shutdown hook") {
                         @Override
@@ -92,7 +97,8 @@ public class AgentMain {
                         }
                     });
                 } else if (t.startsWith("excludes=")) {
-                    try (BufferedReader reader = Files.newBufferedReader(Paths.get(t.substring(9)), StandardCharsets.UTF_8)) {
+                    try (BufferedReader reader =
+                            Files.newBufferedReader(Paths.get(t.substring(9)), StandardCharsets.UTF_8)) {
                         while (true) {
                             String line = reader.readLine();
                             if (line == null) {
@@ -137,22 +143,19 @@ public class AgentMain {
                 AbstractInterruptibleChannel.class,
                 FileChannel.class,
                 AbstractSelector.class,
-                Files.class);
+                Files.class,
+                Socket.class,
+                ServerSocket.class);
 
         addIfFound(classes, "sun.nio.ch.SocketChannelImpl");
-        addIfFound(classes, "java.net.AbstractPlainSocketImpl");
-        addIfFound(classes, "java.net.PlainSocketImpl");
+        addIfFound(classes, "sun.nio.ch.FileChannelImpl");
         addIfFound(classes, "sun.nio.fs.UnixDirectoryStream");
         addIfFound(classes, "sun.nio.fs.UnixSecureDirectoryStream");
         addIfFound(classes, "sun.nio.fs.WindowsDirectoryStream");
+        addIfFound(classes, "jdk.internal.jrtfs.JrtDirectoryStream");
+        addIfFound(classes, "jdk.nio.zipfs.ZipDirectoryStream");
 
         instrumentation.retransformClasses(classes.toArray(new Class[0]));
-
-
-//                Socket.class,
-//                SocketChannel.class,
-//                AbstractInterruptibleChannel.class,
-//                ServerSocket.class);
 
         if (serverPort >= 0) {
             runHttpServer(serverPort);
@@ -170,7 +173,11 @@ public class AgentMain {
     private static void runHttpServer(int port) throws IOException {
         @SuppressWarnings("resource")
         final ServerSocket ss = new ServerSocket();
-        ss.bind(new InetSocketAddress("localhost", port));
+        try {
+            ss.bind(new InetSocketAddress("localhost", port));
+        } catch (IOException e) {
+            throw new IOException("While binding to localhost:" + port, e);
+        }
         System.err.println("Serving file leak stats on http://localhost:" + ss.getLocalPort() + "/ for stats");
         final ExecutorService es = Executors.newCachedThreadPool(r -> {
             Thread t = new Thread(r);
@@ -182,11 +189,13 @@ public class AgentMain {
                 final Socket s = ss.accept();
                 es.submit(() -> {
                     try {
-                        BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream(), StandardCharsets.UTF_8));
+                        BufferedReader in =
+                                new BufferedReader(new InputStreamReader(s.getInputStream(), StandardCharsets.UTF_8));
                         // Read the request line (and ignore it)
                         in.readLine();
 
-                        PrintWriter w = new PrintWriter(new OutputStreamWriter(s.getOutputStream(), StandardCharsets.UTF_8));
+                        PrintWriter w =
+                                new PrintWriter(new OutputStreamWriter(s.getOutputStream(), StandardCharsets.UTF_8));
                         w.print("HTTP/1.0 200 OK\r\nContent-Type: text/plain;charset=UTF-8\r\n\r\n");
                         Listener.dump(w);
                     } finally {
@@ -213,9 +222,11 @@ public class AgentMain {
         System.err.println("  threshold=N    - Instead of waiting until 'too many open files', dump once");
         System.err.println("                   we have N descriptors open.");
         System.err.println("  http=PORT      - Run a mini HTTP server that you can access to get stats on demand.");
-        System.err.println("                   Specify 0 to choose random available port, -1 to disable, which is default.");
+        System.err.println(
+                "                   Specify 0 to choose random available port, -1 to disable, which is default.");
         System.err.println("  strong         - Don't let GC auto-close leaking file descriptors.");
-        System.err.println("  listener=S     - Specify the fully qualified name of ActivityListener class to activate from beginning.");
+        System.err.println(
+                "  listener=S     - Specify the fully qualified name of ActivityListener class to activate from beginning.");
         System.err.println("  dumpatshutdown - Dump open file handles at shutdown.");
         System.err.println("  excludes=FILE  - Ignore files opened directly/indirectly in specific methods.");
         System.err.println("                   File lists 'some.pkg.ClassName.methodName' patterns.");
@@ -224,66 +235,73 @@ public class AgentMain {
     static List<ClassTransformSpec> createSpec() {
         List<ClassTransformSpec> spec = new ArrayList<>();
         Collections.addAll(
-            spec,
-            newSpec(FileOutputStream.class, "(Ljava/io/File;Z)V"),
-            newSpec(FileInputStream.class, "(Ljava/io/File;)V"),
-            newSpec(RandomAccessFile.class, "(Ljava/io/File;Ljava/lang/String;)V"),
-            newSpec(ZipFile.class, "(Ljava/io/File;I)V"),
+                spec,
+                newSpec(FileOutputStream.class, "(Ljava/io/File;Z)V"),
+                newSpec(FileInputStream.class, "(Ljava/io/File;)V"),
+                newSpec(RandomAccessFile.class, "(Ljava/io/File;Ljava/lang/String;)V"),
+                newSpec(ZipFile.class, "(Ljava/io/File;I)V"),
 
-            /*
-             * Detect the files opened via FileChannel.open(...) calls
-             */
-            new ClassTransformSpec(FileChannel.class,
-                    new ReturnFromStaticMethodInterceptor("open",
-                            "(Ljava/nio/file/Path;Ljava/util/Set;[Ljava/nio/file/attribute/FileAttribute;)Ljava/nio/channels/FileChannel;", 4, "openFileChannel", FileChannel.class, Path.class)),
-            /*
-             * Detect instances opened via static methods in class java.nio.file.Files
-             */
-            new ClassTransformSpec(
-                    Files.class,
-                    // SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs)
-                    new ReturnFromStaticMethodInterceptor(
-                            "newByteChannel",
-                            "(Ljava/nio/file/Path;Ljava/util/Set;[Ljava/nio/file/attribute/FileAttribute;)Ljava/nio/channels/SeekableByteChannel;",
-                            4,
-                            "openFileChannel",
-                            SeekableByteChannel.class,
-                            Path.class),
-                    // DirectoryStream<Path> newDirectoryStream(Path dir)
-                    new ReturnFromStaticMethodInterceptor(
-                            "newDirectoryStream",
-                            "(Ljava/nio/file/Path;)Ljava/nio/file/DirectoryStream;",
-                            2,
-                            "openDirectoryStream",
-                            DirectoryStream.class,
-                            Path.class),
-                    // DirectoryStream<Path> newDirectoryStream(Path dir, String glob)
-                    new ReturnFromStaticMethodInterceptor(
-                            "newDirectoryStream",
-                            "(Ljava/nio/file/Path;Ljava/lang/String;)Ljava/nio/file/DirectoryStream;",
-                            6,
-                            "openDirectoryStream",
-                            DirectoryStream.class,
-                            Path.class),
-                    // DirectoryStream<Path> newDirectoryStream(Path dir, DirectoryStream.Filter<? super Path> filter)
-                    new ReturnFromStaticMethodInterceptor(
-                            "newDirectoryStream",
-                            "(Ljava/nio/file/Path;Ljava/nio/file/DirectoryStream$Filter;)Ljava/nio/file/DirectoryStream;",
-                            3,
-                            "openDirectoryStream",
-                            DirectoryStream.class,
-                            Path.class)),
-            /*
-             * Detect new Pipes
-             */
-            new ClassTransformSpec(AbstractSelectableChannel.class,
-                    new ConstructorInterceptor("(Ljava/nio/channels/spi/SelectorProvider;)V", "openPipe")),
-            /*
-             * AbstractInterruptibleChannel is used by FileChannel and Pipes
-             */
-            new ClassTransformSpec(AbstractInterruptibleChannel.class,
-                    new CloseInterceptor("close"))
-        );
+                /*
+                 * Detect the files opened via FileChannel.open(...) calls
+                 */
+                new ClassTransformSpec(
+                        FileChannel.class,
+                        new ReturnFromStaticMethodInterceptor(
+                                "open",
+                                "(Ljava/nio/file/Path;Ljava/util/Set;[Ljava/nio/file/attribute/FileAttribute;)Ljava/nio/channels/FileChannel;",
+                                4,
+                                "openFileChannel",
+                                FileChannel.class,
+                                Path.class)),
+                /*
+                 * Detect instances opened via static methods in class java.nio.file.Files
+                 */
+                new ClassTransformSpec(
+                        Files.class,
+                        // SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options,
+                        // FileAttribute<?>... attrs)
+                        new ReturnFromStaticMethodInterceptor(
+                                "newByteChannel",
+                                "(Ljava/nio/file/Path;Ljava/util/Set;[Ljava/nio/file/attribute/FileAttribute;)Ljava/nio/channels/SeekableByteChannel;",
+                                4,
+                                "openFileChannel",
+                                SeekableByteChannel.class,
+                                Path.class),
+                        // DirectoryStream<Path> newDirectoryStream(Path dir)
+                        new ReturnFromStaticMethodInterceptor(
+                                "newDirectoryStream",
+                                "(Ljava/nio/file/Path;)Ljava/nio/file/DirectoryStream;",
+                                2,
+                                "openDirectoryStream",
+                                DirectoryStream.class,
+                                Path.class),
+                        // DirectoryStream<Path> newDirectoryStream(Path dir, String glob)
+                        new ReturnFromStaticMethodInterceptor(
+                                "newDirectoryStream",
+                                "(Ljava/nio/file/Path;Ljava/lang/String;)Ljava/nio/file/DirectoryStream;",
+                                6,
+                                "openDirectoryStream",
+                                DirectoryStream.class,
+                                Path.class),
+                        // DirectoryStream<Path> newDirectoryStream(Path dir, DirectoryStream.Filter<? super Path>
+                        // filter)
+                        new ReturnFromStaticMethodInterceptor(
+                                "newDirectoryStream",
+                                "(Ljava/nio/file/Path;Ljava/nio/file/DirectoryStream$Filter;)Ljava/nio/file/DirectoryStream;",
+                                3,
+                                "openDirectoryStream",
+                                DirectoryStream.class,
+                                Path.class)),
+                /*
+                 * Detect new Pipes
+                 */
+                new ClassTransformSpec(
+                        AbstractSelectableChannel.class,
+                        new ConstructorInterceptor("(Ljava/nio/channels/spi/SelectorProvider;)V", "openPipe")),
+                /*
+                 * AbstractInterruptibleChannel is used by FileChannel and Pipes
+                 */
+                new ClassTransformSpec(AbstractInterruptibleChannel.class, new CloseInterceptor("close")));
         /*
          * We need to see closing of DirectoryStream instances,
          * however they are OS-specific, so we need to list them via String-name
@@ -291,16 +309,16 @@ public class AgentMain {
         if (!System.getProperty("os.name").startsWith("Windows")) {
             Collections.addAll(
                     spec,
-                    new ClassTransformSpec(
-                            "sun/nio/fs/UnixDirectoryStream", new CloseInterceptor("close")),
-                    new ClassTransformSpec(
-                            "sun/nio/fs/UnixSecureDirectoryStream", new CloseInterceptor("close")));
+                    new ClassTransformSpec("sun/nio/fs/UnixDirectoryStream", new CloseInterceptor("close")),
+                    new ClassTransformSpec("sun/nio/fs/UnixSecureDirectoryStream", new CloseInterceptor("close")));
         } else {
             Collections.addAll(
-                    spec,
-                    new ClassTransformSpec(
-                            "sun/nio/fs/WindowsDirectoryStream", new CloseInterceptor("close")));
+                    spec, new ClassTransformSpec("sun/nio/fs/WindowsDirectoryStream", new CloseInterceptor("close")));
         }
+
+        spec.add(new ClassTransformSpec("jdk/internal/jrtfs/JrtDirectoryStream", new CloseInterceptor("close")));
+        spec.add(new ClassTransformSpec("jdk/nio/zipfs/ZipDirectoryStream", new CloseInterceptor("close")));
+
         /*
          * Detect selectors, which may open native pipes and anonymous inodes for event polling.
          */
@@ -309,51 +327,67 @@ public class AgentMain {
                 new ConstructorInterceptor("(Ljava/nio/channels/spi/SelectorProvider;)V", "openSelector"),
                 new CloseInterceptor("close")));
         /*
-         * java.net.Socket/ServerSocket uses SocketImpl, and this is where FileDescriptors are actually managed.
-         *
-         * SocketInputStream/SocketOutputStream does not maintain a separate FileDescriptor. They just all piggy back on
-         * the same SocketImpl instance.
+         * java.net.Socket/ServerSocket delegate to an internal SocketImpl (NioSocketImpl since Java 13),
+         * which no longer has a back-reference to its owning Socket/ServerSocket. So we track at the
+         * public API level instead: a Socket from successful connect() (or being handed out by
+         * ServerSocket.implAccept) until close(), a ServerSocket from successful bind() until close().
          */
-        if (Runtime.version().feature() < 19) {
-            spec.add(new ClassTransformSpec(
-                    "java/net/PlainSocketImpl",
-                    // this is where a new file descriptor is allocated.
-                    // it'll occupy a socket even before it gets connected
-                    new OpenSocketInterceptor("create", "(Z)V"),
+        spec.add(new ClassTransformSpec(
+                "java/net/Socket",
+                // all connecting constructors funnel into connect(SocketAddress, int);
+                // the file descriptor is allocated inside the wrapped SocketImpl.connect call
+                new OpenSocketInterceptor("connect", "(Ljava/net/SocketAddress;I)V", "connect"),
+                new CloseInterceptor("close")));
+        spec.add(new ClassTransformSpec(
+                "java/net/ServerSocket",
+                // all binding constructors funnel into bind(SocketAddress, int);
+                // the file descriptor is allocated inside the wrapped SocketImpl.bind call
+                new OpenSocketInterceptor("bind", "(Ljava/net/SocketAddress;I)V", "bind"),
 
-                    // When a socket is accepted, it goes to "accept(SocketImpl s)"
-                    // where 's' is the new socket and 'this' is the server socket
-                    new AcceptInterceptor("accept", "(Ljava/net/SocketImpl;)V"),
-
-                    // file descriptor actually get closed in socketClose()
-                    // socketPreClose() appears to do something similar, but if you read the source code
-                    // of the native socketClose0() method, then you see that it actually doesn't close
-                    // a file descriptor.
-                    new CloseInterceptor("socketClose")));
-            // Later versions of the JDK abstracted out the parts of PlainSocketImpl above into a super class
-            spec.add(new ClassTransformSpec(
-                    "java/net/AbstractPlainSocketImpl",
-                    // this is where a new file descriptor is allocated.
-                    // it'll occupy a socket even before it gets connected
-                    new OpenSocketInterceptor("create", "(Z)V"),
-
-                    // When a socket is accepted, it goes to "accept(SocketImpl s)"
-                    // where 's' is the new socket and 'this' is the server socket
-                    new AcceptInterceptor("accept", "(Ljava/net/SocketImpl;)V"),
-
-                    // file descriptor actually get closed in socketClose()
-                    // socketPreClose() appears to do something similar, but if you read the source code
-                    // of the native socketClose0() method, then you see that it actually doesn't close
-                    // a file descriptor.
-                    new CloseInterceptor("socketClose")));
-        }
+                // when a socket is accepted, it goes through "implAccept(Socket s)"
+                // where 's' is the new socket and 'this' is the server socket;
+                // implAccept is final, so subclass accept() overrides also pass through it
+                new AcceptInterceptor("implAccept", "(Ljava/net/Socket;)V"),
+                new CloseInterceptor("close")));
         spec.add(new ClassTransformSpec(
                 "sun/nio/ch/SocketChannelImpl",
+                // accepted channels are created with the file descriptor and remote address
                 new OpenSocketInterceptor(
                         "<init>",
-                        "(Ljava/nio/channels/spi/SelectorProvider;Ljava/io/FileDescriptor;Ljava/net/InetSocketAddress;)V"),
-                new OpenSocketInterceptor("<init>", "(Ljava/nio/channels/spi/SelectorProvider;)V"),
+                        "(Ljava/nio/channels/spi/SelectorProvider;Ljava/net/ProtocolFamily;Ljava/io/FileDescriptor;Ljava/net/SocketAddress;)V",
+                        "socketCreate"),
+                new OpenSocketInterceptor("<init>", "(Ljava/nio/channels/spi/SelectorProvider;)V", "socketCreate"),
+                new OpenSocketInterceptor(
+                        "<init>", "(Ljava/nio/channels/spi/SelectorProvider;Ljava/net/ProtocolFamily;)V", "socketCreate"),
                 new CloseInterceptor("kill")));
+        spec.add(new ClassTransformSpec(
+                "sun/nio/ch/FileChannelImpl",
+                new ReturnFromStaticMethodInterceptor(
+                        "open",
+                        "(Ljava/io/FileDescriptor;Ljava/lang/String;ZZZLjava/io/Closeable;)Ljava/nio/channels/FileChannel;",
+                        4,
+                        "openFileString",
+                        Object.class,
+                        FileDescriptor.class,
+                        String.class),
+                // this is for java 11/17 - which use Object instead of Closeable as the last parameter
+                new ReturnFromStaticMethodInterceptor(
+                        "open",
+                        "(Ljava/io/FileDescriptor;Ljava/lang/String;ZZZLjava/lang/Object;)Ljava/nio/channels/FileChannel;",
+                        4,
+                        "openFileString",
+                        Object.class,
+                        FileDescriptor.class,
+                        String.class),
+                // this is for java 25+ - which added a boolean parameter
+                new ReturnFromStaticMethodInterceptor(
+                        "open",
+                        "(Ljava/io/FileDescriptor;Ljava/lang/String;ZZZZLjava/io/Closeable;)Ljava/nio/channels/FileChannel;",
+                        7,
+                        "openFileString",
+                        Object.class,
+                        FileDescriptor.class,
+                        String.class)));
         return spec;
     }
 
@@ -363,10 +397,8 @@ public class AgentMain {
      */
     private static ClassTransformSpec newSpec(final Class<?> c, String constructorDesc) {
         final String binName = c.getName().replace('.', '/');
-        return new ClassTransformSpec(binName,
-            new ConstructorOpenInterceptor(constructorDesc, binName),
-            new CloseInterceptor("close")
-        );
+        return new ClassTransformSpec(
+                binName, new ConstructorOpenInterceptor(constructorDesc, binName), new CloseInterceptor("close"));
     }
 
     /**
@@ -379,9 +411,7 @@ public class AgentMain {
 
         @Override
         protected void append(CodeGenerator g) {
-            g.invokeAppStatic(Listener.class,"close",
-                    new Class[]{Object.class},
-                    new int[]{0});
+            g.invokeAppStatic(Listener.class, "close", new Class[] {Object.class}, new int[] {0});
         }
     }
 
@@ -398,62 +428,52 @@ public class AgentMain {
 
         @Override
         protected void append(CodeGenerator g) {
-            g.invokeAppStatic(Listener.class, listenerMethod,
-                    new Class[]{Object.class},
-                    new int[]{0});
+            g.invokeAppStatic(Listener.class, listenerMethod, new Class[] {Object.class}, new int[] {0});
         }
     }
 
     private static class OpenSocketInterceptor extends MethodAppender {
-        public OpenSocketInterceptor(String name, String desc) {
+        /**
+         * Name of the callee within the intercepted method that actually allocates the
+         * file descriptor, wrapped to detect "too many open files" failures.
+         */
+        private final String calleeToWrap;
+
+        public OpenSocketInterceptor(String name, String desc, String calleeToWrap) {
             super(name, desc);
+            this.calleeToWrap = calleeToWrap;
         }
 
         @Override
-        public MethodVisitor newAdapter(MethodVisitor base, int access, String name, String desc, String signature, String[] exceptions) {
+        public MethodVisitor newAdapter(
+                MethodVisitor base, int access, String name, String desc, String signature, String[] exceptions) {
             final MethodVisitor b = super.newAdapter(base, access, name, desc, signature, exceptions);
-            return new OpenInterceptionAdapter(b,access,desc) {
+            return new OpenInterceptionAdapter(b, access, desc) {
                 @Override
                 protected boolean toIntercept(String owner, String name) {
-                    return name.equals("socketCreate");
+                    return name.equals(calleeToWrap);
                 }
             };
         }
 
         @Override
         protected void append(CodeGenerator g) {
-            g.invokeAppStatic(Listener.class,"openSocket",
-                    new Class[]{Object.class},
-                    new int[]{0});
+            g.invokeAppStatic(Listener.class, "openSocket", new Class[] {Object.class}, new int[] {0});
         }
     }
 
     /**
-     * Used to intercept {@link java.net.PlainSocketImpl#accept(SocketImpl)}
+     * Used to intercept {@link ServerSocket#implAccept(Socket)}
      */
-    @SuppressWarnings("JavadocReference")
     private static class AcceptInterceptor extends MethodAppender {
         public AcceptInterceptor(String name, String desc) {
             super(name, desc);
         }
 
         @Override
-        public MethodVisitor newAdapter(MethodVisitor base, int access, String name, String desc, String signature, String[] exceptions) {
-            final MethodVisitor b = super.newAdapter(base, access, name, desc, signature, exceptions);
-            return new OpenInterceptionAdapter(b,access,desc) {
-                @Override
-                protected boolean toIntercept(String owner, String name) {
-                    return name.equals("socketAccept");
-                }
-            };
-        }
-
-        @Override
         protected void append(CodeGenerator g) {
             // the 's' parameter is the new socket that will own the socket
-            g.invokeAppStatic(Listener.class,"openSocket",
-                    new Class[]{Object.class},
-                    new int[]{1});
+            g.invokeAppStatic(Listener.class, "openSocket", new Class[] {Object.class}, new int[] {1});
         }
     }
 
@@ -486,14 +506,14 @@ public class AgentMain {
 
         @Override
         public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
-            if(toIntercept(owner,name)) {
+            if (toIntercept(owner, name)) {
                 Type exceptionType = Type.getType(getExpectedException());
 
                 CodeGenerator g = new CodeGenerator(mv);
                 Label s = new Label(); // start of the try block
-                Label e = new Label();  // end of the try block
-                Label h = new Label();  // handler entry point
-                Label tail = new Label();   // where the execution continue
+                Label e = new Label(); // end of the try block
+                Label h = new Label(); // handler entry point
+                Label tail = new Label(); // where the execution continue
 
                 g.visitTryCatchBlock(s, e, h, exceptionType.getInternalName());
                 g.visitLabel(s);
@@ -508,7 +528,7 @@ public class AgentMain {
                 int ex = lvs.newLocal(exceptionType);
                 g.dup();
                 base.visitVarInsn(Opcodes.ASTORE, ex);
-                g.invokeVirtual(exceptionType.getInternalName(),"getMessage","()Ljava/lang/String;");
+                g.invokeVirtual(exceptionType.getInternalName(), "getMessage", "()Ljava/lang/String;");
                 g.ldc("Too many open files");
                 g.invokeVirtual("java/lang/String", "contains", "(Ljava/lang/CharSequence;)Z");
 
@@ -517,8 +537,7 @@ public class AgentMain {
                 Label rethrow = new Label();
                 g.ifFalse(rethrow);
 
-                g.invokeAppStatic(Listener.class,"outOfDescriptors",
-                        new Class[0], new int[0]);
+                g.invokeAppStatic(Listener.class, "outOfDescriptors", new Class[0], new int[0]);
 
                 // rethrow the FileNotFoundException
                 g.visitLabel(rethrow);
@@ -549,9 +568,10 @@ public class AgentMain {
         }
 
         @Override
-        public MethodVisitor newAdapter(MethodVisitor base, int access, String name, String desc, String signature, String[] exceptions) {
+        public MethodVisitor newAdapter(
+                MethodVisitor base, int access, String name, String desc, String signature, String[] exceptions) {
             final MethodVisitor b = super.newAdapter(base, access, name, desc, signature, exceptions);
-            return new OpenInterceptionAdapter(b,access,desc) {
+            return new OpenInterceptionAdapter(b, access, desc) {
                 @Override
                 protected boolean toIntercept(String owner, String name) {
                     return owner.equals(binName) && name.startsWith("open");
@@ -566,9 +586,7 @@ public class AgentMain {
 
         @Override
         protected void append(CodeGenerator g) {
-            g.invokeAppStatic(Listener.class,"open",
-                    new Class[]{Object.class, File.class},
-                    new int[]{0,1});
+            g.invokeAppStatic(Listener.class, "open", new Class[] {Object.class, File.class}, new int[] {0, 1});
         }
     }
 
@@ -576,13 +594,18 @@ public class AgentMain {
         private final String listenerMethod;
         private final Class<?>[] listenerMethodArgs;
         private final int returnLocalVarIndex;
-        public ReturnFromStaticMethodInterceptor(String methodName, String methodDesc, int returnLocalVarIndex,
-                String listenerMethod, Class<?> ... listenerMethodArgs) {
+
+        public ReturnFromStaticMethodInterceptor(
+                String methodName,
+                String methodDesc,
+                int returnLocalVarIndex,
+                String listenerMethod,
+                Class<?>... listenerMethodArgs) {
             super(methodName, methodDesc);
             this.returnLocalVarIndex = returnLocalVarIndex;
             this.listenerMethod = listenerMethod;
             if (listenerMethodArgs.length == 0) {
-                this.listenerMethodArgs = new Class[] { Object.class };
+                this.listenerMethodArgs = new Class[] {Object.class};
             } else {
                 this.listenerMethodArgs = listenerMethodArgs;
             }
@@ -599,18 +622,11 @@ public class AgentMain {
                 index[i] = i - 1;
             }
 
-            Label start = new Label();
-            Label end = new Label();
-            g.visitLocalVariable("result", "java/lang/Object", null, start, end, returnLocalVarIndex);
-            g.visitLabel(start);
-
             // return value is currently on top of the stack
             // result = {return value}
             g.astore(returnLocalVarIndex);
 
             g.invokeAppStatic(Listener.class, listenerMethod, listenerMethodArgs, index);
-
-            g.visitLabel(end);
 
             // restore the stack so that the ARETURN has something to return
             g.aload(returnLocalVarIndex);

@@ -1,9 +1,5 @@
 package org.kohsuke.file_leak_detector;
 
-import org.kohsuke.args4j.Argument;
-import org.kohsuke.args4j.CmdLineException;
-import org.kohsuke.args4j.CmdLineParser;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -17,6 +13,9 @@ import java.security.CodeSource;
 import java.security.ProtectionDomain;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.kohsuke.args4j.Argument;
+import org.kohsuke.args4j.CmdLineException;
+import org.kohsuke.args4j.CmdLineParser;
 
 /**
  * Entry point for externally attaching agent into another local process.
@@ -24,10 +23,10 @@ import java.util.logging.Logger;
  * @author Kohsuke Kawaguchi
  */
 public class Main {
-    @Argument(index=0,metaVar="PID",usage="Process ID to activate file leak detector",required=true)
+    @Argument(index = 0, metaVar = "PID", usage = "Process ID to activate file leak detector", required = true)
     public String pid;
 
-    @Argument(index=1,metaVar="OPTSTR",usage="Packed option string of the form key1[=value1],key2[=value2],...")
+    @Argument(index = 1, metaVar = "OPTSTR", usage = "Packed option string of the form key1[=value1],key2[=value2],...")
     public String options;
 
     public static void main(String[] args) {
@@ -71,7 +70,8 @@ public class Main {
             System.out.println("Activating file leak detector at " + agentJar);
             // load a specified agent onto the JVM
             // pass the hidden option to prevent this from killing the target JVM if the options were wrong
-            api.getMethod("loadAgent",String.class,String.class).invoke(vm, agentJar.getPath(), options == null ? "noexit" : "noexit,"+options);
+            api.getMethod("loadAgent", String.class, String.class)
+                    .invoke(vm, agentJar.getPath(), options == null ? "noexit" : "noexit," + options);
         } finally {
             api.getMethod("detach").invoke(vm);
         }
@@ -87,7 +87,8 @@ public class Main {
         try {
             return cl.loadClass("com.sun.tools.attach.VirtualMachine");
         } catch (ClassNotFoundException e) {
-            throw new IllegalStateException("Unable to find tools.jar at "+toolsJar+" --- you need to run this tool with a JDK",e);
+            throw new IllegalStateException(
+                    "Unable to find tools.jar at " + toolsJar + " --- you need to run this tool with a JDK", e);
         }
     }
 

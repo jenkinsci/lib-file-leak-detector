@@ -1,6 +1,7 @@
 package org.kohsuke.file_leak_detector;
 
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
@@ -8,11 +9,9 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
 import java.io.Writer;
-import java.lang.reflect.Field;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketAddress;
-import java.net.SocketImpl;
 import java.nio.channels.FileChannel;
 import java.nio.channels.Pipe;
 import java.nio.channels.SeekableByteChannel;
@@ -21,6 +20,7 @@ import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -34,7 +34,9 @@ import java.util.zip.ZipFile;
  *
  * @author Kohsuke Kawaguchi
  */
+@SuppressWarnings("unused")
 public class Listener {
+
     /**
      * Remembers who/where/when opened a file.
      */
@@ -119,6 +121,25 @@ public class Listener {
         }
     }
 
+    public static final class PathRecord extends Record {
+        public final Path path;
+
+        private PathRecord(Path path) {
+            this.path = path;
+        }
+
+        @Override
+        public void dump(String prefix, PrintWriter pw) {
+            pw.println(prefix + path + " by thread:" + threadName + " on " + format(time));
+            super.dump(prefix, pw);
+        }
+
+        @Override
+        public String toString() {
+            return "PathRecord[file=" + path + "]";
+        }
+    }
+
     public static final class SourceChannelRecord extends Record {
         public final Pipe.SourceChannel source;
 
@@ -146,7 +167,6 @@ public class Listener {
             super.dump(prefix, pw);
         }
     }
-
 
     /**
      * Record of opened socket.
@@ -245,7 +265,7 @@ public class Listener {
     }
 
     /**
-     * Files that are currently open, keyed by the owner object (like {@link FileInputStream}.
+     * Files that are currently open, keyed by the owner object like {@link FileInputStream}.
      */
     private static Map<Object, Record> TABLE = new WeakHashMap<>();
 
@@ -300,13 +320,39 @@ public class Listener {
      *      File being opened.
      */
     public static synchronized void open(Object _this, File f) {
-        put(_this, new FileRecord(f));
+        put(_this, new PathRecord(f.toPath()));
 
         for (ActivityListener al : ActivityListener.LIST) {
             al.open(_this, f);
         }
     }
 
+    /**
+     * Called when a new path is opened.
+     *
+     * @param _this
+     *      {@link FileInputStream}, {@link FileOutputStream}, {@link RandomAccessFile}, or {@link ZipFile}.
+     * @param p
+     *      Path being opened.
+     */
+    public static synchronized void open(Object _this, Path p) {
+        put(_this, new PathRecord(p));
+
+        for (ActivityListener al : ActivityListener.LIST) {
+            al.open(_this, p);
+        }
+    }
+
+    public static synchronized void openFileString(Object _this, FileDescriptor fileDescriptor, String path) {
+        open(_this, Paths.get(path));
+    }
+
+    /**
+     * Called when a pipe is opened, e.g. via SelectorProvider
+     *
+     * @param _this
+     * 		{@link java.nio.channels.spi.SelectorProvider}
+     */
     public static synchronized void openPipe(Object _this) {
         if (_this instanceof Pipe.SourceChannel) {
             put(_this, new SourceChannelRecord((Pipe.SourceChannel) _this));
@@ -323,15 +369,15 @@ public class Listener {
     }
 
     public static synchronized void openFileChannel(FileChannel fileChannel, Path path) {
-        open(fileChannel, path.toFile());
+        open(fileChannel, path);
     }
 
     public static synchronized void openFileChannel(SeekableByteChannel byteChannel, Path path) {
-        open(byteChannel, path.toFile());
+        open(byteChannel, path);
     }
 
     public static synchronized void openDirectoryStream(DirectoryStream<?> directoryStream, Path path) {
-        open(directoryStream, path.toFile());
+        open(directoryStream, path);
     }
 
     public static synchronized void openSelector(Object _this) {
@@ -347,30 +393,19 @@ public class Listener {
      * Called when a socket is opened.
      */
     public static synchronized void openSocket(Object _this) {
-        // intercept when
-        if (_this instanceof SocketImpl) {
-            try {
-                // one of the following must be true
-                SocketImpl si = (SocketImpl) _this;
-                Socket s = (Socket) SOCKETIMPL_SOCKET.get(si);
-                if (s != null) {
-                    put(_this, new SocketRecord(s));
-                    for (ActivityListener al : ActivityListener.LIST) {
-                        al.openSocket(s);
-                    }
-                }
-                ServerSocket ss = (ServerSocket) SOCKETIMPL_SERVER_SOCKET.get(si);
-                if (ss != null) {
-                    put(_this, new ServerSocketRecord(ss));
-                    for (ActivityListener al : ActivityListener.LIST) {
-                        al.openSocket(ss);
-                    }
-                }
-            } catch (IllegalAccessException e) {
-                throw new AssertionError(e);
+        if (_this instanceof Socket) {
+            put(_this, new SocketRecord((Socket) _this));
+
+            for (ActivityListener al : ActivityListener.LIST) {
+                al.openSocket(_this);
             }
-        }
-        if (_this instanceof SocketChannel) {
+        } else if (_this instanceof ServerSocket) {
+            put(_this, new ServerSocketRecord((ServerSocket) _this));
+
+            for (ActivityListener al : ActivityListener.LIST) {
+                al.openSocket(_this);
+            }
+        } else if (_this instanceof SocketChannel) {
             put(_this, new SocketChannelRecord((SocketChannel) _this));
 
             for (ActivityListener al : ActivityListener.LIST) {
@@ -419,6 +454,8 @@ public class Listener {
         if (r != null && TRACE != null && !tracing) {
             if (r instanceof FileRecord) {
                 r = new FileRecord(((FileRecord) r).file);
+            } else if (r instanceof PathRecord) {
+                r = new PathRecord(((PathRecord) r).path);
             }
             tracing = true;
             r.dump("Closed ", TRACE);
@@ -429,9 +466,6 @@ public class Listener {
             al.close(_this);
         }
     }
-
-
-
 
     /**
      * Dumps all files that are currently open.
@@ -470,29 +504,6 @@ public class Listener {
             return new Date(time).toString();
         } catch (Exception e) {
             return Long.toString(time);
-        }
-    }
-
-    private static final Field SOCKETIMPL_SOCKET, SOCKETIMPL_SERVER_SOCKET;
-
-    static {
-        SOCKETIMPL_SOCKET = getSocketField("socket");
-        SOCKETIMPL_SERVER_SOCKET = getSocketField("serverSocket");
-    }
-
-    private static Field getSocketField(String socket) {
-        try {
-            Field socketimplSocket = SocketImpl.class.getDeclaredField(socket);
-            socketimplSocket.setAccessible(true);
-
-            return socketimplSocket;
-        } catch (NoSuchFieldException e) {
-            // Java 17+ changed the implementation of Sockets and
-            // so the current approach does not work there any more
-            // for now we gracefully handle this and do keep file-leak-detector
-            // useful for other types of file-handle-leaks
-            System.err.println("Could not load field " + socket + " from SocketImpl: " + e);
-            return null;
         }
     }
 }
