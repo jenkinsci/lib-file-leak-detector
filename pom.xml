@@ -39,7 +39,7 @@
 
   <properties>
     <gitHubRepo>jenkinsci/lib-${project.artifactId}</gitHubRepo>
-    <asm.version>9.11</asm.version>
+    <asm.version>9.11.1</asm.version>
     <project.build.outputTimestamp>2026-07-09T22:02:36Z</project.build.outputTimestamp>
   </properties>
 
